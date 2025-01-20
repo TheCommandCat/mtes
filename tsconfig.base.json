@@ -14,6 +14,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@mtes/database": ["libs/database/src/index.ts"],
       "@mtes/types": ["libs/types/src/index.ts"]
     }
   }
