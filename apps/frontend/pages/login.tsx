@@ -2,23 +2,21 @@ import { useState, useEffect } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { Paper, Box, Link, Stack, Typography } from '@mui/material';
 import Layout from '../components/layout';
-// import EventLoginForm from '@/components/';
+import AdminLoginForm from '../components/general/login/admin-login-form';
 // import { WithId } from 'mongodb';
 
 interface PageProps {
-  recaptchaRequired: boolean;
+  
 }
 
-const Page: NextPage<PageProps> = ({ recaptchaRequired }) => {
+const Page: NextPage<PageProps> = ({ }) => {
   const [isAdminLogin, setIsAdminLogin] = useState<boolean>(false);
 
   return (
     <Layout maxWidth="sm">
       <Paper sx={{ p: 4, mt: 4 }}>
         {isAdminLogin ? (
-          <Typography variant="h2" pb={2} textAlign={'center'}>
-            מנהל
-          </Typography>
+          <AdminLoginForm/>
         ) : (
           <Stack direction="column">
             <Typography variant="h2" pb={2} textAlign={'center'}>
