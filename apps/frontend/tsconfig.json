@@ -21,26 +21,7 @@
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": ["./*"]
-    },
-    "outDir": "out-tsc/frontend",
-    "rootDir": "."
   },
-  "include": [
-    "pages/**/*.ts",
-    "pages/**/*.tsx",
-    "pages/**/*.js",
-    "pages/**/*.jsx",
-    "next-env.d.ts"
-  ],
-  "exclude": [
-    "out-tsc",
-    "dist",
-    "node_modules",
-    "jest.config.ts",
-    "pages/**/*.spec.ts",
-    "pages/**/*.test.ts",
-    ".next"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "next-env.d.ts"],
+  "exclude": ["node_modules", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

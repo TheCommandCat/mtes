@@ -1,16 +1,33 @@
-import { AppProps } from 'next/app';
+import theme from '../lib/theme';
+import { CssBaseline, Grow, ThemeProvider } from '@mui/material';
+import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import './styles.css';
+import { SnackbarProvider } from 'notistack';
+import SnackbarCloseButton from '../components/general/forms/snackbar-close-button';
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Welcome to frontend!</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#fff" />
+        <meta name="description" content="מערכת הבחירות של מחוז תל אביב" />
+        <title>מחוז תל</title>
       </Head>
-      <main className="app">
-        <Component {...pageProps} />
-      </main>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <SnackbarProvider
+          maxSnack={3}
+          TransitionComponent={Grow}
+          action={(snackbarId) => (
+            <SnackbarCloseButton snackbarId={snackbarId} />
+          )}
+        >
+          <main className="app">
+            <Component {...pageProps} />
+          </main>
+        </SnackbarProvider>
+      </ThemeProvider>
     </>
   );
 }
