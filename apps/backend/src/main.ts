@@ -1,7 +1,7 @@
 import express from 'express';
 import cookies from 'cookie-parser';
 import cors from 'cors';
-import authRouter from './routers/auth';
+// import authRouter from './routers/auth';
 import * as path from 'path';
 
 const host = process.env.HOST ?? 'localhost';

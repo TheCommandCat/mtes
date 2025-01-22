@@ -1,11 +1,10 @@
 {
   "name": "@mtes/database",
-  "version": "0.0.1",
+  "version": "1.4.0",
   "dependencies": {
     "tslib": "^2.3.0"
   },
-  "type": "commonjs",
+  "type": "module",
   "main": "./src/index.js",
-  "types": "./src/index.d.ts",
-  "private": true
+  "typings": "./src/index.d.ts"
 }
