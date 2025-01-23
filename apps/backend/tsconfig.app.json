@@ -2,8 +2,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "module": "commonjs",
-    "types": ["node"]
+    "target": "es2017",
+    "module": "esnext",
+    "types": ["node", "express"]
   },
   "include": ["src/**/*.ts"]
 }

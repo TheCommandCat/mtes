@@ -5,6 +5,8 @@ import cors from 'cors';
 import * as path from 'path';
 import * as db from '@mtes/database';
 
+const notinporttand = db.EventUserAllowedRoleTypes
+
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 

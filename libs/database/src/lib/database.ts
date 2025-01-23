@@ -19,7 +19,7 @@ const initDbClient = async () => {
 
 const client = await initDbClient();
 
-const db: Db = client.db('lems');
+const db: Db = client.db('mtes');
 
 const admins = db.collection<User>('users');
 admins.findOne({}).then(user => {
