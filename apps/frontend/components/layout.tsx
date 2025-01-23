@@ -21,6 +21,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { ConnectionStatus } from '@mtes/types';
 import ConnectionIndicator from './connection-indicator';
+import { apiFetch } from '../lib/utils/fetch';
 
 interface LayoutProps {
   connectionStatus?: ConnectionStatus;
@@ -61,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   const logout = () => {
-    // apiFetch('/auth/logout', { method: 'POST' }).then(res => router.push('/'));
+   apiFetch('/auth/logout', { method: 'POST' }).then(res => router.push('/'));
   };
 
   return (
