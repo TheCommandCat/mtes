@@ -1,14 +1,14 @@
 import express from 'express';
 import cookies from 'cookie-parser';
 import cors from 'cors';
-// import authRouter from './routers/auth';
+import authRouter from './routers/auth';
 import * as path from 'path';
 import * as db from '@mtes/database';
 
 const notinporttand = db.EventUserAllowedRoleTypes
 
 const host = process.env.HOST ?? 'localhost';
-const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 
 const app = express();
 const corsOptions = {
@@ -22,7 +22,7 @@ app.use(express.json());
 
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
-// app.use('/auth', authRouter);
+app.use('/auth', authRouter);
 
 app.listen(port, host, () => {
   console.log(`[ ready ] http://${host}:${port}`);
