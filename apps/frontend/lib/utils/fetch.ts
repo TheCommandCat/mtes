@@ -1,13 +1,48 @@
-export const apiFetch = (
-  url: string,
-  options?: RequestInit
-): Promise<Response> => {
-  let headers = { ...options?.headers };
+import { GetServerSidePropsContext } from 'next';
 
-  return fetch('http://localhost:3333' + url, {
+export const apiFetch = (
+  path: string,
+  init?: RequestInit | undefined,
+  ctx?: GetServerSidePropsContext
+): Promise<Response> => {
+  let headers = { ...init?.headers };
+  if (ctx) {
+    let token: string | undefined = undefined;
+    const authHeader = ctx.req.headers.authorization as string;
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split('Bearer ')[1];
+    } else {
+      token = ctx.req.cookies?.['auth-token'];
+    }
+    headers = { Authorization: `Bearer ${token}`, ...init?.headers };
+  }
+
+  return fetch("http://localhost:3333" + path, {
+    credentials: 'include',
     headers,
-    ...options,
-  }).then((res) => {
-    return res;
+    ...init
+  }).then(response => {
+    return response;
   });
+};
+
+export const serverSideGetRequests = async (
+  toFetch: { [key: string]: string },
+  ctx: GetServerSidePropsContext
+) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { [key: string]: any } = {};
+
+  await Promise.all(
+    Object.entries(toFetch).map(async ([key, urlPath]) => {
+      console.log(urlPath);
+      
+      const data = await apiFetch(urlPath, undefined).then(res => res?.json());
+      
+      
+      result[key] = data;
+    })
+  );
+
+  return result;
 };
