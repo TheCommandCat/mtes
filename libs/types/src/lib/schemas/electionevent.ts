@@ -1,7 +1,10 @@
-import { EventUserAllowedRoles } from '../roles';
+import { WithId } from 'mongodb';
+import { Division } from './division';
 
 export interface ElectionEvent {
   name: string;
   startDate: Date;
-  eventUsers: Array<EventUserAllowedRoles>;
+  endDate: Date;
+  salesforceId?: string;
+  divisions?: Array<WithId<Division>>;
 }

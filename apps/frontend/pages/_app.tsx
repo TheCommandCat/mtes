@@ -3,7 +3,8 @@ import { CssBaseline, Grow, ThemeProvider } from '@mui/material';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { SnackbarProvider } from 'notistack';
-import SnackbarCloseButton from '../components/general/forms/snackbar-close-button';
+import SnackbarCloseButton from '../components/general/snackbar-close-button';
+import { RouteAuthorizer } from '../components/route-authorizer';
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (
@@ -24,7 +25,9 @@ function CustomApp({ Component, pageProps }: AppProps) {
           )}
         >
           <main className="app">
-            <Component {...pageProps} />
+            <RouteAuthorizer>
+              <Component {...pageProps} />
+            </RouteAuthorizer>
           </main>
         </SnackbarProvider>
       </ThemeProvider>

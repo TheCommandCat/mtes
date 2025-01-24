@@ -1,5 +1,9 @@
 import { GetServerSidePropsContext } from 'next';
 
+export const getApiBase = (forceClient = false) => {
+  return 'http://localhost:3333';
+};
+
 export const apiFetch = (
   path: string,
   init?: RequestInit | undefined,
@@ -35,11 +39,7 @@ export const serverSideGetRequests = async (
 
   await Promise.all(
     Object.entries(toFetch).map(async ([key, urlPath]) => {
-      console.log(urlPath);
-      
       const data = await apiFetch(urlPath, undefined).then(res => res?.json());
-      
-      
       result[key] = data;
     })
   );

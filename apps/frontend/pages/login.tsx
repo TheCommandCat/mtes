@@ -55,8 +55,6 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
     return response.ok ? response.json() : undefined;
   });
 
-  const recaptchaRequired = process.env.RECAPTCHA === 'true';
-
   if (user) {
     return user.isAdmin
       ? { redirect: { destination: `/admin`, permanent: false } }
@@ -65,7 +63,7 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
     return apiFetch('/public/events', undefined, ctx)
       .then(response => response.json())
       .then((events: Array<WithId<ElectionEvent>>) => {
-        return { props: { events, recaptchaRequired } };
+        return { props: { events } };
       });
   }
 };

@@ -31,6 +31,7 @@ admins.findOne({}).then(user => {
         username: adminUsername,
         isAdmin: true,
         password: adminPassword,
+        lastPasswordSetDate: new Date(),
       })
       .then(() => {
         console.log(`⚙️ Setup initial admin user with details - ${adminUsername}:${adminPassword}`);
