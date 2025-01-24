@@ -1,5 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { AudienceDisplayScreen } from '../constants';
+import { Positions } from '../positions';
+import { Division } from './division';
 
 export interface PresentationState {
   enabled: boolean;
@@ -22,19 +24,16 @@ export interface AwardsPresentationState {
 export interface AudienceDisplayState {
   screen: AudienceDisplayScreen;
   message: string;
-  scoreboard: ScoreboardState;
-  awardsPresentation: AwardsPresentationState;
+  // scoreboard: ScoreboardState;
+  // awardsPresentation: AwardsPresentationState;
 }
 
 export interface DivisionState {
   divisionId: ObjectId;
-  loadedMatch: ObjectId | null;
-  activeMatch: ObjectId | null;
-  currentStage: 'practice' | 'ranking';
-  currentRound: number;
-  currentSession: number;
+  activeRound: ObjectId | null;
+  currentRoundPosition: Positions | null;
+  currentRound: null;
   audienceDisplay: AudienceDisplayState;
-  presentations: { [key: string]: PresentationState };
   completed: boolean;
   allowTeamExports: boolean;
 }

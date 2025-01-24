@@ -12,6 +12,11 @@ export const cleanDivisionData = async (division: WithId<Division>) => {
       throw new Error('Could not delete division state!');
   }
 
-  // remove all devision data
+  const oldMembers = await db.getDivisionMembers(division._id);
+  const oldContestants = await db.getDivisionContestants(division._id);
 
+  if (!(await db.deleteDivisionMembers(division._id)).acknowledged)
+    throw new Error('Could not delete members!');
+  if (!(await db.deleteDivisionContestants(division._id)).acknowledged)
+    throw new Error('Could not delete contestant!');
 };

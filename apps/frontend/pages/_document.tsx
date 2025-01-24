@@ -3,7 +3,7 @@ import theme from '../lib/theme';
 
 export default function Document() {
   return (
-    <Html lang="en">
+    <Html lang="he">
       <Head>
         <link
           rel="stylesheet"

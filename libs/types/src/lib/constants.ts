@@ -93,11 +93,10 @@ export type TicketType = (typeof TicketTypes)[number];
 export const AudienceDisplayScreenTypes = [
   'blank',
   'logo',
-  'scores',
-  'match-preview',
-  'awards',
-  'sponsors',
-  'hotspot',
+  'attendance',
+  'speeches',
+  'voting',
+  'winneres',
   'message'
 ];
 export type AudienceDisplayScreen = (typeof AudienceDisplayScreenTypes)[number];

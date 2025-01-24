@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import asyncHandler from 'express-async-handler';
 import { Division } from '@mtes/types';
 import * as db from '@mtes/database';
-// import divisionUsersRouter from './users';
+import divisionScheduleRouter from './schedule';
 import { cleanDivisionData } from '../../../../lib/schedule/cleaner';
 
 const router = express.Router({ mergeParams: true });
@@ -47,7 +47,7 @@ router.delete(
   })
 );
 
-// router.use('/:divisionId/schedule', divisionScheduleRouter);
+router.use('/:divisionId/schedule', divisionScheduleRouter);
 // router.use('/:divisionId/pit-map', divisionPitMapRouter);
 // router.use('/:divisionId/users', divisionUsersRouter);
 // router.use('/:divisionId/awards', divisionAwardsRouter);

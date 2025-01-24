@@ -4,3 +4,5 @@ export * from './lib/crud/users';
 export * from './lib/crud/election-events';
 export * from './lib/crud/divisions';
 export * from './lib/crud/division-states';
+export * from './lib/crud/members';
+export * from './lib/crud/contestants';
