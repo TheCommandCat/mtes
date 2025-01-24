@@ -13,16 +13,14 @@ function CustomApp({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#fff" />
         <meta name="description" content="מערכת הבחירות של מחוז תל אביב" />
-        <title>מחוז תל</title>
+        <title>מערכת בחירות מחוז תל אביב</title>
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider
           maxSnack={3}
           TransitionComponent={Grow}
-          action={(snackbarId) => (
-            <SnackbarCloseButton snackbarId={snackbarId} />
-          )}
+          action={snackbarId => <SnackbarCloseButton snackbarId={snackbarId} />}
         >
           <main className="app">
             <RouteAuthorizer>
