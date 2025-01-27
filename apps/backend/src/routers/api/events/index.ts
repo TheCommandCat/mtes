@@ -6,6 +6,8 @@ const router = express.Router({ mergeParams: true });
 
 router.get('/:eventId', (req: Request, res: Response) => {
   db.getElectionEvent({ _id: new ObjectId(req.params.eventId) }).then(event => {
+    // console.log(event);
+
     res.json(event);
   });
 });

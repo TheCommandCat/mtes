@@ -6,10 +6,18 @@ export const getElectionEvent = (filter: Filter<ElectionEvent>) => {
   return findElectionEvents(filter).next();
 };
 
-export const findElectionEvents = (filter: Filter<ElectionEvent>): AggregationCursor<WithId<ElectionEvent>> => {
+export const findElectionEvents = (filter: Filter<ElectionEvent>) => {
   return db.collection<ElectionEvent>('election-events').aggregate([
     { $match: filter },
-  ]);
+    {
+      $lookup: {
+        from: 'divisions',
+        localField: '_id',
+        foreignField: 'eventId',
+        as: 'divisions'
+      }
+    }
+  ]) as AggregationCursor<WithId<ElectionEvent>>;
 };
 
 export const getElectionEvents = (filter: Filter<ElectionEvent>) => {
@@ -25,11 +33,13 @@ export const updateElectionEvent = (
   newElectionEvent: Partial<ElectionEvent>,
   upsert = false
 ) => {
-  return db.collection<ElectionEvent>('election-events').updateOne(filter, { $set: newElectionEvent }, { upsert });
+  return db
+    .collection<ElectionEvent>('election-events')
+    .updateOne(filter, { $set: newElectionEvent }, { upsert });
 };
 
-export const addElectionEvent = (fllEvent: ElectionEvent) => {
-  return db.collection<ElectionEvent>('election-events').insertOne(fllEvent);
+export const addElectionEvent = (ElectionEvent: ElectionEvent) => {
+  return db.collection<ElectionEvent>('election-events').insertOne(ElectionEvent);
 };
 
 export const deleteElectionEvent = (filter: Filter<ElectionEvent>) => {

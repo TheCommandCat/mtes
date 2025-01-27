@@ -22,15 +22,27 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import Grid from '@mui/material/Grid2';
 import ImportIcon from '@mui/icons-material/UploadRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import { DivisionSwatches } from '@mtes/types';
+import { DivisionSwatches, EventUserAllowedRoles, EventUserAllowedRoleTypes } from '@mtes/types';
 import { apiFetch } from '../../../lib/utils/fetch';
 import Layout from '../../../components/layout';
 import FormikTextField from '../../../components/general/forms/formik-text-field';
 import ColorPickerButton from '../../../components/admin/color-picker-button';
 
+interface EventCreateFormValues {
+  name: string;
+  salesforceId: string;
+  startDate: Dayjs;
+  endDate: Dayjs;
+  eventUsers: Record<EventUserAllowedRoles, boolean>;
+  divisions: {
+    name: string;
+    color: string;
+  }[];
+}
+
 const DivisionField: React.FC<{ name: string }> = ({ name }) => {
   return (
-    (<Grid container alignItems="center" spacing={2} size={6}>
+    <Grid container alignItems="center" spacing={2} size={6}>
       <Grid position="relative" height="100%" size={1.5}>
         <Field name={`${name}.color`}>
           {({ field, form }: FieldProps) => (
@@ -52,7 +64,7 @@ const DivisionField: React.FC<{ name: string }> = ({ name }) => {
           fullWidth
         />
       </Grid>
-    </Grid>)
+    </Grid>
   );
 };
 
@@ -66,14 +78,14 @@ const Page: NextPage = () => {
     return dayjs();
   };
 
-  const handleSubmit = (values: any, formikHelpers: any) => {
+  const handleSubmit = (values: EventCreateFormValues, formikHelpers: any) => {
     apiFetch('/api/admin/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...values,
         startDate: resetTimePart(values.startDate || getDefaultDate()),
-        endDate: resetTimePart(values.endDate || getDefaultDate()),
+        endDate: resetTimePart(values.endDate || getDefaultDate())
       })
     })
       .then(res => {
@@ -91,14 +103,18 @@ const Page: NextPage = () => {
     return {
       name: '',
       salesforceId: '',
+      eventUsers: EventUserAllowedRoleTypes.reduce(
+        (a, r) => ({ ...a, [r]: true }),
+        {} as Record<EventUserAllowedRoles, boolean>
+      ),
       startDate: getDefaultDate(),
       endDate: getDefaultDate(),
-      divisions: [{ name: '', color: DivisionSwatches[0] }]
+      divisions: [{ name: '123', color: DivisionSwatches[0] }]
     };
   };
 
   return (
-    (<Layout maxWidth="xl" title="יצירת אירוע" back="/admin">
+    <Layout maxWidth="xl" title="יצירת אירוע" back="/admin">
       <Formik initialValues={getInitialValues()} onSubmit={handleSubmit}>
         {({ values, errors, touched, setFieldValue }) => (
           <Form>
@@ -215,7 +231,7 @@ const Page: NextPage = () => {
           </Form>
         )}
       </Formik>
-    </Layout>)
+    </Layout>
   );
 };
 

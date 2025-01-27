@@ -15,6 +15,8 @@ router.post(
       return;
     }
 
+    console.log(divisions, body);
+
     body.startDate = new Date(body.startDate);
     body.endDate = new Date(body.endDate);
 

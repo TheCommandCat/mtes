@@ -1,6 +1,7 @@
 import { ObjectId, Filter, WithId } from 'mongodb';
 import { User, SafeUser } from '@mtes/types';
 import db from '../database';
+import { fileURLToPath } from 'url';
 
 export const getDivisionUsersWithCredentials = (divisionId: ObjectId) => {
   return db.collection<User>('users').find({ divisionId }).toArray();
@@ -17,6 +18,13 @@ export const getDivisionUsers = (divisionId: ObjectId): Promise<Array<WithId<Saf
 };
 
 export const getUserWithCredentials = (filter: Filter<User>) => {
+  console.log(filter);
+
+  // turn the id to ObjectId
+  if (filter._id) {
+    filter._id = new ObjectId(String(filter._id));
+  }
+
   return db.collection<User>('users').findOne(filter);
 };
 
