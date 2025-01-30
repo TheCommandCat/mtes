@@ -12,9 +12,13 @@ const jwtSecret = process.env.JWT_SECRET;
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   const loginDetails: User = req.body;
 
+  if (loginDetails.eventId) loginDetails.eventId = new ObjectId(loginDetails.eventId);
+  if (loginDetails.divisionId) loginDetails.divisionId = new ObjectId(loginDetails.divisionId);
+  if (loginDetails.roleAssociation && ['room', 'table'].includes(loginDetails.roleAssociation.type))
+    loginDetails.roleAssociation.value = new ObjectId(loginDetails.roleAssociation.value);
+
   try {
     const user = await db.getUser({ ...loginDetails });
-
 
     if (!user) {
       console.log(

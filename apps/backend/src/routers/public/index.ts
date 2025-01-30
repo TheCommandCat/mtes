@@ -5,8 +5,6 @@ const router = express.Router({ mergeParams: true });
 
 router.get('/events', (req: Request, res: Response) => {
   db.getAllElectionEvents().then(events => {
-    console.log(events);
-
     res.json(
       events.map(event => {
         event.divisions.forEach(division => {
