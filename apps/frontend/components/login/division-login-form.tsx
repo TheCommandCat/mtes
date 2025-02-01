@@ -112,8 +112,8 @@ const DivisionLoginForm: React.FC<Props> = ({ event, division, onCancel }) => {
       >
         {loginRoles.map((r: Role) => {
           return (
-            <MenuItem value={r} key={r}>
-              {localizedRoles[r].name}
+            <MenuItem value={r as Role} key={r as Role}>
+              {localizedRoles[r as Role].name}
             </MenuItem>
           );
         })}

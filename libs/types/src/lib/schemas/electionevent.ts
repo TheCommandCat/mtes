@@ -11,3 +11,7 @@ export interface ElectionEvent {
   divisions?: Array<WithId<Division>>;
   eventUsers: Array<EventUserAllowedRoles>;
 }
+
+export interface DivisionWithEvent extends Division {
+  event: WithId<ElectionEvent>;
+}
