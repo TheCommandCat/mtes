@@ -22,7 +22,11 @@
       ],
       "@mtes/types": [
         "libs/types/src/index.ts"
-      ]
+      ],
+      "@mtes/utils": ["libs/utils/src/index.ts"],
+      "@mtes/utils/arrays": ["libs/utils/arrays/src/index.ts"],
+      "@mtes/utils/objects": ["libs/utils/objects/src/index.ts"],
+      "@mtes/utils/random": ["libs/utils/random/src/index.ts"]
     }
   }
 }

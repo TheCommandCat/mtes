@@ -1,3 +1,5 @@
+import { Division, SafeUser } from '@mtes/types';
+import { WithId } from 'mongodb';
 import { GetServerSidePropsContext } from 'next';
 
 export const getApiBase = (forceClient = false) => {
@@ -21,13 +23,32 @@ export const apiFetch = (
     headers = { Authorization: `Bearer ${token}`, ...init?.headers };
   }
 
-  return fetch("http://localhost:3333" + path, {
+  return fetch('http://localhost:3333' + path, {
     credentials: 'include',
     headers,
     ...init
   }).then(response => {
     return response;
   });
+};
+
+export const getUserAndDivision = async (ctx: GetServerSidePropsContext) => {
+  const user: SafeUser = await apiFetch(`/api/me`, undefined, ctx).then(res => res?.json());
+  const divisions: Array<WithId<Division>> = await apiFetch(`/public/divisions`).then(res =>
+    res?.json()
+  );
+
+  let divisionId = user.divisionId?.toString();
+  if (divisionId) return { user, divisionId };
+
+  const isEventUser = user.eventId || user.isAdmin;
+  if (!isEventUser) return { user, divisionId };
+
+  const idFromQuery = (ctx.query.divisionId as string) || undefined;
+  if (user.isAdmin && !idFromQuery) return { user, divisionId }; //Don't know what division admin wants
+
+  if (user.isAdmin) divisionId = idFromQuery;
+  return { user, divisionId };
 };
 
 export const serverSideGetRequests = async (
