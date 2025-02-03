@@ -5,7 +5,14 @@ import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
 import { Paper, Tabs, Tab, Typography, Box, Card, CardContent } from '@mui/material';
-import { DivisionState, DivisionWithEvent, RoleConfig, SafeUser, VotingConfig } from '@mtes/types';
+import {
+  DivisionState,
+  DivisionWithEvent,
+  Member,
+  RoleConfig,
+  SafeUser,
+  VotingConfig
+} from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 // import { useWebsocket } from '../../hooks/use-websocket';
@@ -31,33 +38,34 @@ const Page: NextPage<Props> = ({
   const [division] = useState<WithId<DivisionWithEvent>>(initialDivision);
   const [divisionState, setDivisionState] = useState<WithId<DivisionState>>(initialDivisionState);
   const [votingConf, setVotingConf] = useState<VotingConfig | undefined>(undefined);
+  const [member, setMember] = useState<Member | null>(null);
 
   const Votingcnf: VotingConfig = {
     roles: [
       {
-        role: 'Chairman',
+        role: 'יו"ר',
         contestants: [
           {
             name: 'Contestant 1',
-            city: 'Ramat Gan'
+            city: 'תל אביב יפו'
           },
           {
             name: 'Contestant 2',
-            city: 'Ramat Gan'
+            city: 'תל אביב יפו'
           }
         ],
         maxVotes: 1
       },
       {
-        role: 'Secretary',
+        role: 'סיו"ר',
         contestants: [
           {
             name: 'Contestant 3',
-            city: 'Ramat Gan'
+            city: 'תל אביב יפו'
           },
           {
             name: 'Contestant 4',
-            city: 'Ramat Gan'
+            city: 'תל אביב יפו'
           }
         ],
         maxVotes: 2
@@ -65,6 +73,10 @@ const Page: NextPage<Props> = ({
     ]
   };
 
+  const memberCnf: Member = {
+    name: 'ניר חן',
+    city: 'תל אביב יפו'
+  };
   // handel statments
 
   // socket
@@ -97,6 +109,25 @@ const Page: NextPage<Props> = ({
             <Typography variant="h1">Voting Stand UI</Typography>
           </Paper>
           <Paper sx={{ mt: 2, p: 5, textAlign: 'center' }}>
+            {member ? (
+              <>
+                <Typography>
+                  המצביע
+                  <br />
+                  --------------------------------------
+                </Typography>
+
+                <Typography variant="h5">{member.name}</Typography>
+                <Typography variant="subtitle1">{member.city}</Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="h2">No member selected</Typography>
+                <Button variant="contained" onClick={() => setMember(memberCnf)}>
+                  Load Member
+                </Button>
+              </>
+            )}
             {votingConf ? (
               <Formik
                 initialValues={Object.fromEntries(
@@ -124,11 +155,21 @@ const Page: NextPage<Props> = ({
                             mb: 4
                           }}
                         >
-                          <Typography variant="h3">{roleConfig.role}</Typography>
+                          <Typography variant="h1">{roleConfig.role}</Typography>
                           <Typography variant="subtitle1">
-                            Maximum votes allowed: {roleConfig.maxVotes}
+                            {roleConfig.maxVotes === 1
+                              ? 'בחר מתמודד אחד'
+                              : `בחר ${roleConfig.maxVotes} מתמודדים`}
                           </Typography>
-                          <FormControl component="fieldset" sx={{ mt: 2 }}>
+                          <FormControl
+                            component="fieldset"
+                            sx={{
+                              mt: 2,
+                              display: 'flex',
+                              flexDirection: 'row',
+                              justifyContent: 'center'
+                            }}
+                          >
                             {roleConfig.contestants.map(contestant => {
                               const [selected, setSelected] = useState(false);
                               const isDisabled = !selected && selectedVotes >= roleConfig.maxVotes;
@@ -136,10 +177,13 @@ const Page: NextPage<Props> = ({
                               return (
                                 <Card
                                   key={contestant.name}
+                                  variant="outlined"
                                   sx={{
-                                    mt: 2,
-                                    border: selected ? '2px solid blue' : 'none',
-                                    cursor: isDisabled ? 'not-allowed' : 'pointer'
+                                    m: 2,
+                                    boxShadow: selected ? '0 0 20px blue' : '0 0 5px black',
+                                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                    width: '10rem',
+                                    userSelect: 'none'
                                   }}
                                   onClick={() => {
                                     if (!isDisabled) {
@@ -147,7 +191,7 @@ const Page: NextPage<Props> = ({
                                       // Update Formik values
                                       setFieldValue(
                                         `${roleConfig.role}-${contestant.name}`,
-                                        selected ? 0 : 1
+                                        selected ? false : true
                                       );
                                     }
                                   }}

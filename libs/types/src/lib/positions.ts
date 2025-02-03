@@ -1,2 +1,2 @@
-export const Position = ['Chairman', 'Secretary', 'Secretary General'] as const;
+export const Position = ['יו"ר', 'סיו"ר', 'מזכ"ל'] as const;
 export type Positions = (typeof Position)[number];
