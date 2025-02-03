@@ -7,3 +7,4 @@ export * from './lib/schemas/electionevent';
 export * from './lib/schemas/division';
 export * from './lib/schemas/division-state';
 export * from './lib/schemas/member';
+export * from './lib/schemas/voting';

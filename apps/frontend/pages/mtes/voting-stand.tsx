@@ -4,14 +4,16 @@ import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
-import { Paper, Tabs, Tab, Typography, Box } from '@mui/material';
-import { DivisionState, DivisionWithEvent, SafeUser } from '@mtes/types';
+import { Paper, Tabs, Tab, Typography, Box, Card, CardContent } from '@mui/material';
+import { DivisionState, DivisionWithEvent, RoleConfig, SafeUser, VotingConfig } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 // import { useWebsocket } from '../../hooks/use-websocket';
 import { localizedRoles } from '../../localization/roles';
 import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { useQueryParam } from '../../hooks/use-query-param';
+import { Formik, Form, Field, FieldProps } from 'formik';
+import { Button, FormControl, FormLabel, RadioGroup, Radio, FormControlLabel } from '@mui/material';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -28,6 +30,40 @@ const Page: NextPage<Props> = ({
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
   const [division] = useState<WithId<DivisionWithEvent>>(initialDivision);
   const [divisionState, setDivisionState] = useState<WithId<DivisionState>>(initialDivisionState);
+  const [votingConf, setVotingConf] = useState<VotingConfig | undefined>(undefined);
+
+  const Votingcnf: VotingConfig = {
+    roles: [
+      {
+        role: 'Chairman',
+        contestants: [
+          {
+            name: 'Contestant 1',
+            city: 'Ramat Gan'
+          },
+          {
+            name: 'Contestant 2',
+            city: 'Ramat Gan'
+          }
+        ],
+        maxVotes: 1
+      },
+      {
+        role: 'Secretary',
+        contestants: [
+          {
+            name: 'Contestant 3',
+            city: 'Ramat Gan'
+          },
+          {
+            name: 'Contestant 4',
+            city: 'Ramat Gan'
+          }
+        ],
+        maxVotes: 2
+      }
+    ]
+  };
 
   // handel statments
 
@@ -58,7 +94,89 @@ const Page: NextPage<Props> = ({
       >
         <Box sx={{ mt: 2 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography>Voting Stand UI</Typography>
+            <Typography variant="h1">Voting Stand UI</Typography>
+          </Paper>
+          <Paper sx={{ mt: 2, p: 5, textAlign: 'center' }}>
+            {votingConf ? (
+              <Formik
+                initialValues={Object.fromEntries(
+                  votingConf.roles.flatMap(role =>
+                    role.contestants.map(c => [`${role.role}-${c.name}`, 0])
+                  )
+                )}
+                onSubmit={values => {
+                  console.log(values);
+                  // Handle submission here
+                }}
+              >
+                {({ handleSubmit, setFieldValue, values }) => (
+                  <Form onSubmit={handleSubmit}>
+                    {votingConf.roles.map(roleConfig => {
+                      const selectedVotes = Object.entries(values).filter(
+                        ([key, value]) => key.startsWith(roleConfig.role) && value === 1
+                      ).length;
+
+                      return (
+                        <Box
+                          key={roleConfig.role}
+                          sx={{
+                            mt: 4,
+                            mb: 4
+                          }}
+                        >
+                          <Typography variant="h3">{roleConfig.role}</Typography>
+                          <Typography variant="subtitle1">
+                            Maximum votes allowed: {roleConfig.maxVotes}
+                          </Typography>
+                          <FormControl component="fieldset" sx={{ mt: 2 }}>
+                            {roleConfig.contestants.map(contestant => {
+                              const [selected, setSelected] = useState(false);
+                              const isDisabled = !selected && selectedVotes >= roleConfig.maxVotes;
+
+                              return (
+                                <Card
+                                  key={contestant.name}
+                                  sx={{
+                                    mt: 2,
+                                    border: selected ? '2px solid blue' : 'none',
+                                    cursor: isDisabled ? 'not-allowed' : 'pointer'
+                                  }}
+                                  onClick={() => {
+                                    if (!isDisabled) {
+                                      setSelected(!selected);
+                                      // Update Formik values
+                                      setFieldValue(
+                                        `${roleConfig.role}-${contestant.name}`,
+                                        selected ? 0 : 1
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <CardContent>
+                                    <Typography variant="h4">{contestant.name}</Typography>
+                                    <Typography variant="subtitle2">{contestant.city}</Typography>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </FormControl>
+                        </Box>
+                      );
+                    })}
+                    <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+                      Submit Votes
+                    </Button>
+                  </Form>
+                )}
+              </Formik>
+            ) : (
+              <>
+                <Typography>No voting configuration available</Typography>
+                <Button variant="contained" onClick={() => setVotingConf(Votingcnf)}>
+                  Load Voting Configuration
+                </Button>
+              </>
+            )}
           </Paper>
         </Box>
       </Layout>
