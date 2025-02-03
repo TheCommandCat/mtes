@@ -67,7 +67,7 @@ const DivisionLoginForm: React.FC<Props> = ({ event, division, onCancel }) => {
         if (data && !data.error) {
           document.getElementById('recaptcha-script')?.remove();
           document.querySelector('.grecaptcha-badge')?.remove();
-          const returnUrl = router.query.returnUrl || `/lems`;
+          const returnUrl = router.query.returnUrl || `/mtes`;
           router.push(returnUrl as string);
         } else if (data.error) {
           if (data.error === 'INVALID_CREDENTIALS') {
