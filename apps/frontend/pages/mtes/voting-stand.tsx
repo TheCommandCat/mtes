@@ -175,32 +175,40 @@ const Page: NextPage<Props> = ({
                               const isDisabled = !selected && selectedVotes >= roleConfig.maxVotes;
 
                               return (
-                                <Card
-                                  key={contestant.name}
-                                  variant="outlined"
-                                  sx={{
-                                    m: 2,
-                                    boxShadow: selected ? '0 0 20px blue' : '0 0 5px black',
-                                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                    width: '10rem',
-                                    userSelect: 'none'
-                                  }}
-                                  onClick={() => {
-                                    if (!isDisabled) {
-                                      setSelected(!selected);
-                                      // Update Formik values
-                                      setFieldValue(
-                                        `${roleConfig.role}-${contestant.name}`,
-                                        selected ? false : true
-                                      );
-                                    }
-                                  }}
-                                >
-                                  <CardContent>
-                                    <Typography variant="h4">{contestant.name}</Typography>
-                                    <Typography variant="subtitle2">{contestant.city}</Typography>
-                                  </CardContent>
-                                </Card>
+                                <>
+                                  <Card
+                                    key={contestant.name}
+                                    variant="outlined"
+                                    sx={{
+                                      m: 2,
+                                      boxShadow: selected ? '0 0 20px blue' : '0 0 5px black',
+                                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                      width: '10rem',
+                                      userSelect: 'none'
+                                    }}
+                                    onClick={() => {
+                                      if (!isDisabled) {
+                                        console.log(
+                                          'clicked',
+                                          roleConfig.role + ' ' + contestant.name
+                                        );
+
+                                        setSelected(!selected);
+                                        console.log(selected);
+                                        // Update Formik values
+                                        setFieldValue(
+                                          `${roleConfig.role}-${contestant.name}`,
+                                          selected ? 0 : 1
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    <CardContent>
+                                      <Typography variant="h4">{contestant.name}</Typography>
+                                      <Typography variant="subtitle2">{contestant.city}</Typography>
+                                    </CardContent>
+                                  </Card>
+                                </>
                               );
                             })}
                           </FormControl>
