@@ -1,6 +1,7 @@
 export * from './lib/constants';
 export * from './lib/roles';
 export * from './lib/cities';
+export * from './lib/websocket';
 export * from './lib/schemas/contestant';
 export * from './lib/schemas/user';
 export * from './lib/schemas/electionevent';
