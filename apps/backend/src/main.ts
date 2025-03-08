@@ -2,7 +2,6 @@ import express from 'express';
 import cookies from 'cookie-parser';
 import cors from 'cors';
 import authRouter from './routers/auth';
-import publicRouter from './routers/public';
 import apiRouter from './routers/api';
 import * as path from 'path';
 import * as db from '@mtes/database';
@@ -23,7 +22,6 @@ app.use(express.json());
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 app.use('/auth', authRouter);
-app.use('/public', publicRouter);
 app.use('/api', apiRouter);
 
 app.get('/status', (req, res) => {

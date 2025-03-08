@@ -5,68 +5,34 @@ import { WithId } from 'mongodb';
 import { Button, Box, Typography, Stack, MenuItem, TextField } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import {
-  RoleTypes,
-  Role,
-  RoleAssociationType,
-  getAssociationType,
-  Division,
-  ElectionEvent,
-  EventUserAllowedRoles
-} from '@mtes/types';
+import { Role, RoleAssociationType, getAssociationType } from '@mtes/types';
 // import { localizedJudgingCategory } from '@lems/season';
 import FormDropdown from './form-dropdown';
 import { apiFetch } from '../../lib/utils/fetch';
 import { localizedRoles } from '../../localization/roles';
-interface Props {
-  event: WithId<ElectionEvent>;
-  division: WithId<Division>;
-  onCancel: () => void;
-}
 
-const DivisionLoginForm: React.FC<Props> = ({ event, division, onCancel }) => {
+const DivisionLoginForm: React.FC = () => {
   const [role, setRole] = useState<Role>('' as Role);
   const [password, setPassword] = useState<string>('');
 
-  const [association, setAssociation] = useState<string>('');
-  const associationType = useMemo<RoleAssociationType>(() => {
-    let aType;
-    if (role) {
-      aType = getAssociationType(role);
-    }
-    return aType ? aType : ('' as RoleAssociationType);
-  }, [role]);
-
-  const loginRoles = Object.keys(event.eventUsers);
+  const loginRoles = ['election-manager', 'voting-stand'] as Role[];
 
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
 
-  const login = (captchaToken?: string) => {
+  const login = () => {
     apiFetch('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        divisionId: division?._id,
         isAdmin: false,
         role,
-        ...(association
-          ? {
-              roleAssociation: {
-                type: associationType,
-                value: association
-              }
-            }
-          : undefined),
-        password,
-        ...(captchaToken ? { captchaToken } : {})
+        password
       })
     })
       .then(async res => {
         const data = await res.json();
         if (data && !data.error) {
-          document.getElementById('recaptcha-script')?.remove();
-          document.querySelector('.grecaptcha-badge')?.remove();
           const returnUrl = router.query.returnUrl || `/mtes`;
           router.push(returnUrl as string);
         } else if (data.error) {
@@ -89,17 +55,10 @@ const DivisionLoginForm: React.FC<Props> = ({ event, division, onCancel }) => {
 
   return (
     <Stack direction="column" spacing={2} component="form" onSubmit={handleSubmit}>
-      <Box justifyContent="flex-start" display="flex">
-        <Button startIcon={<ChevronRightIcon />} onClick={onCancel}>
-          לבחירת אירוע
-        </Button>
-      </Box>
       <Typography variant="h2" textAlign="center">
         התחברות לאירוע:
       </Typography>
-      <Typography variant="h2" textAlign="center">
-        {division.name}
-      </Typography>
+      <Typography variant="h2" textAlign="center"></Typography>
 
       <FormDropdown
         id="select-division-role"
@@ -107,7 +66,6 @@ const DivisionLoginForm: React.FC<Props> = ({ event, division, onCancel }) => {
         label="תפקיד"
         onChange={e => {
           setRole(e.target.value as Role);
-          setAssociation('');
         }}
       >
         {loginRoles.map((r: Role) => {
@@ -131,7 +89,7 @@ const DivisionLoginForm: React.FC<Props> = ({ event, division, onCancel }) => {
       <Box justifyContent="flex-end" display="flex" pt={4}>
         <Button
           endIcon={<ChevronLeftIcon />}
-          disabled={!role || !password || (!!associationType && !association)}
+          disabled={!role || !password}
           type="submit"
           variant="contained"
         >
