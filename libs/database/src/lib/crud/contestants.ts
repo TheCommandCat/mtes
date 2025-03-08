@@ -26,6 +26,6 @@ export const deleteContestant = (filter: Filter<Contestant>) => {
   return db.collection<Contestant>('contestants').deleteOne(filter);
 };
 
-export const deleteDivisionContestants = (divisionId: ObjectId) => {
-  return db.collection<Contestant>('contestants').deleteMany({ divisionId });
+export const deleteContestants = () => {
+  return db.collection<Contestant>('contestants').deleteMany();
 };

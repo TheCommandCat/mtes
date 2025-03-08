@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
 import asyncHandler from 'express-async-handler';
 import { Division } from '@mtes/types';
 import * as db from '@mtes/database';
@@ -9,7 +8,7 @@ import { cleanDivisionData } from '../../../../lib/schedule/cleaner';
 
 const router = express.Router({ mergeParams: true });
 
-router.put('/:divisionId', (req: Request, res: Response) => {
+router.put('/', (req: Request, res: Response) => {
   const body: Partial<Division> = { ...req.body };
   if (!body) return res.status(400).json({ ok: false });
 
@@ -19,7 +18,7 @@ router.put('/:divisionId', (req: Request, res: Response) => {
     });
 
   console.log(`⏬ Updating Division ${req.params.divisionId}`);
-  db.updateDivision({ _id: new ObjectId(req.params.divisionId) }, body, true).then(task => {
+  db.updateDivision(body, true).then(task => {
     if (task.acknowledged) {
       console.log('✅ Division updated!');
       return res.json({ ok: true, id: task.upsertedId });
@@ -31,14 +30,12 @@ router.put('/:divisionId', (req: Request, res: Response) => {
 });
 
 router.delete(
-  '/:divisionId/data',
+  '/data',
   asyncHandler(async (req: Request, res: Response) => {
-    const division = await db.getDivision({ _id: new ObjectId(req.params.divisionId) });
-
     console.log(`🚮 Deleting data from division ${req.params.divisionId}`);
     try {
-      await cleanDivisionData(division);
-      await db.updateDivision({ _id: division._id }, { hasState: false });
+      await cleanDivisionData();
+      await db.updateDivision({ hasState: false });
     } catch (error) {
       res.status(500).json(error.message);
       return;
@@ -48,8 +45,8 @@ router.delete(
   })
 );
 
-router.use('/:divisionId/schedule', divisionScheduleRouter);
-router.use('/:divisionId/users', divisionUsersRouter);
+router.use('/schedule', divisionScheduleRouter);
+router.use('/users', divisionUsersRouter);
 // router.use('/:divisionId/pit-map', divisionPitMapRouter);
 // router.use('/:divisionId/awards', divisionAwardsRouter);
 

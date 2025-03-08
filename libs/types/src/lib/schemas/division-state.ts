@@ -29,7 +29,6 @@ export interface AudienceDisplayState {
 }
 
 export interface DivisionState {
-  divisionId: ObjectId;
   activeRound: ObjectId | null;
   currentRoundPosition: Positions | null;
   currentRound: null;

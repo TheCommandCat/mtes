@@ -2,12 +2,12 @@ import { ObjectId, Filter, WithId } from 'mongodb';
 import { User, SafeUser } from '@mtes/types';
 import db from '../database';
 
-export const getDivisionUsersWithCredentials = (divisionId: ObjectId) => {
-  return db.collection<User>('users').find({ divisionId }).toArray();
+export const getDivisionUsersWithCredentials = () => {
+  return db.collection<User>('users').find().toArray();
 };
 
-export const getDivisionUsers = (divisionId: ObjectId): Promise<Array<WithId<SafeUser>>> => {
-  return getDivisionUsersWithCredentials(divisionId).then(users => {
+export const getDivisionUsers = (): Promise<Array<WithId<SafeUser>>> => {
+  return getDivisionUsersWithCredentials().then(users => {
     return users.map(user => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, lastPasswordSetDate, ...safeUser } = user;
@@ -46,6 +46,6 @@ export const deleteUser = (filter: Filter<User>) => {
   return db.collection<User>('users').deleteOne(filter);
 };
 
-export const deleteDivisionUsers = (divisionId: ObjectId) => {
-  return db.collection<User>('users').deleteMany({ divisionId });
+export const deleteUsers = () => {
+  return db.collection<User>('users').deleteMany();
 };

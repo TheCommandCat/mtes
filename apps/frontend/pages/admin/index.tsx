@@ -15,6 +15,8 @@ interface Props {
 const Page: NextPage<Props> = ({ user, events }) => {
   const router = useRouter();
 
+  console.log('events', events);
+
   return (
     <Layout maxWidth="sm" title="ממשק ניהול">
       <Paper sx={{ p: 4, mt: 4 }}>

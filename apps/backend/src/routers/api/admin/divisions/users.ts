@@ -7,7 +7,7 @@ import * as db from '@mtes/database';
 const router = express.Router({ mergeParams: true });
 
 router.get('/', (req: Request, res: Response) => {
-  db.getDivisionUsers(new ObjectId(req.params.divisionId)).then(users => {
+  db.getDivisionUsers().then(users => {
     return res.json(users);
   });
 });
@@ -15,18 +15,14 @@ router.get('/', (req: Request, res: Response) => {
 router.get(
   '/export',
   asyncHandler(async (req: Request, res: Response) => {
-    const users = await db.getDivisionUsersWithCredentials(new ObjectId(req.params.divisionId));
+    const users = await db.getDivisionUsersWithCredentials();
 
     const credentials = await Promise.all(
       users.map(async user => {
-        const { role, roleAssociation, password } = user;
-
-        let association;
+        const { role, password } = user;
 
         return {
           role,
-          associationType: roleAssociation?.type,
-          association,
           password
         };
       })
@@ -45,14 +41,6 @@ router.get(
           value: 'role'
         },
         {
-          label: 'סוג שיוך',
-          value: 'associationType'
-        },
-        {
-          label: 'שיוך',
-          value: 'association'
-        },
-        {
           label: 'סיסמא',
           value: 'password'
         }
@@ -65,8 +53,7 @@ router.get(
 
 router.get('/:userId', (req: Request, res: Response) => {
   db.getUser({
-    _id: new ObjectId(req.params.userId),
-    divisionId: new ObjectId(req.params.divisionId)
+    _id: new ObjectId(req.params.userId)
   }).then(user => {
     return res.json(user);
   });
