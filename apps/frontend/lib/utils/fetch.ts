@@ -44,6 +44,8 @@ export const serverSideGetRequests = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: { [key: string]: any } = {};
 
+  console.log('toFetch', toFetch);
+
   await Promise.all(
     Object.entries(toFetch).map(async ([key, urlPath]) => {
       const data = await apiFetch(urlPath, undefined).then(res => res?.json());

@@ -3,8 +3,8 @@ import cookies from 'cookie-parser';
 import cors from 'cors';
 import authRouter from './routers/auth';
 import apiRouter from './routers/api';
+import publicRouter from './routers/public';
 import * as path from 'path';
-import * as db from '@mtes/database';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3333;
@@ -22,6 +22,7 @@ app.use(express.json());
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 app.use('/auth', authRouter);
+app.use('/public', publicRouter);
 app.use('/api', apiRouter);
 
 app.get('/status', (req, res) => {

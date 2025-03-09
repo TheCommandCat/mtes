@@ -12,17 +12,16 @@ import ColorPickerButton from './color-picker-button';
 
 interface EditDivisionFormProps extends ButtonProps {
   event: WithId<ElectionEvent>;
-  division: WithId<Division>;
 }
 
-const EditDivisionForm: React.FC<EditDivisionFormProps> = ({ event, division, onSubmit }) => {
-  const [name, setName] = useState<string>(division.name);
+const EditDivisionForm: React.FC<EditDivisionFormProps> = ({ event, onSubmit }) => {
+  const [name, setName] = useState<string>(event.name);
   const [startDate, setStartDate] = useState<Dayjs>(dayjs(event.startDate));
   const [endDate, setEndDate] = useState<Dayjs>(dayjs(event.endDate));
-  const [color, setColor] = useState<CSSProperties['color']>(division.color);
+  const [color, setColor] = useState<CSSProperties['color']>(event.color);
 
   const updateDivision = () => {
-    apiFetch(`/api/admin/divisions/${division._id}`, {
+    apiFetch(`/api/admin/events`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -41,7 +40,7 @@ const EditDivisionForm: React.FC<EditDivisionFormProps> = ({ event, division, on
   };
 
   return (
-    (<Paper sx={{ p: 4 }}>
+    <Paper sx={{ p: 4 }}>
       <Box
         component="form"
         onSubmit={e => {
@@ -107,7 +106,7 @@ const EditDivisionForm: React.FC<EditDivisionFormProps> = ({ event, division, on
           </Box>
         </Stack>
       </Box>
-    </Paper>)
+    </Paper>
   );
 };
 

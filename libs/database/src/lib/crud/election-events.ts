@@ -28,14 +28,10 @@ export const getAllElectionEvents = () => {
   return findElectionEvents({}).toArray();
 };
 
-export const updateElectionEvent = (
-  filter: Filter<ElectionEvent>,
-  newElectionEvent: Partial<ElectionEvent>,
-  upsert = false
-) => {
+export const updateElectionEvent = (newElectionEvent: Partial<ElectionEvent>, upsert = false) => {
   return db
     .collection<ElectionEvent>('election-events')
-    .updateOne(filter, { $set: newElectionEvent }, { upsert });
+    .updateOne({}, { $set: newElectionEvent }, { upsert });
 };
 
 export const addElectionEvent = (ElectionEvent: ElectionEvent) => {
