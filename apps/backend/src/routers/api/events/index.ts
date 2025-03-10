@@ -4,11 +4,11 @@ import * as db from '@mtes/database';
 
 const router = express.Router({ mergeParams: true });
 
-router.get('/:eventId', (req: Request, res: Response) => {
-  db.getElectionEvent({ _id: new ObjectId(req.params.eventId) }).then(event => {
-    res.json(event);
-  });
-});
+// router.get('/:eventId', (req: Request, res: Response) => {
+//   db.getElectionEvent({ _id: new ObjectId(req.params.eventId) }).then(event => {
+//     res.json(event);
+//   });
+// });
 
 router.get('/:eventId/divisions', (req: Request, res: Response) => {
   db.getEventDivisions(new ObjectId(req.params.eventId)).then(divisions => {

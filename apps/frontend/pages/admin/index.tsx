@@ -2,8 +2,8 @@ import { GetServerSideProps, NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Paper, Typography, Stack, ListItemButton, Tab, Tabs } from '@mui/material';
 import { WithId } from 'mongodb';
-import { ElectionEvent, User } from '@mtes/types';
-import { serverSideGetRequests } from '../../lib/utils/fetch';
+import { ElectionEvent, EventUserAllowedRoles, User } from '@mtes/types';
+import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
 import Layout from '../../components/layout';
 import EventSelector from '../../components/general/event-selector';
 import { TabContext, TabPanel } from '@mui/lab';
@@ -14,6 +14,8 @@ import DownloadUsersButton from 'apps/frontend/components/admin/download-users';
 import EditDivisionForm from 'apps/frontend/components/admin/edit-division-form';
 import { useState } from 'react';
 import DeleteDivisionData from 'apps/frontend/components/admin/delete-division-data';
+import dayjs from 'dayjs';
+import { enqueueSnackbar } from 'notistack';
 
 interface Props {
   user: WithId<User>;
@@ -24,6 +26,54 @@ const Page: NextPage<Props> = ({ user, events }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>('1');
   const [event, setEvent] = useState<WithId<ElectionEvent> | null>(events[0] || null);
+
+  const handleCreate = () => {
+    console.log(
+      JSON.stringify({
+        name: 'אירוע חדש',
+        eventUsers: { 'election-manager': true, 'voting-stand': true },
+        hasState: false,
+        startDate: dayjs(),
+        endDate: dayjs()
+      })
+    );
+
+    apiFetch('/api/admin/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'אירוע חדש',
+        eventUsers: { 'election-manager': true, 'voting-stand': true },
+        hasState: false,
+        startDate: dayjs(),
+        endDate: dayjs()
+      })
+    })
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          throw 'http-error';
+        }
+      })
+      .then(() => router.reload())
+      .catch(() => enqueueSnackbar('אופס, לא הצלחנו ליצור את האירוע.', { variant: 'error' }));
+  };
+
+  const handleDelete = () => {
+    console.log('deleting event');
+
+    apiFetch('/api/admin/events/data', { method: 'DELETE' })
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          throw 'http-error';
+        }
+      })
+      .then(() => router.reload())
+      .catch(() => enqueueSnackbar('אופס, לא הצלחנו למחוק את האירוע.', { variant: 'error' }));
+  };
 
   console.log('events', events);
 
@@ -40,7 +90,7 @@ const Page: NextPage<Props> = ({ user, events }) => {
                 key={'create-division'}
                 dense
                 sx={{ borderRadius: 2, minHeight: '50px' }}
-                onClick={() => router.push('/admin/event/create')}
+                onClick={() => handleCreate()}
               >
                 צור אירוע
               </ListItemButton>
@@ -50,53 +100,27 @@ const Page: NextPage<Props> = ({ user, events }) => {
               <Typography variant="h2" textAlign={'center'}>
                 בחירת אירוע
               </Typography>
-              <TabContext value={activeTab}>
-                <Paper sx={{ mt: 2 }}>
-                  <Tabs
-                    value={activeTab}
-                    onChange={(_e, newValue: string) => setActiveTab(newValue)}
-                    centered
-                  >
-                    <Tab label="פרטי האירוע" value="1" />
-                    <Tab label="לוח זמנים" value="2" />
-                    <Tab label="פרסים" value="3" />
-                  </Tabs>
-                </Paper>
-                <TabPanel value="1">
-                  <Stack spacing={2}>
-                    {event && <EditDivisionForm event={event} />}
-                    <Paper sx={{ p: 4 }}>
-                      {event?.hasState && <DeleteDivisionData event={event} />}
-                      <Stack justifyContent="center" direction="row" spacing={2}>
-                        <UploadFileButton
-                          urlPath={`/api/admin/events/schedule/parse`}
-                          displayName="לוח זמנים"
-                          extension=".csv"
-                          disabled={event?.hasState}
-                        />
-                        {event && <GenerateScheduleButton event={event} />}
-                        {event && <DownloadUsersButton event={event} disabled={!event?.hasState} />}
-                      </Stack>
-                    </Paper>
-                    <Paper sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-                      <UploadFileButton
-                        urlPath={`/api/admin/events/pit-map`}
-                        displayName="מפת פיטים"
-                        extension=".png"
-                      />
-                    </Paper>
+
+              <Stack>
+                {event && <EditDivisionForm event={event} />}
+                <Paper sx={{ p: 4 }}>
+                  {event?.hasState && <DeleteDivisionData event={event} />}
+                  <Stack justifyContent="center" direction="row" gap={2}>
+                    <UploadFileButton
+                      urlPath={`/api/admin/events/schedule/parse`}
+                      displayName="קובץ תצורה"
+                      extension=".csv"
+                      disabled={event?.hasState}
+                    />
+                    {event && <DownloadUsersButton event={event} disabled={!event?.hasState} />}
                   </Stack>
-                </TabPanel>
-                <TabPanel value="2">{event && <DivisionScheduleEditor event={event} />}</TabPanel>
-                <TabPanel value="3">
-                  {/* <DivisionAwardEditor divisionId={divisions[0]?._id} awardSchema={awardSchema} /> */}
-                </TabPanel>
-              </TabContext>
+                </Paper>
+              </Stack>
               <ListItemButton
                 key={'create-division'}
                 dense
                 sx={{ borderRadius: 2, minHeight: '50px' }}
-                // onClick={() => router.push('/admin/event')}
+                onClick={() => handleDelete()}
               >
                 מחק אירוע
               </ListItemButton>

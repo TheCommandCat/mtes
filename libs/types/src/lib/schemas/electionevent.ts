@@ -9,7 +9,6 @@ export interface ElectionEvent {
   color?: string;
   eventUsers: Array<EventUserAllowedRoles>;
   hasState: boolean;
-  schedule?: Array<DivisionScheduleEntry>;
 }
 
 export interface DivisionWithEvent extends Division {

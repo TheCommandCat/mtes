@@ -7,7 +7,6 @@ router.get('/events', (req: Request, res: Response) => {
   db.getAllElectionEvents().then(events => {
     res.json(
       events.map(event => {
-        delete event.schedule;
         return event;
       })
     );

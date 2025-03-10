@@ -46,6 +46,6 @@ export const deleteUser = (filter: Filter<User>) => {
   return db.collection<User>('users').deleteOne(filter);
 };
 
-export const deleteUsers = () => {
-  return db.collection<User>('users').deleteMany();
+export const deleteUsers = (filter: Filter<User>) => {
+  return db.collection<User>('users').deleteMany(filter);
 };

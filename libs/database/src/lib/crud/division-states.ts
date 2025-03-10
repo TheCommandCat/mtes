@@ -2,7 +2,7 @@ import { DivisionState } from '@mtes/types';
 import db from '../database';
 
 export const getDivisionState = () => {
-  return db.collection<DivisionState>('division-states').findOne();
+  return db.collection<DivisionState>('election-events').findOne();
 };
 
 export const getState = () => {

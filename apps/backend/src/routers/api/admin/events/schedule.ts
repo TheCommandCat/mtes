@@ -14,8 +14,8 @@ router.post(
   fileUpload(),
   asyncHandler(async (req: Request, res: Response) => {
     // const event = await db.getElectionEvent({ _id: division.eventId });
-    const divisionState = await db.getDivisionState();
-    if (divisionState) {
+    const event = await db.getElectionEvent();
+    if (event) {
       res.status(400).json({ error: 'Could not parse schedule: Division has data' });
       return;
     }
@@ -51,10 +51,9 @@ router.post(
       console.log('✅ Generated division users');
 
       console.log('🔐 Creating division state');
-      await db.addDivisionState(getInitialDivisionState());
       console.log('✅ Created division state');
 
-      // await db.updateDivision({ _id: division._id }, { hasState: true });
+      await db.updateElectionEvent({ hasState: true });
 
       res.status(200).json({ ok: true });
     } catch (error) {

@@ -30,22 +30,6 @@ router.post(
       return;
     }
 
-    console.log('⏬ Creating Event divisions...');
-    divisions.forEach(async division => {
-      const divisionResult = await db.addDivision({
-        ...division,
-        eventId: eventResult.insertedId,
-        hasState: false
-      });
-      if (divisionResult.acknowledged) {
-        console.log(`✅ Division ${divisionResult.insertedId} created!`);
-      } else {
-        console.log(`❌ Could not create division ${division.name}`);
-        res.status(500).json({ ok: false });
-        return;
-      }
-    });
-
     res.json({ ok: true, id: eventResult.insertedId });
   })
 );
@@ -56,12 +40,6 @@ router.put('/', (req: Request, res: Response) => {
 
   if (body.startDate) body.startDate = new Date(body.startDate);
   if (body.endDate) body.endDate = new Date(body.endDate);
-
-  if (body.schedule) {
-    body.schedule = body.schedule.map(e => {
-      return { ...e, startTime: new Date(e.startTime), endTime: new Date(e.endTime) };
-    });
-  }
 
   console.log(`⏬ Updating Event ${req.params.eventId}`);
   db.updateElectionEvent(body, true).then(task => {
@@ -81,7 +59,7 @@ router.delete(
     console.log(`🚮 Deleting data from event}`);
     try {
       await cleanDivisionData();
-      await db.updateDivision({ hasState: false });
+      // await db.updateDivision({ hasState: false });
     } catch (error) {
       res.status(500).json(error.message);
       return;

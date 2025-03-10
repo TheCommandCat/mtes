@@ -2,8 +2,8 @@ import { WithId, AggregationCursor, Filter } from 'mongodb';
 import { ElectionEvent } from '@mtes/types';
 import db from '../database';
 
-export const getElectionEvent = (filter: Filter<ElectionEvent>) => {
-  return findElectionEvents(filter).next();
+export const getElectionEvent = () => {
+  return findElectionEvents({}).next();
 };
 
 export const findElectionEvents = (filter: Filter<ElectionEvent>) => {
@@ -28,6 +28,10 @@ export const getAllElectionEvents = () => {
   return findElectionEvents({}).toArray();
 };
 
+export const getElectionEventState = () => {
+  return db.collection<ElectionEvent>('election-events').findOne();
+};
+
 export const updateElectionEvent = (newElectionEvent: Partial<ElectionEvent>, upsert = false) => {
   return db
     .collection<ElectionEvent>('election-events')
@@ -38,6 +42,6 @@ export const addElectionEvent = (ElectionEvent: ElectionEvent) => {
   return db.collection<ElectionEvent>('election-events').insertOne(ElectionEvent);
 };
 
-export const deleteElectionEvent = (filter: Filter<ElectionEvent>) => {
-  return db.collection<ElectionEvent>('election-events').deleteOne(filter);
+export const deleteElectionEvent = () => {
+  return db.collection<ElectionEvent>('election-events').drop();
 };
