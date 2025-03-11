@@ -68,19 +68,19 @@ const Page: NextPage<Props> = ({
 
 export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
-    const { user, divisionId } = await getUserAndDivision(ctx);
+    const { user } = await getUserAndDivision(ctx);
 
     const data = await serverSideGetRequests(
       {
-        division: `/api/divisions/${divisionId}?withEvent=true`,
-        divisionState: `/api/divisions/${divisionId}/state`,
-        teams: `/api/divisions/${divisionId}/teams`,
-        tickets: `/api/divisions/${divisionId}/tickets`,
-        rooms: `/api/divisions/${divisionId}/rooms`,
-        tables: `/api/divisions/${divisionId}/tables`,
-        matches: `/api/divisions/${divisionId}/matches`,
-        sessions: `/api/divisions/${divisionId}/sessions`,
-        cvForms: `/api/divisions/${divisionId}/cv-forms`
+        division: `/api/divisions?withEvent=true`,
+        divisionState: `/api/divisions/state`,
+        teams: `/api/divisions/teams`,
+        tickets: `/api/divisions/tickets`,
+        rooms: `/api/divisions/rooms`,
+        tables: `/api/divisions/tables`,
+        matches: `/api/divisions/matches`,
+        sessions: `/api/divisions/sessions`,
+        cvForms: `/api/divisions/cv-forms`
       },
       ctx
     );

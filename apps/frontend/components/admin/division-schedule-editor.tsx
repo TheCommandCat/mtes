@@ -35,13 +35,12 @@ import EventSelector from '../general/event-selector';
 
 interface DivisionScheduleEditorProps {
   event: WithId<ElectionEvent>;
-  division: WithId<Division>;
 }
 
-const DivisionScheduleEditor: React.FC<DivisionScheduleEditorProps> = ({ event, division }) => {
+const DivisionScheduleEditor: React.FC<DivisionScheduleEditorProps> = ({ event }) => {
   const theme = useTheme();
   const router = useRouter();
-  const [schedule, setSchedule] = useState<Array<DivisionScheduleEntry>>(division.schedule || []);
+  const [schedule, setSchedule] = useState<Array<DivisionScheduleEntry>>(event.schedule || []);
   const [copyModal, setCopyModal] = useState(false);
   const [events, setEvents] = useState<Array<WithId<ElectionEvent>>>([]);
 
@@ -89,7 +88,7 @@ const DivisionScheduleEditor: React.FC<DivisionScheduleEditorProps> = ({ event, 
 
   const updateDivision = () => {
     setSchedule(sortedSchedule);
-    apiFetch(`/api/admin/divisions/${division._id}`, {
+    apiFetch(`/api/admin/events`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ schedule: sortedSchedule })
@@ -326,12 +325,6 @@ const DivisionScheduleEditor: React.FC<DivisionScheduleEditorProps> = ({ event, 
           <Typography variant="h2" pb={2} textAlign={'center'}>
             {'העתקת לו"ז כללי'}
           </Typography>
-          <EventSelector
-            events={events.filter(
-              e => e.divisions?.[0]?._id.toString() !== division._id.toString()
-            )}
-            onChange={eventId => copyScheduleFrom(eventId)}
-          />
         </Paper>
       </Modal>
     </Box>

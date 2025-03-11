@@ -20,27 +20,25 @@ import divisionValidator from '../../../middlewares/division-validator';
 
 const router = express.Router({ mergeParams: true });
 
-router.use('/:divisionId', divisionValidator);
+// router.use('/:divisionId', divisionValidator);
 
-router.get('/:divisionId', (req: Request, res: Response) => {
-  db.getDivision({ _id: new ObjectId(req.params.divisionId) }).then(division => {
-    if (!req.query.withSchedule) delete division.schedule;
-    res.json(division);
-  });
+// router.get('/:divisionId', (req: Request, res: Response) => {
+//   db.getDivision({ _id: new ObjectId(req.params.divisionId) }).then(division => {
+//     if (!req.query.withSchedule) delete division.schedule;
+//     res.json(division);
+//   });
+// });
+
+router.get('/state', (req: Request, res: Response) => {
+  db.getDivisionState().then(divisionState => res.json(divisionState));
 });
 
-router.get('/:divisionId/state', (req: Request, res: Response) => {
-  db.getDivisionState({ divisionId: new ObjectId(req.params.divisionId) }).then(divisionState =>
-    res.json(divisionState)
-  );
-});
-
-router.put('/:divisionId/state', (req: Request, res: Response) => {
+router.put('/state', (req: Request, res: Response) => {
   const body: Partial<DivisionState> = { ...req.body };
   if (!body) return res.status(400).json({ ok: false });
 
   console.log(`⏬ Updating Division state for division ${req.params.divisionId}`);
-  db.updateDivisionState({ divisionId: new ObjectId(req.params.divisionId) }, body).then(task => {
+  db.updateDivisionState(body).then(task => {
     if (task.acknowledged) {
       console.log('✅ Division state updated!');
       return res.json({ ok: true, id: task.upsertedId });

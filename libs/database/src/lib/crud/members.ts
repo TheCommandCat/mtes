@@ -26,6 +26,6 @@ export const deleteMember = (filter: Filter<Member>) => {
   return db.collection<Member>('members').deleteOne(filter);
 };
 
-export const deleteDivisionMembers = (divisionId: ObjectId) => {
-  return db.collection<Member>('members').deleteMany({ divisionId });
+export const deleteMembers = () => {
+  return db.collection<Member>('members').deleteMany();
 };

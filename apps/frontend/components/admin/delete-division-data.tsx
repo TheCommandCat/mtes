@@ -12,19 +12,19 @@ import {
   DialogTitle
 } from '@mui/material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { Division } from '@mtes/types';
+import { Division, ElectionEvent } from '@mtes/types';
 import { apiFetch } from '../../lib/utils/fetch';
 
 interface DeleteDivisionDataProps {
-  division: WithId<Division>;
+  event: WithId<ElectionEvent>;
 }
 
-const DeleteDivisionData: React.FC<DeleteDivisionDataProps> = ({ division }) => {
+const DeleteDivisionData: React.FC<DeleteDivisionDataProps> = ({ event }) => {
   const router = useRouter();
   const [open, setOpen] = useState<boolean>(false);
 
   const handleConfirm = () => {
-    apiFetch(`/api/admin/divisions/${division._id}/data`, {
+    apiFetch(`/api/admin/events/data`, {
       method: 'DELETE'
     }).then(() => {
       setOpen(false);
@@ -67,7 +67,7 @@ const DeleteDivisionData: React.FC<DeleteDivisionDataProps> = ({ division }) => 
           <DialogContentText id="delete-data-description">
             {`אתם עומדים למחוק את כל נתוני האירוע, כולל תוצאות ופרסים מיום התחרות.
             פעולה זו אינה ניתנת לשחזור במקרה של טעות. אנא אשרו שברצונכם למחוק
-            את כל המידע הקיים מאירוע "${division.name}".`}
+            את כל המידע הקיים מאירוע "${event.name}".`}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

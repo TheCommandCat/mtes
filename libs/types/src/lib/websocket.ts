@@ -17,7 +17,6 @@ export interface WSServerEmittedEvents {
 
 export interface WSClientEmittedEvents {
   loadVotingMember: (
-    divisionId: string,
     votingConf: VotingConfig,
     member: Member,
     callback: (response: { ok: boolean; error?: string }) => void

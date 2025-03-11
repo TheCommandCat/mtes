@@ -34,21 +34,7 @@ export const apiFetch = (
 
 export const getUserAndDivision = async (ctx: GetServerSidePropsContext) => {
   const user: SafeUser = await apiFetch(`/api/me`, undefined, ctx).then(res => res?.json());
-  const divisions: Array<WithId<Division>> = await apiFetch(`/public/divisions`).then(res =>
-    res?.json()
-  );
-
-  let divisionId = user.divisionId?.toString();
-  if (divisionId) return { user, divisionId };
-
-  const isEventUser = user.eventId || user.isAdmin;
-  if (!isEventUser) return { user, divisionId };
-
-  const idFromQuery = (ctx.query.divisionId as string) || undefined;
-  if (user.isAdmin && !idFromQuery) return { user, divisionId }; //Don't know what division admin wants
-
-  if (user.isAdmin) divisionId = idFromQuery;
-  return { user, divisionId };
+  return { user };
 };
 
 export const serverSideGetRequests = async (
@@ -57,6 +43,8 @@ export const serverSideGetRequests = async (
 ) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: { [key: string]: any } = {};
+
+  console.log('toFetch', toFetch);
 
   await Promise.all(
     Object.entries(toFetch).map(async ([key, urlPath]) => {

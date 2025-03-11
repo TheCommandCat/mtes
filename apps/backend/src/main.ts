@@ -2,10 +2,9 @@ import express from 'express';
 import cookies from 'cookie-parser';
 import cors from 'cors';
 import authRouter from './routers/auth';
-import publicRouter from './routers/public';
 import apiRouter from './routers/api';
+import publicRouter from './routers/public';
 import * as path from 'path';
-import * as db from '@mtes/database';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3333;

@@ -1,5 +1,5 @@
 import { WithId } from 'mongodb';
-import { Division } from './division';
+import { Division, DivisionScheduleEntry } from './division';
 import { EventUserAllowedRoles } from '@mtes/types';
 
 export interface ElectionEvent {
@@ -7,9 +7,8 @@ export interface ElectionEvent {
   startDate: Date;
   endDate: Date;
   color?: string;
-  salesforceId?: string;
-  divisions?: Array<WithId<Division>>;
   eventUsers: Array<EventUserAllowedRoles>;
+  hasState: boolean;
 }
 
 export interface DivisionWithEvent extends Division {

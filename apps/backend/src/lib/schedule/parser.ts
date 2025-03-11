@@ -19,13 +19,11 @@ const RANKING_MATCHES_BLOCK_ID = 4;
 
 const extractMembersFromBlock = (
   memberBlock: Line[],
-  division: WithId<Division>
 ): Array<Member> => {
   const LINES_TO_SKIP = 1;
   memberBlock = (memberBlock || []).splice(LINES_TO_SKIP);
 
   return memberBlock.map(teamLine => ({
-    divisionId: division._id,
     name: teamLine[0],
     city: teamLine[1] as Cities
   }));
@@ -33,14 +31,12 @@ const extractMembersFromBlock = (
 
 const extractContestantsFromBlock = (
   contestantsBlock: Line[],
-  division: WithId<Division>
 ): Array<Contestant> => {
   const LINES_TO_SKIP = 1;
 
   contestantsBlock = (contestantsBlock || []).splice(LINES_TO_SKIP);
 
   return contestantsBlock.map(name => ({
-    divisionId: division._id,
     member: {
       name: name[0],
       city: name[1] as Cities
@@ -51,7 +47,6 @@ const extractContestantsFromBlock = (
 };
 
 export const parseDivisionData = (
-  division: WithId<Division>,
   csvData: string
 ): { members: Array<Member>; contestants: Array<Contestant>; } => {
   const file = parse(csvData.trim());
@@ -59,16 +54,15 @@ export const parseDivisionData = (
   if (version !== 2) Promise.reject('MTES can only parse version 2 Data');
 
   const blocks = extractBlocksFromFile(file);
-  const members = extractMembersFromBlock(getBlock(blocks, MEMBERS_BLOCK_ID), division);
-  const contestants = extractContestantsFromBlock(getBlock(blocks, Contestants_BLOCK_ID), division);
+  const members = extractMembersFromBlock(getBlock(blocks, MEMBERS_BLOCK_ID));
+  const contestants = extractContestantsFromBlock(getBlock(blocks, Contestants_BLOCK_ID));
 
   return { members, contestants };
 };
 
-export const getInitialDivisionState = (division: WithId<Division>): DivisionState => {
+export const getInitialDivisionState = (): DivisionState => {
 
   return {
-    divisionId: division._id,
     activeRound: null,
     currentRoundPosition: null,
     currentRound: null,

@@ -1,8 +1,10 @@
 import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import { ObjectId } from 'mongodb';
+import divisionScheduleRouter from './schedule';
+import divisionUsersRouter from './users';
 import { ElectionEvent } from '@mtes/types';
 import * as db from '@mtes/database';
+import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 
 const router = express.Router({ mergeParams: true });
 
@@ -28,27 +30,11 @@ router.post(
       return;
     }
 
-    console.log('⏬ Creating Event divisions...');
-    divisions.forEach(async division => {
-      const divisionResult = await db.addDivision({
-        ...division,
-        eventId: eventResult.insertedId,
-        hasState: false
-      });
-      if (divisionResult.acknowledged) {
-        console.log(`✅ Division ${divisionResult.insertedId} created!`);
-      } else {
-        console.log(`❌ Could not create division ${division.name}`);
-        res.status(500).json({ ok: false });
-        return;
-      }
-    });
-
     res.json({ ok: true, id: eventResult.insertedId });
   })
 );
 
-router.put('/:eventId', (req: Request, res: Response) => {
+router.put('/', (req: Request, res: Response) => {
   const body: Partial<ElectionEvent> = { ...req.body };
   if (!body) return res.status(400).json({ ok: false });
 
@@ -56,7 +42,7 @@ router.put('/:eventId', (req: Request, res: Response) => {
   if (body.endDate) body.endDate = new Date(body.endDate);
 
   console.log(`⏬ Updating Event ${req.params.eventId}`);
-  db.updateElectionEvent({ _id: new ObjectId(req.params.eventId) }, body, true).then(task => {
+  db.updateElectionEvent(body, true).then(task => {
     if (task.acknowledged) {
       console.log('✅ Event updated!');
       return res.json({ ok: true, id: task.upsertedId });
@@ -66,5 +52,26 @@ router.put('/:eventId', (req: Request, res: Response) => {
     }
   });
 });
+
+router.delete(
+  '/data',
+  asyncHandler(async (req: Request, res: Response) => {
+    console.log(`🚮 Deleting data from event}`);
+    try {
+      await cleanDivisionData();
+      // await db.updateDivision({ hasState: false });
+    } catch (error) {
+      res.status(500).json(error.message);
+      return;
+    }
+    console.log('✅ Deleted event data!');
+    res.status(200).json({ ok: true });
+  })
+);
+
+router.use('/schedule', divisionScheduleRouter);
+router.use('/users', divisionUsersRouter);
+// router.use('/:divisionId/pit-map', divisionPitMapRouter);
+// router.use('/:divisionId/awards', divisionAwardsRouter);
 
 export default router;

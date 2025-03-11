@@ -1,20 +1,20 @@
 import { WithId } from 'mongodb';
 import { Button, ButtonProps } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
-import { Division } from '@mtes/types';
+import { Division, ElectionEvent } from '@mtes/types';
 import { getApiBase } from '../../lib/utils/fetch';
 
 interface DownloadUsersButtonProps extends ButtonProps {
-  division: WithId<Division>;
+  event: WithId<ElectionEvent>;
 }
 
-const DownloadUsersButton: React.FC<DownloadUsersButtonProps> = ({ division, ...props }) => {
+const DownloadUsersButton: React.FC<DownloadUsersButtonProps> = ({ event, ...props }) => {
   return (
     <Button
       component="a"
       startIcon={<DownloadIcon />}
       variant="contained"
-      href={`${getApiBase(true)}/api/admin/divisions/${division._id}/users/export`}
+      href={`${getApiBase(true)}/api/admin/events/users/export`}
       target="_blank"
       download
       {...props}

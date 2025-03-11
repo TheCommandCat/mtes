@@ -17,14 +17,11 @@ import UploadFileButton from '../../../components/general/upload-file';
 
 interface Props {
   event: WithId<ElectionEvent>;
-  divisions: Array<WithId<Division>>;
   awardSchema: AwardSchema;
 }
 
-const Page: NextPage<Props> = ({ event, divisions, awardSchema }) => {
+const Page: NextPage<Props> = ({ event }) => {
   const [activeTab, setActiveTab] = useState<string>('1');
-
-  console.log('event', event);
 
   return (
     <Layout maxWidth="md" title={`ניהול אירוע: ${event.name}`} back="/admin">
@@ -42,23 +39,23 @@ const Page: NextPage<Props> = ({ event, divisions, awardSchema }) => {
         </Paper>
         <TabPanel value="1">
           <Stack spacing={2}>
-            <EditDivisionForm event={event} division={divisions[0]} />
+            <EditDivisionForm event={event} />
             <Paper sx={{ p: 4 }}>
-              {divisions[0]?.hasState && <DeleteDivisionData division={divisions[0]} />}
+              {event?.hasState && <DeleteDivisionData event={event} />}
               <Stack justifyContent="center" direction="row" spacing={2}>
                 <UploadFileButton
-                  urlPath={`/api/admin/divisions/${divisions[0]?._id}/schedule/parse`}
+                  urlPath={`/api/admin/divisions/schedule/parse`}
                   displayName="לוח זמנים"
                   extension=".csv"
-                  disabled={divisions[0]?.hasState}
+                  disabled={event?.hasState}
                 />
-                <GenerateScheduleButton division={divisions[0]} />
-                <DownloadUsersButton division={divisions[0]} disabled={!divisions[0]?.hasState} />
+                <GenerateScheduleButton event={event} />
+                <DownloadUsersButton event={event} disabled={event?.hasState} />
               </Stack>
             </Paper>
             <Paper sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
               <UploadFileButton
-                urlPath={`/api/admin/divisions/${divisions[0]?._id}/pit-map`}
+                urlPath={`/api/admin/divisions/pit-map`}
                 displayName="מפת פיטים"
                 extension=".png"
               />
@@ -66,7 +63,7 @@ const Page: NextPage<Props> = ({ event, divisions, awardSchema }) => {
           </Stack>
         </TabPanel>
         <TabPanel value="2">
-          <DivisionScheduleEditor event={event} division={divisions[0]} />
+          <DivisionScheduleEditor event={event} />
         </TabPanel>
         <TabPanel value="3">
           {/* <DivisionAwardEditor divisionId={divisions[0]?._id} awardSchema={awardSchema} /> */}
@@ -80,20 +77,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
   const event = await apiFetch(`/api/events/${ctx.params?.eventId}`, undefined, ctx).then(res =>
     res?.json()
   );
-  const divisions = await apiFetch(
-    `/api/events/${ctx.params?.eventId}/divisions?withSchedule=true`,
-    undefined,
-    ctx
-  ).then(res => res?.json());
 
-  const data = await serverSideGetRequests(
-    {
-      awardSchema: `/api/admin/divisions/${divisions[0]?._id}/awards/schema`
-    },
-    ctx
-  );
-
-  return { props: { event, divisions, ...data } };
+  return { props: { event } };
 };
 
 export default Page;
