@@ -104,7 +104,6 @@ const Page: NextPage<Props> = ({ user, events }) => {
               <Stack>
                 {event && <EditDivisionForm event={event} />}
                 <Paper sx={{ p: 4 }}>
-                  {event?.hasState && <DeleteDivisionData event={event} />}
                   <Stack justifyContent="center" direction="row" gap={2}>
                     <UploadFileButton
                       urlPath={`/api/admin/events/schedule/parse`}

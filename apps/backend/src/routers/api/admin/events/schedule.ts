@@ -15,7 +15,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     // const event = await db.getElectionEvent({ _id: division.eventId });
     const event = await db.getElectionEvent();
-    if (event) {
+    if (event.hasState) {
       res.status(400).json({ error: 'Could not parse schedule: Division has data' });
       return;
     }
