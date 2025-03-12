@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
@@ -8,8 +8,7 @@ import { Paper, Tabs, Tab, Typography, Box } from '@mui/material';
 import { DivisionState, DivisionWithEvent, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
-// import { useWebsocket } from '../../hooks/use-websocket';
-import { localizedRoles } from '../../localization/roles';
+import { useWebsocket } from '../../hooks/use-websocket';
 import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { useQueryParam } from '../../hooks/use-query-param';
 
@@ -29,18 +28,9 @@ const Page: NextPage<Props> = ({
   const [division] = useState<WithId<DivisionWithEvent>>(initialDivision);
   const [divisionState, setDivisionState] = useState<WithId<DivisionState>>(initialDivisionState);
 
-  // handel statments
-
-  // socket
-  //   const { socket, connectionStatus } = useWebsocket(
-  //     division._id.toString(),
-  //     ['pit-admin', 'field', 'judging'],
-  //     undefined,
-  //     [
-  //     //   { name: 'name', handler: handler },
-
-  //     ]
-  //   );
+  const { socket, connectionStatus } = useWebsocket([
+    // handle ws eventes
+  ]);
 
   return (
     <RoleAuthorizer
@@ -53,7 +43,7 @@ const Page: NextPage<Props> = ({
     >
       <Layout
         title={`ממשק ${user.role}`}
-        // connectionStatus={connectionStatus}
+        connectionStatus={connectionStatus}
         color={division.color}
       >
         <Box sx={{ mt: 2 }}>
