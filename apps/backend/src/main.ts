@@ -7,6 +7,7 @@ import apiRouter from './routers/api';
 import publicRouter from './routers/public';
 import * as path from 'path';
 import { Server } from 'socket.io';
+import websocket from './websocket';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3333;
@@ -39,6 +40,9 @@ app.use((err, req, res, next) => {
   console.log(err);
   res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
 });
+
+const namespace = io.of('/socket');
+namespace.on('connection', websocket);
 
 console.log('💫 Starting server...');
 server.listen(port, () => {

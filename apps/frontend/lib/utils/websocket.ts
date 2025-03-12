@@ -3,7 +3,8 @@ import { WSServerEmittedEvents, WSClientEmittedEvents } from '@mtes/types';
 
 const getWsBase = (forceClient = false) => {
   const isSsr = !forceClient && typeof window === 'undefined';
-  return isSsr ? process.env.LOCAL_WS_URL : process.env.NEXT_PUBLIC_WS_URL;
+  return 'http://localhost:3333';
+  // return isSsr ? process.env.LOCAL_WS_URL : process.env.NEXT_PUBLIC_WS_URL;
 };
 
 const url = getWsBase();
@@ -12,6 +13,6 @@ const manager = new Manager(url ? url : '', {
   withCredentials: true
 });
 
-export const getSocket = () => {
-  return manager.socket('socket');
+export const getSocket = (): Socket<WSServerEmittedEvents, WSClientEmittedEvents> => {
+  return manager.socket('/socket');
 };

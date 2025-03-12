@@ -79,11 +79,16 @@ const Page: NextPage<Props> = ({
     city: 'תל אביב יפו'
   };
 
-  const { socket, connectionStatus } = useWebsocket(
-    [
-      // add listeners
-    ]
-  );
+  function handleUpdateMember(...args: any[]): void | Promise<void> {
+    throw new Error('Function not implemented.');
+  }
+
+  const { socket, connectionStatus } = useWebsocket([
+    {
+      name: 'votingMemberLoaded',
+      handler: handleUpdateMember
+    }
+  ]);
 
   return (
     <RoleAuthorizer
@@ -96,7 +101,7 @@ const Page: NextPage<Props> = ({
     >
       <Layout
         title={`ממשק ${user.role}`}
-        // connectionStatus={connectionStatus}
+        connectionStatus={connectionStatus}
         color={division.color}
       >
         <Box sx={{ mt: 2 }}>

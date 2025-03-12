@@ -21,6 +21,8 @@ export interface WSClientEmittedEvents {
     member: Member,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
+
+  ping: (callback: (response: { ok: boolean; error?: string }) => void) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type
