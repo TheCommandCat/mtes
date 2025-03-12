@@ -21,6 +21,7 @@ import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch
 import { useQueryParam } from '../../hooks/use-query-param';
 import { Formik, Form, Field, FieldProps } from 'formik';
 import { Button, FormControl, FormLabel, RadioGroup, Radio, FormControlLabel } from '@mui/material';
+import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -77,18 +78,12 @@ const Page: NextPage<Props> = ({
     name: 'ניר חן',
     city: 'תל אביב יפו'
   };
-  // handel statments
 
-  // socket
-  //   const { socket, connectionStatus } = useWebsocket(
-  //     division._id.toString(),
-  //     ['pit-admin', 'field', 'judging'],
-  //     undefined,
-  //     [
-  //     //   { name: 'name', handler: handler },
-
-  //     ]
-  //   );
+  const { socket, connectionStatus } = useWebsocket(
+    [
+      // add listeners
+    ]
+  );
 
   return (
     <RoleAuthorizer

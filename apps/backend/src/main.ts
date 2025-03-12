@@ -1,19 +1,23 @@
 import express from 'express';
 import cookies from 'cookie-parser';
 import cors from 'cors';
+import * as http from 'http';
 import authRouter from './routers/auth';
 import apiRouter from './routers/api';
 import publicRouter from './routers/public';
 import * as path from 'path';
+import { Server } from 'socket.io';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 
 const app = express();
+const server = http.createServer(app);
 const corsOptions = {
   origin: [/localhost:\d+$/],
   credentials: true
 };
+const io = new Server(server, { cors: corsOptions });
 
 app.use(cookies());
 app.use(cors(corsOptions));
@@ -31,6 +35,14 @@ app.get('/status', (req, res) => {
 
 app.use((req, res) => res.status(404).json({ error: 'ROUTE_NOT_DEFINED' }));
 
-app.listen(port, host, () => {
-  console.log(`[ ready ] http://${host}:${port}`);
+app.use((err, req, res, next) => {
+  console.log(err);
+  res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
 });
+
+console.log('💫 Starting server...');
+server.listen(port, () => {
+  console.log(`✅ Server started on port ${port}.`);
+});
+
+server.on('error', console.error);

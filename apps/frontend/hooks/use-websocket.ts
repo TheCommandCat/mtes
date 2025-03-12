@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { WSEventListener, ConnectionStatus, WSRoomName } from '@mtes/types';
+import { ConnectionStatus, WSEventListener } from '@mtes/types';
 import { getSocket } from '../lib/utils/websocket';
 
 const MAX_RETRIES = 5;
@@ -8,22 +8,15 @@ const BASE_DELAY = 1000;
 const MAX_DELAY = 30000;
 
 export const useWebsocket = (
-  divisionId: string,
-  rooms: Array<WSRoomName>,
-  init?: (...args: any[]) => void | Promise<void>,
-  wsevents?: Array<WSEventListener>
+  wsevents?: Array<WSEventListener>,
+  init?: (...args: any[]) => void | Promise<void>
 ) => {
-  const socket = getSocket(divisionId);
+  const socket = getSocket();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
     socket.connected ? 'connected' : 'disconnected'
   );
   const retryRef = useRef(0);
   const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const compareArrays = (arr1: string[], arr2: string[]) => {
-    if (arr1.length !== arr2.length) return false;
-    return arr1.every(item => arr2.includes(item));
-  };
 
   const calculateDelay = useCallback(() => {
     const delay = Math.min(BASE_DELAY * Math.pow(2, retryRef.current), MAX_DELAY);
@@ -45,17 +38,10 @@ export const useWebsocket = (
       setConnectionStatus(prev => (prev === 'error' ? 'error' : 'connecting'));
 
       socket.connect();
-      socket.emit('joinRoom', rooms, response => {
-        if (!response.ok) {
-          setConnectionStatus('error');
-          reconnect();
-        } else {
-          retryRef.current = 0;
-          setConnectionStatus('connected');
-        }
-      });
+      retryRef.current = 0;
+      setConnectionStatus('connected');
     }, delay);
-  }, [socket, calculateDelay, rooms]);
+  }, [socket, calculateDelay]);
 
   const heartbeat = useCallback(() => {
     if (!socket.connected) return;
@@ -64,25 +50,23 @@ export const useWebsocket = (
       clearTimeout(heartbeatTimeoutRef.current);
     }
 
-    socket
-      .timeout(TIMEOUT)
-      .emit('pingRooms', (error: Error | null, response: { ok: boolean; rooms: string[] }) => {
-        if (error) {
-          console.error('Heartbeat failed:', error);
-          reconnect();
-          return;
-        }
+    socket.timeout(TIMEOUT).emit('ping', (error: Error | null, response: { ok: boolean }) => {
+      if (error) {
+        console.error('Heartbeat failed:', error);
+        reconnect();
+        return;
+      }
 
-        if (!response.ok || !compareArrays(response.rooms, rooms)) {
-          console.warn('Room mismatch or invalid response:', response);
-          reconnect();
-          return;
-        }
+      if (!response.ok) {
+        console.warn('Invalid heartbeat response:', response);
+        reconnect();
+        return;
+      }
 
-        const delay = calculateDelay();
-        heartbeatTimeoutRef.current = setTimeout(heartbeat, delay);
-      });
-  }, [socket, rooms, reconnect, calculateDelay]);
+      const delay = calculateDelay();
+      heartbeatTimeoutRef.current = setTimeout(heartbeat, delay);
+    });
+  }, [socket, reconnect, calculateDelay]);
 
   useEffect(() => {
     return () => {
@@ -100,14 +84,7 @@ export const useWebsocket = (
 
     const onConnect = () => {
       setConnectionStatus('connected');
-
-      socket.emit('joinRoom', rooms, response => {
-        if (!response.ok) {
-          setConnectionStatus('disconnected');
-          reconnect();
-        }
-        heartbeat();
-      });
+      heartbeat();
     };
 
     const onDisconnect = () => {
@@ -125,8 +102,6 @@ export const useWebsocket = (
 
     if (wsevents) {
       for (const event of wsevents) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
         socket.on(event.name, event.handler);
       }
     }
@@ -138,18 +113,17 @@ export const useWebsocket = (
 
       if (wsevents) {
         for (const event of wsevents) {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-expect-error
           socket.off(event.name, event.handler);
         }
       }
 
-      socket.disconnect();
+      // We don't disconnect the socket on cleanup
+      // as it's the shared socket instance used across the app
       retryRef.current = 0;
       setConnectionStatus('disconnected');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket]);
+  }, []);
 
   return { socket, connectionStatus };
 };

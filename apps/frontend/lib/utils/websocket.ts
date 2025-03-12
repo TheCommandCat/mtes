@@ -12,8 +12,6 @@ const manager = new Manager(url ? url : '', {
   withCredentials: true
 });
 
-export const getSocket = (
-  divisionId: string
-): Socket<WSServerEmittedEvents, WSClientEmittedEvents> => {
-  return manager.socket(`/division/${divisionId}`);
+export const getSocket = () => {
+  return manager.socket('socket');
 };
