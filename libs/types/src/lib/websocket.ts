@@ -35,6 +35,6 @@ export interface WSSocketData {
 }
 
 export interface WSEventListener {
-  name: DivisionNames<WSServerEmittedEvents> | DivisionNames<WSClientEmittedEvents>;
+  name: keyof WSServerEmittedEvents | keyof WSClientEmittedEvents;
   handler: (...args: any[]) => void | Promise<void>;
 }

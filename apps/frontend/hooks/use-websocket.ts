@@ -102,7 +102,7 @@ export const useWebsocket = (
 
     if (wsevents) {
       for (const event of wsevents) {
-        socket.on(event.name, event.handler);
+        socket.on(event.name as any, event.handler);
       }
     }
 
@@ -113,7 +113,7 @@ export const useWebsocket = (
 
       if (wsevents) {
         for (const event of wsevents) {
-          socket.off(event.name, event.handler);
+          socket.off(event.name as any, event.handler);
         }
       }
 

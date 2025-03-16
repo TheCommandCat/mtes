@@ -5,6 +5,7 @@ import {
   WSInterServerEvents,
   WSSocketData
 } from '@mtes/types';
+import { handleLoadVotingMember } from './handlers';
 
 const websocket = (
   socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents, WSSocketData>
@@ -14,6 +15,8 @@ const websocket = (
   socket.on('ping', callback => {
     callback({ ok: true });
   });
+
+  socket.on('loadVotingMember', (...args) => handleLoadVotingMember(...args));
 
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);
