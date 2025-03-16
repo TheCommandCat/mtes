@@ -10,6 +10,10 @@ const router = express.Router({ mergeParams: true });
 //   });
 // });
 
+router.get('/', async (req: Request, res: Response) => {
+  return res.json(await db.getMember({}));
+});
+
 router.get('/:eventId/divisions', (req: Request, res: Response) => {
   db.getEventDivisions(new ObjectId(req.params.eventId)).then(divisions => {
     if (!req.query.withSchedule) {

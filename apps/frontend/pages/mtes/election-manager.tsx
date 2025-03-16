@@ -4,8 +4,8 @@ import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
-import { Paper, Tabs, Tab, Typography, Box } from '@mui/material';
-import { DivisionState, DivisionWithEvent, SafeUser } from '@mtes/types';
+import { Paper, Tabs, Tab, Typography, Box, Button } from '@mui/material';
+import { DivisionState, DivisionWithEvent, Member, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
@@ -14,19 +14,12 @@ import { useQueryParam } from '../../hooks/use-query-param';
 
 interface Props {
   user: WithId<SafeUser>;
-  division: WithId<DivisionWithEvent>;
-  divisionState: WithId<DivisionState>;
+  member: WithId<Member>;
 }
 
-const Page: NextPage<Props> = ({
-  user,
-  division: initialDivision,
-  divisionState: initialDivisionState
-}) => {
+const Page: NextPage<Props> = ({ user, member }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
-  const [division] = useState<WithId<DivisionWithEvent>>(initialDivision);
-  const [divisionState, setDivisionState] = useState<WithId<DivisionState>>(initialDivisionState);
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
@@ -41,14 +34,22 @@ const Page: NextPage<Props> = ({
         enqueueSnackbar('לא נמצאו הרשאות מתאימות.', { variant: 'error' });
       }}
     >
-      <Layout
-        title={`ממשק ${user.role}`}
-        connectionStatus={connectionStatus}
-        color={division.color}
-      >
+      <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
         <Box sx={{ mt: 2 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography>Election Manager UI</Typography>
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                console.log('loadVotingMember', member);
+
+                socket.emit('loadVotingMember', member);
+              }}
+            >
+              Load Voting Member
+            </Button>
           </Paper>
         </Box>
       </Layout>
@@ -62,15 +63,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
 
     const data = await serverSideGetRequests(
       {
-        division: `/api/divisions?withEvent=true`,
-        divisionState: `/api/divisions/state`,
-        teams: `/api/divisions/teams`,
-        tickets: `/api/divisions/tickets`,
-        rooms: `/api/divisions/rooms`,
-        tables: `/api/divisions/tables`,
-        matches: `/api/divisions/matches`,
-        sessions: `/api/divisions/sessions`,
-        cvForms: `/api/divisions/cv-forms`
+        // fetch member data
+        member: '/api/events'
       },
       ctx
     );

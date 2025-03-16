@@ -16,8 +16,6 @@ const websocket = (
     callback({ ok: true });
   });
 
-  socket.on('loadVotingMember', (...args) => handleLoadVotingMember(...args));
-
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);
   });

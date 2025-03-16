@@ -16,11 +16,7 @@ export interface WSServerEmittedEvents {
 }
 
 export interface WSClientEmittedEvents {
-  loadVotingMember: (
-    votingConf: VotingConfig,
-    member: Member,
-    callback: (response: { ok: boolean; error?: string }) => void
-  ) => void;
+  loadVotingMember: (member: Member) => void;
 
   ping: (callback: (response: { ok: boolean; error?: string }) => void) => void;
 }

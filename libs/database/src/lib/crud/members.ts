@@ -18,7 +18,11 @@ export const addMembers = (members: Array<Member>) => {
   return db.collection<Member>('members').insertMany(members);
 };
 
-export const updateMember = (filter: Filter<Member>, newMember: Partial<Member>, upsert = false) => {
+export const updateMember = (
+  filter: Filter<Member>,
+  newMember: Partial<Member>,
+  upsert = false
+) => {
   return db.collection<Member>('members').updateOne(filter, { $set: newMember }, { upsert });
 };
 

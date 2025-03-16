@@ -79,8 +79,12 @@ const Page: NextPage<Props> = ({
     city: 'תל אביב יפו'
   };
 
-  function handleUpdateMember(...args: any[]): void | Promise<void> {
-    throw new Error('Function not implemented.');
+  function handleUpdateMember(
+    votingConf: VotingConfig,
+    member: Member,
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) {
+    setMember(member);
   }
 
   const { socket, connectionStatus } = useWebsocket([
