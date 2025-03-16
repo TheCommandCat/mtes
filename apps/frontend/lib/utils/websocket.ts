@@ -1,4 +1,4 @@
-import { Manager, Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { WSServerEmittedEvents, WSClientEmittedEvents } from '@mtes/types';
 
 const getWsBase = (forceClient = false) => {
@@ -7,12 +7,9 @@ const getWsBase = (forceClient = false) => {
   // return isSsr ? process.env.LOCAL_WS_URL : process.env.NEXT_PUBLIC_WS_URL;
 };
 
-const url = getWsBase();
-const manager = new Manager(url ? url : '', {
-  autoConnect: false,
-  withCredentials: true
-});
-
 export const getSocket = (): Socket<WSServerEmittedEvents, WSClientEmittedEvents> => {
-  return manager.socket('/socket');
+  return io(getWsBase(), {
+    autoConnect: false,
+    withCredentials: true
+  });
 };

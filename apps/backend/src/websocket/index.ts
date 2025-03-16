@@ -9,8 +9,6 @@ import {
 const websocket = (
   socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents, WSSocketData>
 ) => {
-  const namespace = socket.nsp;
-  
   console.log(`🔌 WS: New connection established`);
 
   socket.on('ping', callback => {
