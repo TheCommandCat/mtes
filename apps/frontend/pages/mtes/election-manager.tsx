@@ -14,8 +14,10 @@ import {
   List,
   Divider,
   ListItem,
-  ListItemText
+  ListItemText,
+  Stack
 } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 import { DivisionState, DivisionWithEvent, Member, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
@@ -36,7 +38,10 @@ const Page: NextPage<Props> = ({ user, members }) => {
     // handle ws eventes
   ]);
 
-  // console.log(JSON.stringify(membersFormated, null, 2));
+  const handleSendMember = (member: Member) => {
+    socket?.emit('loadVotingMember', member);
+    enqueueSnackbar(`${member.name} נשלח להצבעה`, { variant: 'success' });
+  };
 
   return (
     <RoleAuthorizer
@@ -48,18 +53,28 @@ const Page: NextPage<Props> = ({ user, members }) => {
       }}
     >
       <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
-        <Box sx={{ mt: 2 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              Election Manager UI
+        <Box sx={{ mt: 2, maxWidth: 800, mx: 'auto' }}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom align="center" sx={{ mb: 3 }}>
+              ניהול הצבעות
             </Typography>
-            <Typography variant="subtitle1" gutterBottom>
-              Members List ({members.length})
+            <Typography variant="subtitle1" gutterBottom align="center" sx={{ mb: 3 }}>
+              רשימת מצביעים ({members.length})
             </Typography>
             <List>
               {members.map((member, index) => (
                 <Box key={member._id.toString()}>
-                  <ListItem>
+                  <ListItem sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      onClick={() => handleSendMember(member)}
+                      startIcon={<SendIcon />}
+                      sx={{ ml: 2, direction: 'ltr' }}
+                    >
+                      שלח
+                    </Button>
                     <ListItemText
                       primary={member.name}
                       secondary={member.city}
