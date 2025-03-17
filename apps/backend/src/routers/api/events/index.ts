@@ -10,8 +10,8 @@ const router = express.Router({ mergeParams: true });
 //   });
 // });
 
-router.get('/', async (req: Request, res: Response) => {
-  return res.json(await db.getMember({}));
+router.get('/members', async (req: Request, res: Response) => {
+  return res.json(await db.getMembers({}));
 });
 
 router.get('/:eventId/divisions', (req: Request, res: Response) => {

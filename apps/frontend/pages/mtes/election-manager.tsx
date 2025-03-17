@@ -4,7 +4,18 @@ import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
-import { Paper, Tabs, Tab, Typography, Box, Button } from '@mui/material';
+import {
+  Paper,
+  Tabs,
+  Tab,
+  Typography,
+  Box,
+  Button,
+  List,
+  Divider,
+  ListItem,
+  ListItemText
+} from '@mui/material';
 import { DivisionState, DivisionWithEvent, Member, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
@@ -14,16 +25,18 @@ import { useQueryParam } from '../../hooks/use-query-param';
 
 interface Props {
   user: WithId<SafeUser>;
-  member: WithId<Member>;
+  members: WithId<Member>[];
 }
 
-const Page: NextPage<Props> = ({ user, member }) => {
+const Page: NextPage<Props> = ({ user, members }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
   ]);
+
+  // console.log(JSON.stringify(membersFormated, null, 2));
 
   return (
     <RoleAuthorizer
@@ -37,19 +50,26 @@ const Page: NextPage<Props> = ({ user, member }) => {
       <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
         <Box sx={{ mt: 2 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography>Election Manager UI</Typography>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => {
-                console.log('loadVotingMember', member);
-
-                socket.emit('loadVotingMember', member);
-              }}
-            >
-              Load Voting Member
-            </Button>
+            <Typography variant="h6" gutterBottom>
+              Election Manager UI
+            </Typography>
+            <Typography variant="subtitle1" gutterBottom>
+              Members List ({members.length})
+            </Typography>
+            <List>
+              {members.map((member, index) => (
+                <Box key={member._id.toString()}>
+                  <ListItem>
+                    <ListItemText
+                      primary={member.name}
+                      secondary={member.city}
+                      sx={{ textAlign: 'right' }}
+                    />
+                  </ListItem>
+                  {index < members.length - 1 && <Divider />}
+                </Box>
+              ))}
+            </List>
           </Paper>
         </Box>
       </Layout>
@@ -64,13 +84,15 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
     const data = await serverSideGetRequests(
       {
         // fetch member data
-        member: '/api/events'
+        members: '/api/events/members'
       },
       ctx
     );
 
     return { props: { user, ...data } };
   } catch {
+    console.log('we got into the catch block');
+
     return { redirect: { destination: '/login', permanent: false } };
   }
 };

@@ -6,8 +6,8 @@ export const getMember = (filter: Filter<Member>) => {
   return db.collection<Member>('members').findOne(filter);
 };
 
-export const getDivisionMembers = (divisionId: ObjectId) => {
-  return db.collection<Member>('members').find({ divisionId }).toArray();
+export const getMembers = (filter: Filter<Member>) => {
+  return db.collection<Member>('members').find(filter).toArray();
 };
 
 export const addMember = (team: Member) => {
