@@ -5,6 +5,8 @@ import { RoleConfig, VotingConfig } from './schemas/voting';
 
 export type WSVotingStandName = 'voting' | 'audience-display';
 
+export type WSRoomName = 'main';
+
 interface DivisionsMap {
   [division: string]: any;
 }
@@ -16,9 +18,17 @@ export interface WSServerEmittedEvents {
 }
 
 export interface WSClientEmittedEvents {
-  loadVotingMember: (member: Member) => void;
+  joinRoom: (
+    room: WSRoomName,
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) => void;
 
-  ping: (callback: (response: { ok: boolean; error?: string }) => void) => void;
+  loadVotingMember: (
+    member: Member,
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) => void;
+
+  pingRoom: (callback: (response: { room: string; ok: boolean; error?: string }) => void) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type

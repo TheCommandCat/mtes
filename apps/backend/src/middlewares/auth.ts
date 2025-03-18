@@ -12,11 +12,11 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const token = extractToken(req);
     const tokenData = jwt.verify(token, jwtSecret) as JwtTokenData;
     const user = await db.getUserWithCredentials({ _id: new ObjectId(tokenData.userId) });
-        if (user) {
-          delete user.password;
-          req.user = user;
-          return next();
-        }
+    if (user) {
+      delete user.password;
+      req.user = user;
+      return next();
+    }
   } catch (err) {
     //Invalid token
   }

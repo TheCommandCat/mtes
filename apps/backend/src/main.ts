@@ -41,7 +41,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
 });
 
-io.on('connection', websocket);
+const namespace = io.of('/sockets/main');
+namespace.on('connection', websocket);
 
 console.log('💫 Starting server...');
 server.listen(port, () => {

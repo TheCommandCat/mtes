@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ConnectionStatus, WSEventListener } from '@mtes/types';
+import { ConnectionStatus, WSEventListener, WSRoomName } from '@mtes/types';
 import { getSocket } from '../lib/utils/websocket';
 
 const MAX_RETRIES = 5;
@@ -8,10 +8,11 @@ const BASE_DELAY = 1000;
 const MAX_DELAY = 30000;
 
 export const useWebsocket = (
-  wsevents?: Array<WSEventListener>,
-  init?: (...args: any[]) => void | Promise<void>
+  room: WSRoomName,
+  init?: (...args: any[]) => void | Promise<void>,
+  wsevents?: Array<WSEventListener>
 ) => {
-  const socket = getSocket();
+  const socket = getSocket('main');
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
     socket.connected ? 'connected' : 'disconnected'
   );
@@ -38,8 +39,15 @@ export const useWebsocket = (
       setConnectionStatus(prev => (prev === 'error' ? 'error' : 'connecting'));
 
       socket.connect();
-      retryRef.current = 0;
-      setConnectionStatus('connected');
+      socket.emit('joinRoom', room, response => {
+        if (!response.ok) {
+          setConnectionStatus('error');
+          reconnect();
+        } else {
+          retryRef.current = 0;
+          setConnectionStatus('connected');
+        }
+      });
     }, delay);
   }, [socket, calculateDelay]);
 
@@ -50,23 +58,25 @@ export const useWebsocket = (
       clearTimeout(heartbeatTimeoutRef.current);
     }
 
-    socket.timeout(TIMEOUT).emit('ping', (error: Error | null, response: { ok: boolean }) => {
-      if (error) {
-        console.error('Heartbeat failed:', error);
-        reconnect();
-        return;
-      }
+    socket
+      .timeout(TIMEOUT)
+      .emit('pingRoom', (error: Error | null, response: { ok: boolean; room: string }) => {
+        if (error) {
+          console.error('Heartbeat failed:', error);
+          reconnect();
+          return;
+        }
 
-      if (!response.ok) {
-        console.warn('Invalid heartbeat response:', response);
-        reconnect();
-        return;
-      }
+        if (!response.ok) {
+          console.warn('Invalid heartbeat response:', response);
+          reconnect();
+          return;
+        }
 
-      const delay = calculateDelay();
-      heartbeatTimeoutRef.current = setTimeout(heartbeat, delay);
-    });
-  }, [socket, reconnect, calculateDelay]);
+        const delay = calculateDelay();
+        heartbeatTimeoutRef.current = setTimeout(heartbeat, delay);
+      });
+  }, [socket, room, reconnect, calculateDelay]);
 
   useEffect(() => {
     return () => {
