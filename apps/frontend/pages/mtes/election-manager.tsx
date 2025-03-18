@@ -39,7 +39,6 @@ const Page: NextPage<Props> = ({ user, members }) => {
   ]);
 
   const handleSendMember = (member: Member) => {
-    console.log('sending member', member);
 
     socket.emit('loadVotingMember', member, response => {
       if (response.ok) {
@@ -113,8 +112,6 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
 
     return { props: { user, ...data } };
   } catch {
-    console.log('we got into the catch block');
-
     return { redirect: { destination: '/login', permanent: false } };
   }
 };

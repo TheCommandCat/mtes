@@ -92,6 +92,17 @@ export const useWebsocket = (
 
     if (init) init();
 
+    socket.onAny((eventName, ...args) => {
+      console.log('🔽 Socket.IO Incoming:', eventName, args);
+    });
+
+      // Log all outgoing events
+      const emit = socket.emit;
+      socket.emit = function (this: any, ev, ...args) {
+        console.log('🔼 Socket.IO Outgoing:', ev, args);
+        return emit.apply(this, [ev, ...args] as any);
+      };
+
     const onConnect = () => {
       setConnectionStatus('connected');
       heartbeat();

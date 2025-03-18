@@ -23,14 +23,11 @@ export const apiFetch = (
     headers = { Authorization: `Bearer ${token}`, ...init?.headers };
   }
 
-  console.log('🌐 Fetching:', path);
-
   return fetch('http://localhost:3333' + path, {
     credentials: 'include',
     headers,
     ...init
   }).then(response => {
-    console.log('🌐 Fetched:', path, response);
     return response;
   });
 };
@@ -47,21 +44,6 @@ export const serverSideGetRequests = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: { [key: string]: any } = {};
 
-  console.log('🌐 Starting server-side data fetch:', {
-    routes: Object.entries(toFetch)
-      .map(([key, path]) => `${key}: ${path}`)
-      .join(', '),
-    requestContext: {
-      url: ctx.req.url,
-      method: ctx.req.method,
-      headers: {
-        authorization: ctx.req.headers.cookie ? 'present' : 'none'
-      },
-      query: ctx.query
-    }
-  });
-
-  console.log('using serverSideGetRequests with data:');
 
   await Promise.all(
     Object.entries(toFetch).map(async ([key, urlPath]) => {
@@ -69,8 +51,6 @@ export const serverSideGetRequests = async (
       result[key] = data;
     })
   );
-
-  console.log('🌐 Finished server-side data fetch:', result);
 
   return result;
 };
