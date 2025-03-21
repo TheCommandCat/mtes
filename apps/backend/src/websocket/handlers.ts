@@ -1,8 +1,8 @@
 import { Member } from '@mtes/types';
 
-export const handleLoadVotingMember = async (namespace: any, member: Member, callback) => {
+export const handleLoadVotingMember = async (socket: any, member: Member, callback) => {
   console.log('🔌 WS: Load voting member');
 
-  namespace.to('main').emit('votingMemberLoaded', member);
+  // socket.emit('votingMemberLoaded', member);
   callback({ ok: true });
 };

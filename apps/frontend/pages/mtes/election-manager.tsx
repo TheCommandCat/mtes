@@ -34,16 +34,21 @@ const Page: NextPage<Props> = ({ user, members }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
 
-  const { socket, connectionStatus } = useWebsocket('main', undefined, [
+  const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
   ]);
 
   const handleSendMember = (member: Member) => {
+    console.log('Sending member:', member);
+    console.log('Socket:', socket.connected);
 
-    socket.emit('loadVotingMember', member, response => {
+    socket.emit('loadVotingMember', member, (response: { ok: boolean }) => {
       if (response.ok) {
+        console.log('Member sent successfully');
+
         enqueueSnackbar(`${member.name} נשלח להצבעה`, { variant: 'success' });
       } else {
+        console.error('Error sending member');
         enqueueSnackbar('שגיאה בשליחת המצביע', { variant: 'error' });
       }
     });

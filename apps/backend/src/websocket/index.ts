@@ -10,21 +10,13 @@ import { handleLoadVotingMember } from './handlers';
 const websocket = (
   socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents, WSSocketData>
 ) => {
-  const namespace = socket.nsp;
-  const name = socket.nsp.name.split('/')[2];
-  console.log(`🔌 WS: New connection established to ${name}`);
+  console.log(`🔌 WS: New connection established`);
 
-  socket.on('joinRoom', (rooms, callback) => {
-    console.log(`🏠 WS: Joining rooms ${rooms.toString()}`);
-    socket.join(rooms);
+  socket.on('ping', callback => {
     callback({ ok: true });
   });
 
-  socket.on('pingRoom', callback => {
-    callback({ ok: true, room: 'main' });
-  });
-
-  socket.on('loadVotingMember', (...args) => handleLoadVotingMember(namespace, ...args));
+  socket.on('loadVotingMember', (...args) => handleLoadVotingMember(socket, ...args));
 
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);

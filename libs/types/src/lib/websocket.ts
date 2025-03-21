@@ -18,17 +18,12 @@ export interface WSServerEmittedEvents {
 }
 
 export interface WSClientEmittedEvents {
-  joinRoom: (
-    room: WSRoomName,
-    callback: (response: { ok: boolean; error?: string }) => void
-  ) => void;
-
   loadVotingMember: (
     member: Member,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
-  pingRoom: (callback: (response: { room: string; ok: boolean; error?: string }) => void) => void;
+  ping: (callback: (response: { ok: boolean; error?: string }) => void) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type
