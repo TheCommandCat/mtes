@@ -75,12 +75,10 @@ const Page: NextPage<Props> = ({ user }) => {
     console.log('updatingMember', member);
   }
 
-  const { socket, connectionStatus } = useWebsocket('main', undefined, [
+  const { socket, connectionStatus } = useWebsocket([
     {
-      name: 'pingRoom',
-      handler: () => {
-        console.log('pingRoom');
-      }
+      name: 'votingMemberLoaded',
+      handler: handleUpdateMember 
     }
   ]);
 
