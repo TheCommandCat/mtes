@@ -66,11 +66,6 @@ const Page: NextPage<Props> = ({ user }) => {
     ]
   };
 
-  const memberCnf: Member = {
-    name: 'ניר חן',
-    city: 'תל אביב יפו'
-  };
-
   function handleUpdateMember(member: Member) {
     setMember(member);
   }
@@ -110,10 +105,7 @@ const Page: NextPage<Props> = ({ user }) => {
               </>
             ) : (
               <>
-                <Typography variant="h2">No member selected</Typography>
-                <Button variant="contained" onClick={() => setMember(memberCnf)}>
-                  Load Member
-                </Button>
+                <Typography variant="h2">?</Typography>
               </>
             )}
             {votingConf ? (
@@ -217,6 +209,15 @@ const Page: NextPage<Props> = ({ user }) => {
                 </Button>
               </>
             )}
+            {member ? (
+              <Box
+                sx={{
+                  mt: 2
+                }}
+              >
+                <Button onClick={() => setMember(null)}>Finished Voting</Button>
+              </Box>
+            ) : null}
           </Paper>
         </Box>
       </Layout>
