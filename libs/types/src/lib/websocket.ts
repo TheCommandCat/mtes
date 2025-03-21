@@ -5,6 +5,8 @@ import { RoleConfig, VotingConfig } from './schemas/voting';
 
 export type WSVotingStandName = 'voting' | 'audience-display';
 
+export type WSRoomName = 'main';
+
 interface DivisionsMap {
   [division: string]: any;
 }
@@ -17,7 +19,6 @@ export interface WSServerEmittedEvents {
 
 export interface WSClientEmittedEvents {
   loadVotingMember: (
-    votingConf: VotingConfig,
     member: Member,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;

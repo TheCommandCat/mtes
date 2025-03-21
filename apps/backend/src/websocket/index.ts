@@ -10,13 +10,14 @@ import { handleLoadVotingMember } from './handlers';
 const websocket = (
   socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents, WSSocketData>
 ) => {
+  const namespace = socket.nsp;
   console.log(`🔌 WS: New connection established`);
 
   socket.on('ping', callback => {
     callback({ ok: true });
   });
 
-  socket.on('loadVotingMember', (...args) => handleLoadVotingMember(...args));
+  socket.on('loadVotingMember', (...args) => handleLoadVotingMember(namespace, ...args));
 
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);

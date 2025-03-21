@@ -44,23 +44,10 @@ export const serverSideGetRequests = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: { [key: string]: any } = {};
 
-  console.log('🌐 Starting server-side data fetch:', {
-    routes: Object.entries(toFetch)
-      .map(([key, path]) => `${key}: ${path}`)
-      .join(', '),
-    requestContext: {
-      url: ctx.req.url,
-      method: ctx.req.method,
-      headers: {
-        authorization: ctx.req.headers.cookie ? 'present' : 'none'
-      },
-      query: ctx.query
-    }
-  });
 
   await Promise.all(
     Object.entries(toFetch).map(async ([key, urlPath]) => {
-      const data = await apiFetch(urlPath, undefined).then(res => res?.json());
+      const data = await apiFetch(urlPath, undefined, ctx).then(res => res?.json());
       result[key] = data;
     })
   );

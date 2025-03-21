@@ -1,26 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { ConnectionStatus, WSEventListener } from '@mtes/types';
-import { getSocket } from '../lib/utils/websocket';
 
+const WS_URL = 'http://localhost:3333';
+let socket: Socket | null = null;
 const MAX_RETRIES = 5;
 const TIMEOUT = 800;
 const BASE_DELAY = 1000;
 const MAX_DELAY = 30000;
 
-export const useWebsocket = (
-  wsevents?: Array<WSEventListener>,
-  init?: (...args: any[]) => void | Promise<void>
-) => {
-  const socket = getSocket();
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
-    socket.connected ? 'connected' : 'disconnected'
-  );
+export const useWebsocket = (wsevents?: Array<WSEventListener>) => {
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const retryRef = useRef(0);
   const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  if (!socket) {
+    socket = io(WS_URL, { autoConnect: false });
+  }
+
   const calculateDelay = useCallback(() => {
-    const delay = Math.min(BASE_DELAY * Math.pow(2, retryRef.current), MAX_DELAY);
-    return delay;
+    return Math.min(BASE_DELAY * Math.pow(2, retryRef.current), MAX_DELAY);
   }, []);
 
   const reconnect = useCallback(() => {
@@ -30,100 +29,65 @@ export const useWebsocket = (
       return;
     }
 
-    socket.disconnect();
-    retryRef.current += 1;
-    const delay = calculateDelay();
-
-    setTimeout(() => {
-      setConnectionStatus(prev => (prev === 'error' ? 'error' : 'connecting'));
-
-      socket.connect();
-      retryRef.current = 0;
-      setConnectionStatus('connected');
-    }, delay);
-  }, [socket, calculateDelay]);
-
-  const heartbeat = useCallback(() => {
-    if (!socket.connected) return;
-
-    if (heartbeatTimeoutRef.current) {
-      clearTimeout(heartbeatTimeoutRef.current);
+    if (socket) {
+      socket.disconnect();
     }
 
+    retryRef.current += 1;
+    setTimeout(() => {
+      setConnectionStatus('connecting');
+      socket?.connect();
+    }, calculateDelay());
+  }, [calculateDelay]);
+
+  const heartbeat = useCallback(() => {
+    if (!socket?.connected) return;
+
+    heartbeatTimeoutRef.current && clearTimeout(heartbeatTimeoutRef.current);
+
     socket.timeout(TIMEOUT).emit('ping', (error: Error | null, response: { ok: boolean }) => {
-      if (error) {
+      if (error || !response.ok) {
         console.error('Heartbeat failed:', error);
         reconnect();
         return;
       }
-
-      if (!response.ok) {
-        console.warn('Invalid heartbeat response:', response);
-        reconnect();
-        return;
-      }
-
-      const delay = calculateDelay();
-      heartbeatTimeoutRef.current = setTimeout(heartbeat, delay);
+      heartbeatTimeoutRef.current = setTimeout(heartbeat, calculateDelay());
     });
-  }, [socket, reconnect, calculateDelay]);
+  }, [calculateDelay, reconnect]);
 
   useEffect(() => {
-    return () => {
-      if (heartbeatTimeoutRef.current) {
-        clearTimeout(heartbeatTimeoutRef.current);
-      }
-    };
-  }, []);
+    if (!socket) return;
 
-  useEffect(() => {
     socket.connect();
-    if (!socket.connected) setConnectionStatus('connecting');
+    setConnectionStatus(socket.connected ? 'connected' : 'connecting');
 
-    if (init) init();
-
-    const onConnect = () => {
+    socket.on('connect', () => {
       setConnectionStatus('connected');
+      retryRef.current = 0;
       heartbeat();
-    };
+    });
 
-    const onDisconnect = () => {
+    socket.on('disconnect', () => {
       setConnectionStatus('disconnected');
-    };
+      reconnect();
+    });
 
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-
-    socket.on('connect_error', (error: any) => {
-      console.error('Connection error:', error);
+    socket.on('connect_error', () => {
       setConnectionStatus('error');
       reconnect();
     });
 
-    if (wsevents) {
-      for (const event of wsevents) {
-        socket.on(event.name as any, event.handler);
-      }
+    if (Array.isArray(wsevents)) {
+      wsevents.forEach(({ name, handler }) => socket?.on(name, handler));
     }
 
     return () => {
-      socket.off('connect', onConnect);
-      socket.off('connect_error');
-      socket.off('disconnect', onDisconnect);
-
-      if (wsevents) {
-        for (const event of wsevents) {
-          socket.off(event.name as any, event.handler);
-        }
-      }
-
-      // We don't disconnect the socket on cleanup
-      // as it's the shared socket instance used across the app
-      retryRef.current = 0;
-      setConnectionStatus('disconnected');
+      socket?.off('connect');
+      socket?.off('disconnect');
+      socket?.off('connect_error');
+      wsevents?.forEach(({ name, handler }) => socket?.off(name, handler));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [heartbeat, reconnect, wsevents]);
 
   return { socket, connectionStatus };
 };

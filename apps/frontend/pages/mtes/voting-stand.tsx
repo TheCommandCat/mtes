@@ -25,19 +25,11 @@ import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
 
 interface Props {
   user: WithId<SafeUser>;
-  division: WithId<DivisionWithEvent>;
-  divisionState: WithId<DivisionState>;
 }
 
-const Page: NextPage<Props> = ({
-  user,
-  division: initialDivision,
-  divisionState: initialDivisionState
-}) => {
+const Page: NextPage<Props> = ({ user }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
-  const [division] = useState<WithId<DivisionWithEvent>>(initialDivision);
-  const [divisionState, setDivisionState] = useState<WithId<DivisionState>>(initialDivisionState);
   const [votingConf, setVotingConf] = useState<VotingConfig | undefined>(undefined);
   const [member, setMember] = useState<Member | null>(null);
 
@@ -74,13 +66,8 @@ const Page: NextPage<Props> = ({
     ]
   };
 
-  const memberCnf: Member = {
-    name: 'ניר חן',
-    city: 'תל אביב יפו'
-  };
-
-  function handleUpdateMember(...args: any[]): void | Promise<void> {
-    throw new Error('Function not implemented.');
+  function handleUpdateMember(member: Member) {
+    setMember(member);
   }
 
   const { socket, connectionStatus } = useWebsocket([
@@ -99,11 +86,7 @@ const Page: NextPage<Props> = ({
         enqueueSnackbar('לא נמצאו הרשאות מתאימות.', { variant: 'error' });
       }}
     >
-      <Layout
-        title={`ממשק ${user.role}`}
-        connectionStatus={connectionStatus}
-        color={division.color}
-      >
+      <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
         <Box sx={{ mt: 2 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h1">Voting Stand UI</Typography>
@@ -122,10 +105,7 @@ const Page: NextPage<Props> = ({
               </>
             ) : (
               <>
-                <Typography variant="h2">No member selected</Typography>
-                <Button variant="contained" onClick={() => setMember(memberCnf)}>
-                  Load Member
-                </Button>
+                <Typography variant="h2">?</Typography>
               </>
             )}
             {votingConf ? (
@@ -229,6 +209,15 @@ const Page: NextPage<Props> = ({
                 </Button>
               </>
             )}
+            {member ? (
+              <Box
+                sx={{
+                  mt: 2
+                }}
+              >
+                <Button onClick={() => setMember(null)}>Finished Voting</Button>
+              </Box>
+            ) : null}
           </Paper>
         </Box>
       </Layout>
@@ -240,20 +229,7 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
     const { user } = await getUserAndDivision(ctx);
 
-    const data = await serverSideGetRequests(
-      {
-        division: `/api/divisions?withEvent=true`,
-        divisionState: `/api/divisions/state`,
-        teams: `/api/divisions/teams`,
-        tickets: `/api/divisions/tickets`,
-        rooms: `/api/divisions/rooms`,
-        tables: `/api/divisions/tables`,
-        matches: `/api/divisions/matches`,
-        sessions: `/api/divisions/sessions`,
-        cvForms: `/api/divisions/cv-forms`
-      },
-      ctx
-    );
+    const data = await serverSideGetRequests({}, ctx);
 
     return { props: { user, ...data } };
   } catch {

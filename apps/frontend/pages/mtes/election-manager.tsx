@@ -4,8 +4,21 @@ import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
-import { Paper, Tabs, Tab, Typography, Box } from '@mui/material';
-import { DivisionState, DivisionWithEvent, SafeUser } from '@mtes/types';
+import {
+  Paper,
+  Tabs,
+  Tab,
+  Typography,
+  Box,
+  Button,
+  List,
+  Divider,
+  ListItem,
+  ListItemText,
+  Stack
+} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import { DivisionState, DivisionWithEvent, Member, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
@@ -14,23 +27,32 @@ import { useQueryParam } from '../../hooks/use-query-param';
 
 interface Props {
   user: WithId<SafeUser>;
-  division: WithId<DivisionWithEvent>;
-  divisionState: WithId<DivisionState>;
+  members: WithId<Member>[];
 }
 
-const Page: NextPage<Props> = ({
-  user,
-  division: initialDivision,
-  divisionState: initialDivisionState
-}) => {
+const Page: NextPage<Props> = ({ user, members }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
-  const [division] = useState<WithId<DivisionWithEvent>>(initialDivision);
-  const [divisionState, setDivisionState] = useState<WithId<DivisionState>>(initialDivisionState);
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
   ]);
+
+  const handleSendMember = (member: Member) => {
+    console.log('Sending member:', member);
+    console.log('Socket:', socket.connected);
+
+    socket.emit('loadVotingMember', member, (response: { ok: boolean }) => {
+      if (response.ok) {
+        console.log('Member sent successfully');
+
+        enqueueSnackbar(`${member.name} נשלח להצבעה`, { variant: 'success' });
+      } else {
+        console.error('Error sending member');
+        enqueueSnackbar('שגיאה בשליחת המצביע', { variant: 'error' });
+      }
+    });
+  };
 
   return (
     <RoleAuthorizer
@@ -41,14 +63,39 @@ const Page: NextPage<Props> = ({
         enqueueSnackbar('לא נמצאו הרשאות מתאימות.', { variant: 'error' });
       }}
     >
-      <Layout
-        title={`ממשק ${user.role}`}
-        connectionStatus={connectionStatus}
-        color={division.color}
-      >
-        <Box sx={{ mt: 2 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography>Election Manager UI</Typography>
+      <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
+        <Box sx={{ mt: 2, maxWidth: 800, mx: 'auto' }}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom align="center" sx={{ mb: 3 }}>
+              ניהול הצבעות
+            </Typography>
+            <Typography variant="subtitle1" gutterBottom align="center" sx={{ mb: 3 }}>
+              רשימת מצביעים ({members.length})
+            </Typography>
+            <List>
+              {members.map((member, index) => (
+                <Box key={member._id.toString()}>
+                  <ListItem sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      onClick={() => handleSendMember(member)}
+                      startIcon={<SendIcon />}
+                      sx={{ ml: 2, direction: 'ltr' }}
+                    >
+                      שלח
+                    </Button>
+                    <ListItemText
+                      primary={member.name}
+                      secondary={member.city}
+                      sx={{ textAlign: 'right' }}
+                    />
+                  </ListItem>
+                  {index < members.length - 1 && <Divider />}
+                </Box>
+              ))}
+            </List>
           </Paper>
         </Box>
       </Layout>
@@ -62,15 +109,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
 
     const data = await serverSideGetRequests(
       {
-        division: `/api/divisions?withEvent=true`,
-        divisionState: `/api/divisions/state`,
-        teams: `/api/divisions/teams`,
-        tickets: `/api/divisions/tickets`,
-        rooms: `/api/divisions/rooms`,
-        tables: `/api/divisions/tables`,
-        matches: `/api/divisions/matches`,
-        sessions: `/api/divisions/sessions`,
-        cvForms: `/api/divisions/cv-forms`
+        // fetch member data
+        members: '/api/events/members'
       },
       ctx
     );

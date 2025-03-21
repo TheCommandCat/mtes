@@ -6,8 +6,8 @@ export const getMember = (filter: Filter<Member>) => {
   return db.collection<Member>('members').findOne(filter);
 };
 
-export const getDivisionMembers = (divisionId: ObjectId) => {
-  return db.collection<Member>('members').find({ divisionId }).toArray();
+export const getMembers = (filter: Filter<Member>) => {
+  return db.collection<Member>('members').find(filter).toArray();
 };
 
 export const addMember = (team: Member) => {
@@ -18,7 +18,11 @@ export const addMembers = (members: Array<Member>) => {
   return db.collection<Member>('members').insertMany(members);
 };
 
-export const updateMember = (filter: Filter<Member>, newMember: Partial<Member>, upsert = false) => {
+export const updateMember = (
+  filter: Filter<Member>,
+  newMember: Partial<Member>,
+  upsert = false
+) => {
   return db.collection<Member>('members').updateOne(filter, { $set: newMember }, { upsert });
 };
 
