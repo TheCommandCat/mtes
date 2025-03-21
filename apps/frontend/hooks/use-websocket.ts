@@ -77,7 +77,7 @@ export const useWebsocket = (wsevents?: Array<WSEventListener>) => {
       reconnect();
     });
 
-    if (wsevents) {
+    if (Array.isArray(wsevents)) {
       wsevents.forEach(({ name, handler }) => socket?.on(name, handler));
     }
 
