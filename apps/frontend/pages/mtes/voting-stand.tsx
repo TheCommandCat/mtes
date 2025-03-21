@@ -72,13 +72,13 @@ const Page: NextPage<Props> = ({ user }) => {
   };
 
   function handleUpdateMember(member: Member) {
-    console.log('updatingMember', member);
+    setMember(member);
   }
 
   const { socket, connectionStatus } = useWebsocket([
     {
       name: 'votingMemberLoaded',
-      handler: handleUpdateMember 
+      handler: handleUpdateMember
     }
   ]);
 
