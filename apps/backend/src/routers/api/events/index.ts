@@ -10,6 +10,28 @@ const router = express.Router({ mergeParams: true });
 //   });
 // });
 
+router.get('/rounds', async (req: Request, res: Response) => {
+  return res.json(await db.getRounds({}));
+});
+
+router.post('/addRound', async (req: Request, res: Response) => {
+  const { round } = req.body;
+  if (!round) {
+    res.status(400).json({ ok: false, message: 'No round provided' });
+    return;
+  }
+
+  console.log('⏬ Adding Round...');
+  const roundResult = await db.addRound(round);
+  if (!roundResult.acknowledged) {
+    console.log(`❌ Could not add Round`);
+    res.status(500).json({ ok: false, message: 'Could not add round' });
+    return;
+  }
+
+  res.json({ ok: true, id: roundResult.insertedId });
+});
+
 router.get('/members', async (req: Request, res: Response) => {
   return res.json(await db.getMembers({}));
 });

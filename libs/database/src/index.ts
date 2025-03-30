@@ -5,3 +5,4 @@ export * from './lib/crud/divisions';
 export * from './lib/crud/division-states';
 export * from './lib/crud/members';
 export * from './lib/crud/contestants';
+export * from './lib/crud/rounds';
