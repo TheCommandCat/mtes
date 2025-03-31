@@ -8,13 +8,13 @@
   },
   "private": true,
   "dependencies": {
-    "@emotion/react": "^11.11.1",
+    "@emotion/react": "^11.14.0",
     "@emotion/server": "11.11.0",
-    "@emotion/styled": "^11.11.0",
+    "@emotion/styled": "^11.14.0",
     "@json2csv/plainjs": "^7.0.6",
     "@mui/icons-material": "^6.4.0",
     "@mui/lab": "^6.0.0-beta.24",
-    "@mui/material": "^6.4.0",
+    "@mui/material": "^6.4.10",
     "@mui/x-date-pickers": "^7.24.0",
     "@types/express-fileupload": "^1.5.1",
     "cookie-parser": "^1.4.7",
@@ -32,7 +32,9 @@
     "react": "18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-color": "^2.19.3",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@nx/esbuild": "20.3.2",
