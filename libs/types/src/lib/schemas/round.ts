@@ -1,12 +1,14 @@
 import { Positions } from '../positions';
 import { Member } from './member';
 
-export interface VotingConfig {
-  roles: RoleConfig[];
-}
-
-export interface RoleConfig {
+interface RoleConfig {
   role: Positions;
   contestants: Member[];
   maxVotes: number;
+}
+
+export interface Round {
+  name: string;
+  roles: RoleConfig[];
+  allowedMembers: Member[];
 }

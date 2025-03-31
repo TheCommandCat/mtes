@@ -5,14 +5,7 @@ import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
 import { Paper, Tabs, Tab, Typography, Box, Card, CardContent } from '@mui/material';
-import {
-  DivisionState,
-  DivisionWithEvent,
-  Member,
-  RoleConfig,
-  SafeUser,
-  VotingConfig
-} from '@mtes/types';
+import { DivisionState, DivisionWithEvent, Member, SafeUser, Role, Round } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 // import { useWebsocket } from '../../hooks/use-websocket';
@@ -30,10 +23,11 @@ interface Props {
 const Page: NextPage<Props> = ({ user }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
-  const [votingConf, setVotingConf] = useState<VotingConfig | undefined>(undefined);
+  const [votingConf, setVotingConf] = useState<Round | undefined>(undefined);
   const [member, setMember] = useState<Member | null>(null);
 
-  const Votingcnf: VotingConfig = {
+  const Votingcnf: Round = {
+    name: 'Voting Configuration',
     roles: [
       {
         role: 'יו"ר',
@@ -63,6 +57,16 @@ const Page: NextPage<Props> = ({ user }) => {
         ],
         maxVotes: 2
       }
+    ],
+    allowedMembers: [
+      {
+        name: 'Member 1',
+        city: 'תל אביב יפו'
+      },
+      {
+        name: 'Member 2',
+        city: 'תל אביב יפו'
+      }
     ]
   };
 
@@ -74,6 +78,12 @@ const Page: NextPage<Props> = ({ user }) => {
     {
       name: 'votingMemberLoaded',
       handler: handleUpdateMember
+    },
+    {
+      name: 'roundLoaded',
+      handler: (round: Round) => {
+        setVotingConf(round);
+      }
     }
   ]);
 

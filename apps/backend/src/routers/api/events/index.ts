@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import * as db from '@mtes/database';
+import { Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
@@ -15,9 +16,25 @@ router.get('/rounds', async (req: Request, res: Response) => {
 });
 
 router.post('/addRound', async (req: Request, res: Response) => {
-  const { round } = req.body;
+  const { round } = req.body as { round: Round };
   if (!round) {
-    res.status(400).json({ ok: false, message: 'No round provided' });
+    console.log('❌ Round object is null or undefined');
+    res.status(400).json({ ok: false, message: 'Round object is missing' });
+    return;
+  }
+  if (!round.name) {
+    console.log('❌ Round name is missing or empty');
+    res.status(400).json({ ok: false, message: 'Round name is required' });
+    return;
+  }
+  if (!round.roles) {
+    console.log('❌ Round roles are missing');
+    res.status(400).json({ ok: false, message: 'Round roles must be specified' });
+    return;
+  }
+  if (!round.allowedMembers) {
+    console.log('❌ Round allowedMembers is missing');
+    res.status(400).json({ ok: false, message: 'Round allowed members must be specified' });
     return;
   }
 

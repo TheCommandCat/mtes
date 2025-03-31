@@ -15,7 +15,8 @@ import {
   Divider,
   ListItem,
   ListItemText,
-  Stack
+  Stack,
+  Input
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { DivisionState, DivisionWithEvent, Member, SafeUser } from '@mtes/types';
@@ -33,6 +34,7 @@ interface Props {
 const Page: NextPage<Props> = ({ user, members }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useQueryParam('tab', '1');
+  const [roundId, setRoundId] = useState('');
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
@@ -96,6 +98,31 @@ const Page: NextPage<Props> = ({ user, members }) => {
                 </Box>
               ))}
             </List>
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="subtitle1" gutterBottom>
+                ניהול סבבים
+              </Typography>
+              <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
+                <Input
+                  placeholder="הכנס מזהה סבב"
+                  value={roundId}
+                  onChange={e => setRoundId(e.target.value)}
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (roundId && /^[0-9a-fA-F]{24}$/.test(roundId)) {
+                      socket.emit('loadRound', roundId);
+                      setRoundId('');
+                    } else {
+                      enqueueSnackbar('מזהה סבב לא תקין. נדרש מזהה באורך 24 תווים הקסדצימליים.', { variant: 'error' });
+                    }
+                  }}
+                >
+                  שלח מזהה סבב
+                </Button>
+              </Stack>
+            </Box>
           </Paper>
         </Box>
       </Layout>

@@ -1,7 +1,6 @@
 import { WithId } from 'mongodb';
 import { AwardNames, TicketType } from './constants';
 import { Member } from './schemas/member';
-import { RoleConfig, VotingConfig } from './schemas/voting';
 
 export type WSVotingStandName = 'voting' | 'audience-display';
 
@@ -15,11 +14,17 @@ type DivisionNames<Map extends DivisionsMap> = keyof Map & (string | symbol);
 
 export interface WSServerEmittedEvents {
   votingMemberLoaded: (member: WithId<Member>) => void;
+  roundLoaded: (roundId: string) => void;
 }
 
 export interface WSClientEmittedEvents {
   loadVotingMember: (
     member: Member,
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) => void;
+
+  loadRound: (
+    roundId: string,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
