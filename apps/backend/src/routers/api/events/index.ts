@@ -53,6 +53,10 @@ router.get('/members', async (req: Request, res: Response) => {
   return res.json(await db.getMembers({}));
 });
 
+router.get('/rounds', async (req: Request, res: Response) => {
+  return res.json(await db.getRounds({}));
+});
+
 router.get('/:eventId/divisions', (req: Request, res: Response) => {
   db.getEventDivisions(new ObjectId(req.params.eventId)).then(divisions => {
     if (!req.query.withSchedule) {
