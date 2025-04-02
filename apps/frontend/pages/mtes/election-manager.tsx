@@ -21,6 +21,9 @@ import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
 import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
+import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
+import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -72,144 +75,33 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
           <Paper sx={{ p: 3 }}>
             <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
               {activeRound ? (
-                <Box>
-                  <Typography variant="h5" align="center">
-                    {activeRound.name}
-                  </Typography>
-                  <Typography variant="subtitle1" gutterBottom align="center">
-                    רשימת מצביעים ({activeRound.allowedMembers.length})
-                  </Typography>
-                  <List>
-                    {activeRound.allowedMembers.map((member, index) => (
-                      <Box key={member.name}>
-                        <ListItem sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
-                          <Button
-                            variant="outlined"
-                            color="primary"
-                            size="small"
-                            onClick={() => handleSendMember(member)}
-                            startIcon={<SendIcon />}
-                            sx={{ ml: 2, direction: 'ltr' }}
-                          >
-                            שלח
-                          </Button>
-                          <ListItemText
-                            primary={member.name}
-                            secondary={member.city}
-                            sx={{ textAlign: 'right' }}
-                          />
-                        </ListItem>
-                        {index < activeRound.allowedMembers.length - 1 && <Divider />}
-                      </Box>
-                    ))}
-                  </List>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => {
-                      setActiveRound(null);
-                      setSelectedRound(null);
-                      enqueueSnackbar(`סבב ${activeRound.name} הסתיים`, { variant: 'info' });
-                    }}
-                  >
-                    סיים סבב
-                  </Button>
-                </Box>
+                <ActiveRound
+                  activeRound={activeRound}
+                  setActiveRound={setActiveRound}
+                  setSelectedRound={setSelectedRound}
+                  handleSendMember={handleSendMember}
+                />
               ) : selectedRound ? (
-                <>
-                  <Typography variant="h5" align="center">
-                    {selectedRound.name}
-                  </Typography>
-                  <Stack direction="row" sx={{ justifyContent: 'space-evenly', p: 2 }}>
-                    {selectedRound.roles.map(role => (
-                      <Box key={role.role} sx={{ boxShadow: 1, p: 2, borderRadius: 1, outline: 1 }}>
-                        <Typography
-                          variant="h4"
-                          align="center"
-                          sx={{ fontSize: '1.2rem', fontWeight: 'bold' }}
-                        >
-                          {role.role}
-                        </Typography>
-                        <Stack direction="column" spacing={1}>
-                          {role.contestants.map(contestant => (
-                            <Typography key={contestant.name} variant="subtitle1" align="center">
-                              {contestant.name}
-                            </Typography>
-                          ))}
-                        </Stack>
-                      </Box>
-                    ))}
-                  </Stack>
-                  <Typography variant="subtitle1" align="center">
-                    {selectedRound.allowedMembers.length} מצביעים מורשים
-                  </Typography>
-                  <Stack direction="row" gap={1} sx={{ justifyContent: 'center', mt: 2 }}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      onClick={() => {
-                        setSelectedRound(null);
-                      }}
-                      startIcon={<ArrowBackIcon />}
-                      sx={{ ml: 2, direction: 'ltr' }}
-                    >
-                      חזור
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="small"
-                      onClick={() => handleStartRound(selectedRound)}
-                      startIcon={<SendIcon />}
-                      sx={{ direction: 'ltr' }}
-                    >
-                      התחל הצבעה
-                    </Button>
-                  </Stack>
-                </>
+                <SelectedRound
+                  selectedRound={selectedRound}
+                  setSelectedRound={setSelectedRound}
+                  handleStartRound={handleStartRound}
+                />
               ) : (
                 <Typography variant="h5" align="center">
                   אין סבב פעיל
                 </Typography>
               )}
             </Paper>
+
             <Typography variant="h5" gutterBottom align="center">
               ניהול הצבעות
             </Typography>
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="subtitle1" gutterBottom>
-                ניהול סבבים
-              </Typography>
-              {rounds.map(round => (
-                <Box key={round._id.toString()}>
-                  <ListItem sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                      onClick={() => {
-                        setSelectedRound(round);
-                        enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
-                      }}
-                      startIcon={<SendIcon />}
-                      sx={{ ml: 2, direction: 'ltr' }}
-                      disabled={activeRound !== null}
-                    >
-                      שלח
-                    </Button>
-                    <ListItemText
-                      primary={round.name}
-                      secondary={`${
-                        round.roles.map(role => role.role).join(', ') || 'ללא תפקידים'
-                      }`}
-                      sx={{ textAlign: 'right' }}
-                    />
-                  </ListItem>
-                  <Divider />
-                </Box>
-              ))}
-            </Box>
+            <ControlRounds
+              rounds={rounds}
+              setSelectedRound={setSelectedRound}
+              activeRound={activeRound}
+            />
           </Paper>
         </Box>
       </Layout>
