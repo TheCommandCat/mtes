@@ -3,11 +3,8 @@ import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
-import { TabContext, TabPanel } from '@mui/lab';
 import {
   Paper,
-  Tabs,
-  Tab,
   Typography,
   Box,
   Button,
@@ -15,25 +12,22 @@ import {
   Divider,
   ListItem,
   ListItemText,
-  Stack,
-  Input
+  Stack
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { DivisionState, DivisionWithEvent, Member, Round, SafeUser } from '@mtes/types';
+import { Member, Round, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
 import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
-import { useQueryParam } from '../../hooks/use-query-param';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 interface Props {
   user: WithId<SafeUser>;
-  members: WithId<Member>[];
   rounds: WithId<Round>[];
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds }) => {
+const Page: NextPage<Props> = ({ user, rounds }) => {
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<Round | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
@@ -61,6 +55,7 @@ const Page: NextPage<Props> = ({ user, members, rounds }) => {
   const handleStartRound = (round: Round) => {
     console.log('Starting round:', round);
     setActiveRound(round);
+    enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
   };
 
   return (
@@ -82,11 +77,11 @@ const Page: NextPage<Props> = ({ user, members, rounds }) => {
                     {activeRound.name}
                   </Typography>
                   <Typography variant="subtitle1" gutterBottom align="center">
-                    רשימת מצביעים ({members.length})
+                    רשימת מצביעים ({activeRound.allowedMembers.length})
                   </Typography>
                   <List>
-                    {members.map((member, index) => (
-                      <Box key={member._id.toString()}>
+                    {activeRound.allowedMembers.map((member, index) => (
+                      <Box key={member.name}>
                         <ListItem sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
                           <Button
                             variant="outlined"
@@ -104,7 +99,7 @@ const Page: NextPage<Props> = ({ user, members, rounds }) => {
                             sx={{ textAlign: 'right' }}
                           />
                         </ListItem>
-                        {index < members.length - 1 && <Divider />}
+                        {index < activeRound.allowedMembers.length - 1 && <Divider />}
                       </Box>
                     ))}
                   </List>
@@ -114,6 +109,7 @@ const Page: NextPage<Props> = ({ user, members, rounds }) => {
                     onClick={() => {
                       setActiveRound(null);
                       setSelectedRound(null);
+                      enqueueSnackbar(`סבב ${activeRound.name} הסתיים`, { variant: 'info' });
                     }}
                   >
                     סיים סבב
@@ -194,6 +190,7 @@ const Page: NextPage<Props> = ({ user, members, rounds }) => {
                       size="small"
                       onClick={() => {
                         setSelectedRound(round);
+                        enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
                       }}
                       startIcon={<SendIcon />}
                       sx={{ ml: 2, direction: 'ltr' }}
@@ -227,7 +224,6 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
     const data = await serverSideGetRequests(
       {
         // fetch member data
-        members: '/api/events/members',
         rounds: '/api/events/rounds'
       },
       ctx
