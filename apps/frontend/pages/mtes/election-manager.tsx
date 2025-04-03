@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
-import { WithId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 import {
   Paper,
   Typography,
@@ -19,7 +19,7 @@ import { Member, Round, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
-import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
 import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
@@ -61,6 +61,18 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
     enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
   };
 
+  const handleDeleteRound = (round: WithId<Round>) => {
+    console.log('Deleting round:', round);
+    apiFetch(`/api/events/deleteRound`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roundId: round._id })
+    }).then(() => {
+      enqueueSnackbar(`הסבב ${round.name} נמחק`, { variant: 'success' });
+      router.reload();
+    });
+  };
+
   return (
     <RoleAuthorizer
       user={user}
@@ -82,26 +94,42 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
                   handleSendMember={handleSendMember}
                 />
               ) : selectedRound ? (
-                <SelectedRound
-                  selectedRound={selectedRound}
-                  setSelectedRound={setSelectedRound}
-                  handleStartRound={handleStartRound}
-                />
+                <>
+                  <SelectedRound
+                    selectedRound={selectedRound}
+                    setSelectedRound={setSelectedRound}
+                    handleStartRound={handleStartRound}
+                  />
+                  <ControlRounds
+                    rounds={rounds}
+                    setSelectedRound={setSelectedRound}
+                    handleDeleteRound={handleDeleteRound}
+                  />
+                </>
               ) : (
-                <Typography variant="h5" align="center">
-                  אין סבב פעיל
-                </Typography>
+                <>
+                  <Box
+                    sx={{
+                      height: 100,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'background.default',
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Typography variant="h5" align="center">
+                      אין סבב פעיל
+                    </Typography>
+                  </Box>
+                  <ControlRounds
+                    rounds={rounds}
+                    setSelectedRound={setSelectedRound}
+                    handleDeleteRound={handleDeleteRound}
+                  />
+                </>
               )}
             </Paper>
-
-            <Typography variant="h5" gutterBottom align="center">
-              ניהול הצבעות
-            </Typography>
-            <ControlRounds
-              rounds={rounds}
-              setSelectedRound={setSelectedRound}
-              activeRound={activeRound}
-            />
           </Paper>
         </Box>
       </Layout>

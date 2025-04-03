@@ -2,14 +2,19 @@ import { Round } from '@mtes/types';
 import { Box, Typography, ListItem, Button, ListItemText, Divider } from '@mui/material';
 import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
+import { WithId } from 'mongodb';
 
 interface ControlRoundsProps {
-  rounds: Round[];
-  setSelectedRound: (round: Round | null) => void;
-  activeRound: Round | null;
+  rounds: WithId<Round>[];
+  setSelectedRound: (round: WithId<Round> | null) => void;
+  handleDeleteRound: (round: WithId<Round>) => void;
 }
 
-export const ControlRounds = ({ rounds, setSelectedRound, activeRound }: ControlRoundsProps) => {
+export const ControlRounds = ({
+  rounds,
+  setSelectedRound,
+  handleDeleteRound
+}: ControlRoundsProps) => {
   return (
     <Box sx={{ mt: 2, textAlign: 'center' }}>
       <Typography variant="subtitle1" gutterBottom>
@@ -19,18 +24,26 @@ export const ControlRounds = ({ rounds, setSelectedRound, activeRound }: Control
         <Box key={round.name}>
           <ListItem sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
             <Button
-              variant="outlined"
+              variant="contained"
               color="primary"
-              size="small"
               onClick={() => {
                 setSelectedRound(round);
                 enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
               }}
               startIcon={<SendIcon />}
               sx={{ ml: 2, direction: 'ltr' }}
-              disabled={activeRound !== null}
             >
-              שלח
+              טען
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                handleDeleteRound(round);
+              }}
+              sx={{ ml: 2, direction: 'ltr' }}
+            >
+              מחק
             </Button>
             <ListItemText
               primary={round.name}

@@ -16,7 +16,7 @@ export const SelectedRound: React.FC<SelectedRoundProps> = ({
   handleStartRound
 }) => {
   return (
-    <>
+    <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
       <Typography variant="h5" align="center">
         {selectedRound.name}
       </Typography>
@@ -63,6 +63,6 @@ export const SelectedRound: React.FC<SelectedRoundProps> = ({
           התחל הצבעה
         </Button>
       </Stack>
-    </>
+    </Box>
   );
 };

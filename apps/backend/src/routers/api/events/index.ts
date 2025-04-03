@@ -49,6 +49,26 @@ router.post('/addRound', async (req: Request, res: Response) => {
   res.json({ ok: true, id: roundResult.insertedId });
 });
 
+router.delete('/deleteRound', async (req: Request, res: Response) => {
+  const { roundId } = req.body as { roundId: string };
+  console.log(`Round ID: ${roundId}`);
+  if (!roundId) {
+    console.log('❌ Round ID is null or undefined');
+    res.status(400).json({ ok: false, message: 'Round ID is missing' });
+    return;
+  }
+  console.log('⏬ Deleting Round...');
+
+  const roundResult = await db.deleteRound({ _id: new ObjectId(roundId) });
+  if (!roundResult.acknowledged) {
+    console.log(`❌ Could not delete Round`);
+    res.status(500).json({ ok: false, message: 'Could not delete round' });
+    return;
+  }
+
+  res.json({ ok: true });
+});
+
 router.get('/members', async (req: Request, res: Response) => {
   return res.json(await db.getMembers({}));
 });
