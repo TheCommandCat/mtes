@@ -15,6 +15,6 @@ export const updateElectionState = (newElectionState: Partial<ElectionState>, up
     .updateOne({ $set: newElectionState }, { upsert });
 };
 
-export const deleteState = () => {
+export const deleteElectionState = () => {
   return db.collection<ElectionState>('election-state').deleteOne();
 };

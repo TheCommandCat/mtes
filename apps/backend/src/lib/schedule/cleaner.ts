@@ -13,10 +13,11 @@ export const cleanDivisionData = async () => {
 
   //   throw new Error('Could not delete non-admin users!');
 
-  // const oldState = await db.getState();
-  // if (oldState) {
-  if (!(await db.deleteState()).acknowledged) throw new Error('Could not delete division state!');
-  // }
+  const oldState = await db.getElectionState();
+  if (oldState) {
+    if (!(await db.deleteElectionState()).acknowledged)
+      throw new Error('Could not delete division state!');
+  }
 
   if (!(await db.deleteMembers()).acknowledged) throw new Error('Could not delete members!');
   if (!(await db.deleteContestants()).acknowledged) throw new Error('Could not delete contestant!');
