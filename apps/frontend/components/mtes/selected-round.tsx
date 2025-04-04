@@ -3,11 +3,12 @@ import { Typography, Stack, Box, Button } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import React from 'react';
+import { WithId } from 'mongodb';
 
 interface SelectedRoundProps {
-  selectedRound: Round;
-  setSelectedRound: (round: Round | null) => void;
-  handleStartRound: (round: Round) => void;
+  selectedRound: WithId<Round>;
+  setSelectedRound: (round: WithId<Round> | null) => void;
+  handleStartRound: (round: WithId<Round>) => void;
 }
 
 export const SelectedRound: React.FC<SelectedRoundProps> = ({

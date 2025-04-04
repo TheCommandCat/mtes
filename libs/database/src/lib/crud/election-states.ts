@@ -10,9 +10,11 @@ export const addElectionState = (state: ElectionState) => {
 };
 
 export const updateElectionState = (newElectionState: Partial<ElectionState>, upsert = false) => {
+  console.log('Updating election state', newElectionState);
+
   return db
     .collection<ElectionState>('election-state')
-    .updateOne({ $set: newElectionState }, { upsert });
+    .updateOne({}, { $set: newElectionState }, { upsert });
 };
 
 export const deleteElectionState = () => {

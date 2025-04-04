@@ -30,7 +30,7 @@ interface Props {
 
 const Page: NextPage<Props> = ({ user, rounds }) => {
   const router = useRouter();
-  const [selectedRound, setSelectedRound] = useState<Round | null>(null);
+  const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
 
   const { socket, connectionStatus } = useWebsocket([
@@ -53,9 +53,17 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
     });
   };
 
-  const handleStartRound = (round: Round) => {
+  const handleStartRound = (round: WithId<Round>) => {
     console.log('Starting round:', round);
     setActiveRound(round);
+    socket.emit('loadRound', round._id, (response: { ok: boolean }) => {
+      if (response.ok) {
+        console.log('Round started successfully');
+      } else {
+        console.error('Error starting round');
+        enqueueSnackbar('שגיאה בהתחלת הסבב', { variant: 'error' });
+      }
+    });
     enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
   };
 

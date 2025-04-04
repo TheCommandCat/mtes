@@ -9,7 +9,10 @@ import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 const router = express.Router({ mergeParams: true });
 
 function getInitialDivisionState(): ElectionState {
-  throw new Error('Function not implemented.');
+  return {
+    activeRound: null,
+    completed: false
+  };
 }
 
 router.post(
@@ -35,9 +38,9 @@ router.post(
     }
     console.log('✅ Created Event!');
     console.log('🔐 Creating division state');
-      if (!(await db.addElectionState(getInitialDivisionState())).acknowledged)
-        throw new Error('Could not create division state!');
-      console.log('✅ Created division state'); 
+    if (!(await db.addElectionState(getInitialDivisionState())).acknowledged)
+      throw new Error('Could not create division state!');
+    console.log('✅ Created division state');
 
     res.json({ ok: true, id: eventResult.insertedId });
   })

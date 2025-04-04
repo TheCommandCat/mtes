@@ -2,11 +2,12 @@ import { Round, Member } from '@mtes/types';
 import { Box, Typography, List, ListItem, Button, ListItemText, Divider } from '@mui/material';
 import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
+import { WithId } from 'mongodb';
 
 interface ActiveRoundProps {
   activeRound: Round;
   setActiveRound: (round: Round | null) => void;
-  setSelectedRound: (round: Round | null) => void;
+  setSelectedRound: (round: WithId<Round> | null) => void;
   handleSendMember: (member: Member) => void;
 }
 

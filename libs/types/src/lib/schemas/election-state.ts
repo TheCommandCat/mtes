@@ -30,7 +30,7 @@ export interface AudienceDisplayState {
 }
 
 export interface ElectionState {
-  activeRound: ObjectId | null;
+  activeRound: Round;
   // audienceDisplay: AudienceDisplayState;
   completed: boolean;
 }
