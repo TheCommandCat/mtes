@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
-import { DivisionState } from '@mtes/types';
+import { ElectionState } from '@mtes/types';
 import * as db from '@mtes/database';
 import divisionValidator from '../../../middlewares/division-validator';
 // import sessionsRouter from './sessions';
@@ -30,15 +30,15 @@ const router = express.Router({ mergeParams: true });
 // });
 
 router.get('/state', (req: Request, res: Response) => {
-  db.getDivisionState().then(divisionState => res.json(divisionState));
+  db.getElectionState().then(divisionState => res.json(divisionState));
 });
 
 router.put('/state', (req: Request, res: Response) => {
-  const body: Partial<DivisionState> = { ...req.body };
+  const body: Partial<ElectionState> = { ...req.body };
   if (!body) return res.status(400).json({ ok: false });
 
   console.log(`⏬ Updating Division state for division ${req.params.divisionId}`);
-  db.updateDivisionState(body).then(task => {
+  db.updateElectionState(body).then(task => {
     if (task.acknowledged) {
       console.log('✅ Division state updated!');
       return res.json({ ok: true, id: task.upsertedId });

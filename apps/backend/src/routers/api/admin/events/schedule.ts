@@ -4,7 +4,7 @@ import fileUpload from 'express-fileupload';
 import asyncHandler from 'express-async-handler';
 import * as db from '@mtes/database';
 import { getDivisionUsers } from '../../../../lib/schedule/division-users';
-import { parseDivisionData, getInitialDivisionState } from '../../../../lib/schedule/parser';
+import { parseDivisionData, getInitialElectionState } from '../../../../lib/schedule/parser';
 import { cleanDivisionData } from '../../../../lib/schedule/cleaner';
 
 const router = express.Router({ mergeParams: true });

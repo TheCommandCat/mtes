@@ -14,13 +14,11 @@ import {
   ListItemText,
   Stack
 } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
 import { Member, Round, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
 import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
 import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
@@ -115,7 +113,7 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       bgcolor: 'background.default',
-                      borderRadius: 1,
+                      borderRadius: 1
                     }}
                   >
                     <Typography variant="h5" align="center">

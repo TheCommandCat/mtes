@@ -2,7 +2,7 @@ export { default as db } from './lib/database';
 export * from './lib/crud/users';
 export * from './lib/crud/election-events';
 export * from './lib/crud/divisions';
-export * from './lib/crud/division-states';
+export * from './lib/crud/election-states';
 export * from './lib/crud/members';
 export * from './lib/crud/contestants';
 export * from './lib/crud/rounds';

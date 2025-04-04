@@ -28,7 +28,7 @@ export interface AudienceDisplayState {
   // awardsPresentation: AwardsPresentationState;
 }
 
-export interface DivisionState {
+export interface ElectionState {
   activeRound: ObjectId | null;
   currentRoundPosition: Positions | null;
   currentRound: null;

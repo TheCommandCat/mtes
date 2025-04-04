@@ -6,6 +6,6 @@ export * from './lib/schemas/contestant';
 export * from './lib/schemas/user';
 export * from './lib/schemas/electionevent';
 export * from './lib/schemas/division';
-export * from './lib/schemas/division-state';
+export * from './lib/schemas/election-state';
 export * from './lib/schemas/member';
 export * from './lib/schemas/round';

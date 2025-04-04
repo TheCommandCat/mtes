@@ -5,7 +5,7 @@ import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
 import { Paper, Tabs, Tab, Typography, Box, Card, CardContent } from '@mui/material';
-import { DivisionState, DivisionWithEvent, Member, SafeUser, Role, Round } from '@mtes/types';
+import { ElectionState, DivisionWithEvent, Member, SafeUser, Role, Round } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 // import { useWebsocket } from '../../hooks/use-websocket';

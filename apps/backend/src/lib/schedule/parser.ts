@@ -1,14 +1,7 @@
 import dayjs from 'dayjs';
 import { ObjectId, WithId } from 'mongodb';
 import { parse } from 'csv-parse/sync';
-import {
-  ElectionEvent,
-  Member,
-  Division,
-  DivisionState,
-  Cities,
-  Contestant
-} from '@mtes/types';
+import { ElectionEvent, Member, Division, ElectionState, Cities, Contestant } from '@mtes/types';
 import { Line, getBlock, extractBlocksFromFile } from '../csv';
 import { Positions } from 'libs/types/src/lib/positions';
 
@@ -17,9 +10,7 @@ const Contestants_BLOCK_ID = 2;
 const JUDGING_SESSIONS_BLOCK_ID = 3;
 const RANKING_MATCHES_BLOCK_ID = 4;
 
-const extractMembersFromBlock = (
-  memberBlock: Line[],
-): Array<Member> => {
+const extractMembersFromBlock = (memberBlock: Line[]): Array<Member> => {
   const LINES_TO_SKIP = 1;
   memberBlock = (memberBlock || []).splice(LINES_TO_SKIP);
 
@@ -29,9 +20,7 @@ const extractMembersFromBlock = (
   }));
 };
 
-const extractContestantsFromBlock = (
-  contestantsBlock: Line[],
-): Array<Contestant> => {
+const extractContestantsFromBlock = (contestantsBlock: Line[]): Array<Contestant> => {
   const LINES_TO_SKIP = 1;
 
   contestantsBlock = (contestantsBlock || []).splice(LINES_TO_SKIP);
@@ -48,7 +37,7 @@ const extractContestantsFromBlock = (
 
 export const parseDivisionData = (
   csvData: string
-): { members: Array<Member>; contestants: Array<Contestant>; } => {
+): { members: Array<Member>; contestants: Array<Contestant> } => {
   const file = parse(csvData.trim());
   const version = parseInt(file.shift()?.[1]); // Version number: 2nd cell of 1st row.
   if (version !== 2) Promise.reject('MTES can only parse version 2 Data');
@@ -60,17 +49,16 @@ export const parseDivisionData = (
   return { members, contestants };
 };
 
-export const getInitialDivisionState = (): DivisionState => {
-
+export const getInitialElectionState = (): ElectionState => {
   return {
     activeRound: null,
     currentRoundPosition: null,
     currentRound: null,
     audienceDisplay: {
       screen: 'attendance',
-      message: '',
+      message: ''
     },
     completed: false,
-    allowTeamExports: false,
+    allowTeamExports: false
   };
 };
