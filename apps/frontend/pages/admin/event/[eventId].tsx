@@ -11,7 +11,6 @@ import GenerateScheduleButton from '../../../components/admin/generate-schedule'
 import EditDivisionForm from '../../../components/admin/edit-division-form';
 // import DivisionAwardEditor from '../../../components/admin/division-award-editor';
 import DeleteDivisionData from '../../../components/admin/delete-division-data';
-import DivisionScheduleEditor from '../../../components/admin/division-schedule-editor';
 import DownloadUsersButton from '../../../components/admin/download-users';
 import UploadFileButton from '../../../components/general/upload-file';
 
@@ -63,7 +62,7 @@ const Page: NextPage<Props> = ({ event }) => {
           </Stack>
         </TabPanel>
         <TabPanel value="2">
-          <DivisionScheduleEditor event={event} />
+          {/* <DivisionScheduleEditor event={event} /> */}
         </TabPanel>
         <TabPanel value="3">
           {/* <DivisionAwardEditor divisionId={divisions[0]?._id} awardSchema={awardSchema} /> */}

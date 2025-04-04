@@ -50,8 +50,8 @@ router.post(
       }
       console.log('✅ Generated division users');
 
-      console.log('🔐 Creating division state');
-      console.log('✅ Created division state');
+      console.log('🔐 Creating Election state');
+      console.log('✅ Created Election state');
 
       await db.updateElectionEvent({ hasState: true });
 

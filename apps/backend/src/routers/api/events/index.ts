@@ -1,17 +1,12 @@
 import express, { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import * as db from '@mtes/database';
-import { Round } from '@mtes/types';
+import { ElectionState, Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
-// router.get('/:eventId', (req: Request, res: Response) => {
-//   db.getElectionEvent({ _id: new ObjectId(req.params.eventId) }).then(event => {
-//     res.json(event);
-//   });
-// });
-
 router.get('/rounds', async (req: Request, res: Response) => {
+  console.log('⏬ Getting rounds...');
   return res.json(await db.getRounds({}));
 });
 
@@ -70,18 +65,29 @@ router.delete('/deleteRound', async (req: Request, res: Response) => {
 });
 
 router.get('/members', async (req: Request, res: Response) => {
+  console.log('⏬ Getting members...');
+
   return res.json(await db.getMembers({}));
 });
 
-router.get('/:eventId/divisions', (req: Request, res: Response) => {
-  db.getEventDivisions(new ObjectId(req.params.eventId)).then(divisions => {
-    if (!req.query.withSchedule) {
-      divisions = divisions.map(division => {
-        delete division.schedule;
-        return division;
-      });
+router.get('/state', (req: Request, res: Response) => {
+  console.log(`⏬ Getting Election state`);
+  db.getElectionState().then(divisionState => res.json(divisionState));
+});
+
+router.put('/state', (req: Request, res: Response) => {
+  const body: Partial<ElectionState> = { ...req.body };
+  if (!body) return res.status(400).json({ ok: false });
+
+  console.log(`⏬ Updating Election state`);
+  db.updateElectionState(body).then(task => {
+    if (task.acknowledged) {
+      console.log('✅ Election state updated!');
+      return res.json({ ok: true, id: task.upsertedId });
+    } else {
+      console.log('❌ Could not update Election state');
+      return res.status(500).json({ ok: false });
     }
-    res.json(divisions);
   });
 });
 

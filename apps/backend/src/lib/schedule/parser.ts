@@ -52,13 +52,6 @@ export const parseDivisionData = (
 export const getInitialElectionState = (): ElectionState => {
   return {
     activeRound: null,
-    currentRoundPosition: null,
-    currentRound: null,
-    audienceDisplay: {
-      screen: 'attendance',
-      message: ''
-    },
-    completed: false,
-    allowTeamExports: false
+    completed: false
   };
 };

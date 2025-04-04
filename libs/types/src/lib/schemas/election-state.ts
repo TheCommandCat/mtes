@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { AudienceDisplayScreen } from '../constants';
 import { Positions } from '../positions';
 import { Division } from './division';
+import { Round } from './round';
 
 export interface PresentationState {
   enabled: boolean;
@@ -30,9 +31,6 @@ export interface AudienceDisplayState {
 
 export interface ElectionState {
   activeRound: ObjectId | null;
-  currentRoundPosition: Positions | null;
-  currentRound: null;
-  audienceDisplay: AudienceDisplayState;
+  // audienceDisplay: AudienceDisplayState;
   completed: boolean;
-  allowTeamExports: boolean;
 }

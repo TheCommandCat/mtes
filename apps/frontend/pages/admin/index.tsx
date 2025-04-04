@@ -7,7 +7,6 @@ import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
 import Layout from '../../components/layout';
 import EventSelector from '../../components/general/event-selector';
 import { TabContext, TabPanel } from '@mui/lab';
-import DivisionScheduleEditor from 'apps/frontend/components/admin/division-schedule-editor';
 import UploadFileButton from 'apps/frontend/components/general/upload-file';
 import GenerateScheduleButton from 'apps/frontend/components/admin/generate-schedule';
 import DownloadUsersButton from 'apps/frontend/components/admin/download-users';

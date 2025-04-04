@@ -16,14 +16,12 @@ interface Props {
   onCancel: () => void;
 }
 
-const EventLoginForm: React.FC<Props> = ({ event, onCancel }) => {
+const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
   const [role, setRole] = useState<Role>('' as Role);
   const [password, setPassword] = useState<string>('');
 
-=
   const loginRoles = Object.keys(event.eventUsers);
 
-=
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
 

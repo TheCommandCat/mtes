@@ -67,7 +67,9 @@ const Page: NextPage<Props> = ({ user }) => {
         name: 'Member 2',
         city: 'תל אביב יפו'
       }
-    ]
+    ],
+    startTime: null,
+    endTime: null
   };
 
   function handleUpdateMember(member: Member) {

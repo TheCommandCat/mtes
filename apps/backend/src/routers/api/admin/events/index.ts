@@ -2,11 +2,15 @@ import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import divisionScheduleRouter from './schedule';
 import divisionUsersRouter from './users';
-import { ElectionEvent } from '@mtes/types';
+import { ElectionEvent, ElectionState } from '@mtes/types';
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 
 const router = express.Router({ mergeParams: true });
+
+function getInitialDivisionState(): ElectionState {
+  throw new Error('Function not implemented.');
+}
 
 router.post(
   '/',
@@ -25,10 +29,15 @@ router.post(
     console.log('⏬ Creating Event...');
     const eventResult = await db.addElectionEvent(body);
     if (!eventResult.acknowledged) {
-      console.log(`❌ Could not create Event ${body.name}`);
+      console.log('❌ Could not create Event');
       res.status(500).json({ ok: false });
       return;
     }
+    console.log('✅ Created Event!');
+    console.log('🔐 Creating division state');
+      if (!(await db.addElectionState(getInitialDivisionState())).acknowledged)
+        throw new Error('Could not create division state!');
+      console.log('✅ Created division state'); 
 
     res.json({ ok: true, id: eventResult.insertedId });
   })
