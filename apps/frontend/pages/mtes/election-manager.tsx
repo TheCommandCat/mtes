@@ -82,18 +82,6 @@ const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
     enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
   };
 
-  const handleDeleteRound = (round: WithId<Round>) => {
-    console.log('Deleting round:', round);
-    apiFetch(`/api/events/deleteRound`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roundId: round._id })
-    }).then(() => {
-      enqueueSnackbar(`הסבב ${round.name} נמחק`, { variant: 'success' });
-      router.reload();
-    });
-  };
-
   return (
     <RoleAuthorizer
       user={user}
@@ -120,11 +108,7 @@ const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
                     setSelectedRound={setSelectedRound}
                     handleStartRound={handleStartRound}
                   />
-                  <ControlRounds
-                    rounds={rounds}
-                    setSelectedRound={setSelectedRound}
-                    handleDeleteRound={handleDeleteRound}
-                  />
+                  <ControlRounds rounds={rounds} setSelectedRound={setSelectedRound} />
                 </>
               ) : (
                 <>
@@ -142,11 +126,7 @@ const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
                       אין סבב פעיל
                     </Typography>
                   </Box>
-                  <ControlRounds
-                    rounds={rounds}
-                    setSelectedRound={setSelectedRound}
-                    handleDeleteRound={handleDeleteRound}
-                  />
+                  <ControlRounds rounds={rounds} setSelectedRound={setSelectedRound} />
                 </>
               )}
             </Paper>

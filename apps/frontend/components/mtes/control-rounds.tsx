@@ -3,18 +3,27 @@ import { Box, Typography, ListItem, Button, ListItemText, Divider } from '@mui/m
 import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
 import { WithId } from 'mongodb';
+import { apiFetch } from 'apps/frontend/lib/utils/fetch';
+import router from 'next/router';
 
 interface ControlRoundsProps {
   rounds: WithId<Round>[];
   setSelectedRound: (round: WithId<Round> | null) => void;
-  handleDeleteRound: (round: WithId<Round>) => void;
 }
 
-export const ControlRounds = ({
-  rounds,
-  setSelectedRound,
-  handleDeleteRound
-}: ControlRoundsProps) => {
+const handleDeleteRound = (round: WithId<Round>) => {
+  console.log('Deleting round:', round);
+  apiFetch(`/api/events/deleteRound`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roundId: round._id })
+  }).then(() => {
+    enqueueSnackbar(`הסבב ${round.name} נמחק`, { variant: 'success' });
+    router.reload();
+  });
+};
+
+export const ControlRounds = ({ rounds, setSelectedRound }: ControlRoundsProps) => {
   return (
     <Box sx={{ mt: 2, textAlign: 'center' }}>
       <Typography variant="subtitle1" gutterBottom>
