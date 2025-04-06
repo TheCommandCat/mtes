@@ -91,4 +91,10 @@ router.put('/state', (req: Request, res: Response) => {
   });
 });
 
+router.post('/vote', async (req: Request, res: Response) => {
+  const data = req.body;
+  console.log('⏬ Voting...');
+  console.log(data);
+});
+
 export default router;

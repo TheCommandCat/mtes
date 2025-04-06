@@ -10,7 +10,7 @@ import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 // import { useWebsocket } from '../../hooks/use-websocket';
 import { localizedRoles } from '../../localization/roles';
-import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { useQueryParam } from '../../hooks/use-query-param';
 import { Formik, Form, Field, FieldProps } from 'formik';
 import { Button, FormControl, FormLabel, RadioGroup, Radio, FormControlLabel } from '@mui/material';
@@ -106,7 +106,24 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                       }}
                       onSubmit={(values, { setSubmitting }) => {
                         console.log('Submitting valid votes:', values);
-                        // TODO: Send votes to backend via websocket or API call
+
+                        apiFetch('/api/events/vote', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            memberId: member,
+                            votes: Object.entries(values).map(([key, value]) => ({
+                              role: key.split('-')[0],
+                              contestant: key.split('-')[1],
+                              vote: value
+                            }))
+                          })
+                        }).then(response => {
+                          if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                          }
+                        });
+
                         // Example: socket?.emit('submitVotes', { memberId: member.id, votes: values });
                         enqueueSnackbar('ההצבעה נשלחה בהצלחה!', { variant: 'success' });
                         // Optionally reset form or navigate away
