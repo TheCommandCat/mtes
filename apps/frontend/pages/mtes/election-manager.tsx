@@ -22,14 +22,16 @@ import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/u
 import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
 import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
 import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
+import AddRoundDialog from '../../components/mtes/add-round-dialog'; // Import the new component
 
 interface Props {
   user: WithId<SafeUser>;
+  members: WithId<Member>[]; // Add members prop
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
 }
 
-const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
+const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { // Add members to destructuring
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(electionState.activeRound || null);
@@ -82,6 +84,11 @@ const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
     enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
   };
 
+  // Function to refresh server-side props
+  const refreshData = () => {
+    router.replace(router.asPath);
+  };
+
   return (
     <RoleAuthorizer
       user={user}
@@ -127,6 +134,10 @@ const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
                     </Typography>
                   </Box>
                   <ControlRounds rounds={rounds} setSelectedRound={setSelectedRound} />
+                  {/* Add the button/dialog here */}
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                     <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
+                  </Box>
                 </>
               )}
             </Paper>
@@ -141,10 +152,12 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
     const { user } = await getUserAndDivision(ctx);
 
+    // Fetch members along with other data
     const data = await serverSideGetRequests(
       {
         rounds: '/api/events/rounds',
-        electionState: '/api/events/state'
+        electionState: '/api/events/state',
+        members: '/api/events/members' // Assuming this endpoint exists
       },
       ctx
     );
