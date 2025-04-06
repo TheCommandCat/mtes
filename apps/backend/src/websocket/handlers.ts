@@ -21,19 +21,25 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
 
   const round = await db.getRound({ _id: new ObjectId(roundId) });
 
-  if (!round) {
-    console.error('Round not found:', roundId);
-    callback({ ok: false, error: 'Round not found' });
-    return;
-  }
+  // if (!round) {
+  //   console.error('Round not found:', roundId);
+  //   callback({ ok: false, error: 'Round not found' });
+  //   return;
+  // }
 
   try {
     await db.updateElectionState({ activeRound: round });
-    console.log('✅ Loaded', round.name);
+
+    if (round) {
+      console.log('✅ Loaded round:', round.name);
+    } else {
+      console.log('🛑 Round stopped');
+    }
+
     namespace.emit('roundLoaded', round);
     callback({ ok: true });
   } catch (error) {
-    console.error('⛔Error loading round:', error);
+    console.error('❌ Failed to load round:', error);
     callback({ ok: false, error: 'Failed to load round' });
   }
 };

@@ -6,16 +6,14 @@ import { WithId } from 'mongodb';
 
 interface ActiveRoundProps {
   activeRound: Round;
-  setActiveRound: (round: Round | null) => void;
-  setSelectedRound: (round: WithId<Round> | null) => void;
   handleSendMember: (member: Member) => void;
+  handleStopRound: () => void;
 }
 
 export const ActiveRound: React.FC<ActiveRoundProps> = ({
   activeRound,
-  setActiveRound,
-  setSelectedRound,
-  handleSendMember
+  handleSendMember,
+  handleStopRound
 }) => {
   return (
     <Box>
@@ -49,15 +47,7 @@ export const ActiveRound: React.FC<ActiveRoundProps> = ({
           </Box>
         ))}
       </List>
-      <Button
-        variant="outlined"
-        color="error"
-        onClick={() => {
-          setActiveRound(null);
-          setSelectedRound(null);
-          enqueueSnackbar(`סבב ${activeRound.name} הסתיים`, { variant: 'info' });
-        }}
-      >
+      <Button variant="outlined" color="error" onClick={() => handleStopRound()}>
         סיים סבב
       </Button>
     </Box>

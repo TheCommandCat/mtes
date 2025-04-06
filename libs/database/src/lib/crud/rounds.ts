@@ -3,7 +3,7 @@ import { Round } from '@mtes/types';
 import db from '../database';
 
 export const getRound = (filter: Filter<Round>) => {
-  return db.collection<Round>('rounds').findOne();
+  return db.collection<Round>('rounds').findOne(filter);
 };
 
 export const getRounds = (filter: Filter<Round>) => {

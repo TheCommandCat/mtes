@@ -14,7 +14,7 @@ import {
   ListItemText,
   Stack
 } from '@mui/material';
-import { Member, Round, SafeUser } from '@mtes/types';
+import { ElectionState, Member, Round, SafeUser } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
@@ -26,12 +26,13 @@ import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
 interface Props {
   user: WithId<SafeUser>;
   rounds: WithId<Round>[];
+  electionState: WithId<ElectionState>;
 }
 
-const Page: NextPage<Props> = ({ user, rounds }) => {
+const Page: NextPage<Props> = ({ user, rounds, electionState }) => {
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
-  const [activeRound, setActiveRound] = useState<Round | null>(null);
+  const [activeRound, setActiveRound] = useState<Round | null>(electionState.activeRound || null);
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
@@ -67,6 +68,20 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
     enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
   };
 
+  const handleStopRound = () => {
+    console.log('Stopping round:', activeRound);
+    setActiveRound(null);
+    socket.emit('loadRound', null, (response: { ok: boolean }) => {
+      if (response.ok) {
+        console.log('Round stopped successfully');
+      } else {
+        console.error('Error stopping round');
+        enqueueSnackbar('שגיאה בהפסקת הסבב', { variant: 'error' });
+      }
+    });
+    enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
+  };
+
   const handleDeleteRound = (round: WithId<Round>) => {
     console.log('Deleting round:', round);
     apiFetch(`/api/events/deleteRound`, {
@@ -95,9 +110,8 @@ const Page: NextPage<Props> = ({ user, rounds }) => {
               {activeRound ? (
                 <ActiveRound
                   activeRound={activeRound}
-                  setActiveRound={setActiveRound}
-                  setSelectedRound={setSelectedRound}
                   handleSendMember={handleSendMember}
+                  handleStopRound={handleStopRound}
                 />
               ) : selectedRound ? (
                 <>
@@ -149,8 +163,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
 
     const data = await serverSideGetRequests(
       {
-        // fetch member data
-        rounds: '/api/events/rounds'
+        rounds: '/api/events/rounds',
+        electionState: '/api/events/state'
       },
       ctx
     );
