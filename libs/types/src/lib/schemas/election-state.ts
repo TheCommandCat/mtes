@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 import { AudienceDisplayScreen } from '../constants';
 import { Positions } from '../positions';
 import { Division } from './division';
@@ -30,7 +30,7 @@ export interface AudienceDisplayState {
 }
 
 export interface ElectionState {
-  activeRound: Round;
+  activeRound: WithId<Round>;
   // audienceDisplay: AudienceDisplayState;
   completed: boolean;
 }

@@ -5,7 +5,7 @@ import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { TabContext, TabPanel } from '@mui/lab';
 import { Paper, Tabs, Tab, Typography, Box, Card, CardContent } from '@mui/material';
-import { ElectionState, DivisionWithEvent, Member, SafeUser, Role, Round } from '@mtes/types';
+import { ElectionState, DivisionWithEvent, Member, SafeUser, Role, Round, Vote } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 // import { useWebsocket } from '../../hooks/use-websocket';
@@ -23,7 +23,7 @@ interface Props {
 
 const Page: NextPage<Props> = ({ user, electionState }) => {
   const router = useRouter();
-  const [votingConf, setVotingConf] = useState<Round | null>(electionState.activeRound || null);
+  const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
   const [member, setMember] = useState<Member | null>(null);
 
   function handleUpdateMember(member: Member) {
@@ -37,8 +37,8 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
     },
     {
       name: 'roundLoaded',
-      handler: (round: Round) => {
-        setVotingConf(round);
+      handler: (round: WithId<Round>) => {
+        setRound(round);
         setMember(null);
       }
     }
@@ -68,7 +68,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
           </Paper>
 
           <Paper elevation={2} sx={{ mt: 3, p: 4 }}>
-            {votingConf ? (
+            {round ? (
               <>
                 <Box sx={{
                   display: 'flex',
@@ -79,7 +79,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                   borderBottom: '1px solid rgba(0,0,0,0.1)'
                 }}>
                   <Typography color="primary" gutterBottom>סבב נוכחי</Typography>
-                  <Typography variant="h4" fontWeight="bold">{votingConf.name}</Typography>
+                  <Typography variant="h4" fontWeight="bold">{round.name}</Typography>
                 </Box>
 
                 {member ? (
@@ -117,50 +117,45 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
 
                     <Formik
                       initialValues={Object.fromEntries(
-                        votingConf.roles.flatMap(role =>
-                          role.contestants.map(c => [`${role.role}-${c.name}`, 0])
-                        )
+                        round.roles.map(role => [role.role, ''])
                       )}
                       validate={values => {
                         const errors: Record<string, string> = {};
-                        votingConf.roles.forEach(roleConfig => {
-                          const selectedVotes = Object.entries(values).filter(
-                            ([key, value]) => key.startsWith(roleConfig.role) && value === 1
-                          ).length;
-                          if (selectedVotes !== roleConfig.maxVotes) {
-                            // Add a general error or an error specific to the role section
-                            errors[
-                              roleConfig.role
-                            ] = `יש לבחור ${roleConfig.maxVotes} מתמודדים לתפקיד ${roleConfig.role}`;
+                        round.roles.forEach(roleConfig => {
+                          if (!values[roleConfig.role]) {
+                            errors[roleConfig.role] = `יש לבחור מתמודד לתפקיד ${roleConfig.role}`;
                           }
                         });
                         return errors;
                       }}
                       onSubmit={(values, { setSubmitting }) => {
-                        console.log('Submitting valid votes:', values);
+                        const votes = Object.entries(values)
+                          .filter(([_, contestant]) => contestant) // Filter out empty selections
+                          .map(([role, contestant]) => ({
+                            role: role as Role,
+                            contestant
+                          }));
 
+                          
+                          
+                        console.log(JSON.stringify({
+                            round: round._id,
+                            memberId: member,
+                            votes
+                          }));
                         apiFetch('/api/events/vote', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            memberId: member,
-                            votes: Object.entries(values).map(([key, value]) => ({
-                              role: key.split('-')[0],
-                              contestant: key.split('-')[1],
-                              vote: value
-                            }))
-                          })
+                        body: JSON.stringify({ vote: {round: round.name, member: member.name, votes }}),
+                          
                         }).then(response => {
                           if (!response.ok) {
                             throw new Error('Network response was not ok');
                           }
                         });
 
-                        // Example: socket?.emit('submitVotes', { memberId: member.id, votes: values });
                         enqueueSnackbar('ההצבעה נשלחה בהצלחה!', { variant: 'success' });
-                        // Optionally reset form or navigate away
                         setSubmitting(false);
-                        // Reset member state to wait for next voter
                         setMember(null);
                       }}
                     >
@@ -174,9 +169,9 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                         dirty
                       }) => (
                         <Form onSubmit={handleSubmit}>
-                          {votingConf.roles.map(roleConfig => {
+                          {round.roles.map(roleConfig => {
                             const selectedVotes = Object.entries(values).filter(
-                              ([key, value]) => key.startsWith(roleConfig.role) && value === 1
+                              ([key, value]) => key.startsWith(roleConfig.role)
                             ).length;
 
                             return (
@@ -204,28 +199,23 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                                   justifyItems: 'center'
                                 }}>
                                   {roleConfig.contestants.map(contestant => {
-                                    const fieldName = `${roleConfig.role}-${contestant.name}`;
-                                    const isSelected = values[fieldName] === 1;
-                                    const isDisabled = !isSelected && selectedVotes >= roleConfig.maxVotes;
+                                    const isSelected = values[roleConfig.role] === contestant.name;
 
                                     return (
                                       <Card
                                         key={contestant.name}
                                         sx={{
                                           width: '100%',
-                                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                          cursor: 'pointer',
                                           transition: 'all 0.2s ease',
                                           transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                                           border: isSelected ? '2px solid #2196F3' : '1px solid rgba(0,0,0,0.12)',
-                                          opacity: isDisabled ? 0.6 : 1,
                                           '&:hover': {
-                                            boxShadow: isDisabled ? 1 : 4
+                                            boxShadow: 4
                                           }
                                         }}
                                         onClick={() => {
-                                          if (!isDisabled || isSelected) {
-                                            setFieldValue(fieldName, isSelected ? 0 : 1, true);
-                                          }
+                                          setFieldValue(roleConfig.role, isSelected ? '' : contestant.name, true);
                                         }}
                                       >
                                         <CardContent sx={{ textAlign: 'center', p: 3 }}>

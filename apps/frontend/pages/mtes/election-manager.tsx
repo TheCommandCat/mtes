@@ -41,7 +41,7 @@ interface Props {
 const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { // Add members to destructuring
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
-  const [activeRound, setActiveRound] = useState<Round | null>(electionState.activeRound || null);
+  const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
