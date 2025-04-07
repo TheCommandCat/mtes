@@ -23,6 +23,13 @@ import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
 import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
 import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
 import AddRoundDialog from '../../components/mtes/add-round-dialog'; // Import the new component
+import {
+  Card,
+  CardContent,
+  Avatar,
+  Grid,
+  Chip
+} from '@mui/material';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -73,6 +80,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
   const handleStopRound = () => {
     console.log('Stopping round:', activeRound);
     setActiveRound(null);
+    setSelectedRound(null);
     socket.emit('loadRound', null, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Round stopped successfully');
@@ -99,48 +107,219 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
       }}
     >
       <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
-        <Box sx={{ mt: 2, maxWidth: 800, mx: 'auto' }}>
-          <Paper sx={{ p: 3 }}>
-            <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-              {activeRound ? (
-                <ActiveRound
-                  activeRound={activeRound}
-                  handleSendMember={handleSendMember}
-                  handleStopRound={handleStopRound}
-                />
-              ) : selectedRound ? (
-                <>
-                  <SelectedRound
-                    selectedRound={selectedRound}
-                    setSelectedRound={setSelectedRound}
-                    handleStartRound={handleStartRound}
-                  />
-                  <ControlRounds rounds={rounds} setSelectedRound={setSelectedRound} />
-                </>
-              ) : (
-                <>
-                  <Box
-                    sx={{
-                      height: 100,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: 'background.default',
-                      borderRadius: 1
-                    }}
+        <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+          <Paper 
+            elevation={3}
+            sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              color: 'white',
+              mb: 3
+            }}
+          >
+            <Typography variant="h4" fontWeight="bold">ניהול הבחירות</Typography>
+          </Paper>
+
+          <Paper elevation={2} sx={{ p: 4 }}>
+            {activeRound ? (
+              <Box>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 4,
+                  pb: 3,
+                  borderBottom: '1px solid rgba(0,0,0,0.1)'
+                }}>
+                  <Box>
+                    <Typography color="primary" gutterBottom>סבב פעיל</Typography>
+                    <Typography variant="h4" fontWeight="bold">{activeRound.name}</Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={handleStopRound}
+                    sx={{ px: 4, py: 1.5 }}
                   >
-                    <Typography variant="h5" align="center">
-                      אין סבב פעיל
-                    </Typography>
+                    סיים סבב
+                  </Button>
+                </Box>
+
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                  gap: 2,
+                  mb: 4
+                }}>
+                  {members.map(member => (
+                    <Card
+                      key={member._id.toString()}
+                      sx={{
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: 3
+                        }
+                      }}
+                      onClick={() => handleSendMember(member)}
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            {member.name.charAt(0)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="h6">{member.name}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {member.city}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              </Box>
+            ) : selectedRound ? (
+              <Box>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 4,
+                  pb: 3,
+                  borderBottom: '1px solid rgba(0,0,0,0.1)'
+                }}>
+                  <Box>
+                    <Typography color="primary" gutterBottom>סבב נבחר</Typography>
+                    <Typography variant="h4" fontWeight="bold">{selectedRound.name}</Typography>
                   </Box>
-                  <ControlRounds rounds={rounds} setSelectedRound={setSelectedRound} />
-                  {/* Add the button/dialog here */}
-                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                     <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      variant="outlined"
+                      onClick={() => setSelectedRound(null)}
+                    >
+                      חזור
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleStartRound(selectedRound)}
+                      sx={{ px: 4 }}
+                    >
+                      התחל סבב
+                    </Button>
+                  </Stack>
+                </Box>
+
+                <Paper
+                  elevation={1}
+                  sx={{ p: 3, mb: 4, bgcolor: 'background.default' }}
+                >
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    מצביעים מורשים
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: 2,
+                    mt: 2
+                  }}>
+                    {members.map(member => (
+                      <Chip
+                        key={member._id.toString()}
+                        avatar={<Avatar>{member.name.charAt(0)}</Avatar>}
+                        label={`${member.name} - ${member.city}`}
+                        variant="outlined"
+                        sx={{ 
+                          height: 'auto',
+                          '& .MuiChip-label': { 
+                            whiteSpace: 'normal',
+                            py: 1
+                          }
+                        }}
+                      />
+                    ))}
                   </Box>
-                </>
-              )}
-            </Paper>
+                </Paper>
+
+                <Box sx={{ mb: 4 }}>
+                  {selectedRound.roles.map(role => (
+                    <Paper
+                      key={role.role}
+                      elevation={1}
+                      sx={{ p: 3, mb: 2, bgcolor: 'background.default' }}
+                    >
+                      <Typography variant="h6" color="primary" gutterBottom>
+                        {role.role}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        מקסימום הצבעות: {role.maxVotes}
+                      </Typography>
+                      <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {role.contestants.map(contestant => (
+                          <Chip
+                            key={contestant.name}
+                            label={`${contestant.name} - ${contestant.city}`}
+                            variant="outlined"
+                          />
+                        ))}
+                      </Box>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            ) : (
+              <Box>
+                <Box sx={{
+                  mb: 4,
+                  p: 4,
+                  textAlign: 'center',
+                  bgcolor: 'background.default',
+                  borderRadius: 2
+                }}>
+                  <Typography variant="h5" color="text.secondary" gutterBottom>
+                    אין סבב פעיל
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    בחר סבב מהרשימה או צור סבב חדש
+                  </Typography>
+                </Box>
+
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" gutterBottom>סבבים זמינים</Typography>
+                  <Grid container spacing={2}>
+                    {rounds.map(round => (
+                      <Grid item xs={12} sm={6} md={4} key={round._id.toString()}>
+                        <Card
+                          sx={{
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: 3
+                            }
+                          }}
+                          onClick={() => setSelectedRound(round)}
+                        >
+                          <CardContent>
+                            <Typography variant="h6" gutterBottom>{round.name}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {round.roles.length} תפקידים
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
+                </Box>
+              </Box>
+            )}
           </Paper>
         </Box>
       </Layout>

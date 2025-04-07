@@ -39,6 +39,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
       name: 'roundLoaded',
       handler: (round: Round) => {
         setVotingConf(round);
+        setMember(null);
       }
     }
   ]);
@@ -53,35 +54,66 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
       }}
     >
       <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
-        <Box sx={{ mt: 2 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h1">Voting Stand UI</Typography>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+          <Paper 
+            elevation={3}
+            sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              color: 'white'
+            }}
+          >
+            <Typography variant="h4" fontWeight="bold">מערכת הצבעה</Typography>
           </Paper>
-          <Paper sx={{ mt: 2, p: 5, textAlign: 'center' }}>
+
+          <Paper elevation={2} sx={{ mt: 3, p: 4 }}>
             {votingConf ? (
               <>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: 4
-                  }}
-                >
-                  <Typography>סבב</Typography>
-                  <Typography variant="h2">{votingConf.name}</Typography>
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  mb: 4,
+                  pb: 3,
+                  borderBottom: '1px solid rgba(0,0,0,0.1)'
+                }}>
+                  <Typography color="primary" gutterBottom>סבב נוכחי</Typography>
+                  <Typography variant="h4" fontWeight="bold">{votingConf.name}</Typography>
                 </Box>
+
                 {member ? (
                   <>
-                    <Typography>
-                      המצביע
-                      <br />
-                      --------------------------------------
-                    </Typography>
-
-                    <Typography variant="h5">{member.name}</Typography>
-                    <Typography variant="subtitle1">{member.city}</Typography>
+                    <Paper 
+                      elevation={1} 
+                      sx={{ 
+                        p: 3, 
+                        mb: 4, 
+                        background: 'rgba(33, 150, 243, 0.05)',
+                        border: '1px solid rgba(33, 150, 243, 0.2)',
+                        borderRadius: 2
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ 
+                          width: 60, 
+                          height: 60, 
+                          borderRadius: '50%', 
+                          bgcolor: 'primary.main',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '24px'
+                        }}>
+                          {member.name.charAt(0)}
+                        </Box>
+                        <Box>
+                          <Typography variant="h5" fontWeight="bold">{member.name}</Typography>
+                          <Typography color="text.secondary">{member.city}</Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
 
                     <Formik
                       initialValues={Object.fromEntries(
@@ -148,99 +180,115 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                             ).length;
 
                             return (
-                              <Box
-                                key={roleConfig.role}
-                                sx={{
-                                  mt: 4,
-                                  mb: 4
-                                }}
-                              >
-                                <Typography variant="h1">{roleConfig.role}</Typography>
-                                <Typography variant="subtitle1">
-                                  {roleConfig.maxVotes === 1
-                                    ? 'בחר מתמודד אחד'
-                                    : `בחר ${roleConfig.maxVotes} מתמודדים`}
-                                </Typography>
-                                <FormControl
-                                  component="fieldset"
-                                  sx={{
-                                    mt: 2,
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                    justifyContent: 'center',
-                                    flexWrap: 'wrap' // Allow cards to wrap if needed
-                                  }}
-                                >
+                              <Box key={roleConfig.role} sx={{ mb: 6 }}>
+                                <Box sx={{ mb: 3, textAlign: 'center' }}>
+                                  <Typography variant="h5" fontWeight="bold" color="primary">
+                                    {roleConfig.role}
+                                  </Typography>
+                                  <Typography variant="body1" color="text.secondary">
+                                    {roleConfig.maxVotes === 1
+                                      ? 'בחר מתמודד אחד'
+                                      : `בחר ${roleConfig.maxVotes} מתמודדים`}
+                                  </Typography>
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography variant="body2" color={selectedVotes === roleConfig.maxVotes ? 'success.main' : 'info.main'}>
+                                      {selectedVotes} / {roleConfig.maxVotes} נבחרו
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                <Box sx={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                                  gap: 2,
+                                  justifyItems: 'center'
+                                }}>
                                   {roleConfig.contestants.map(contestant => {
                                     const fieldName = `${roleConfig.role}-${contestant.name}`;
                                     const isSelected = values[fieldName] === 1;
-                                    // Disable if max votes reached AND this card isn't already selected
-                                    const isDisabled =
-                                      !isSelected && selectedVotes >= roleConfig.maxVotes;
+                                    const isDisabled = !isSelected && selectedVotes >= roleConfig.maxVotes;
 
                                     return (
                                       <Card
                                         key={contestant.name}
-                                        variant="outlined"
                                         sx={{
-                                          m: 1, // Adjust margin for better spacing
-                                          boxShadow: isSelected ? '0 0 15px blue' : '0 0 3px grey', // Clearer selection indication
+                                          width: '100%',
                                           cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                          width: '10rem',
-                                          userSelect: 'none',
-                                          opacity: isDisabled ? 0.6 : 1 // Visual cue for disabled
+                                          transition: 'all 0.2s ease',
+                                          transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                                          border: isSelected ? '2px solid #2196F3' : '1px solid rgba(0,0,0,0.12)',
+                                          opacity: isDisabled ? 0.6 : 1,
+                                          '&:hover': {
+                                            boxShadow: isDisabled ? 1 : 4
+                                          }
                                         }}
                                         onClick={() => {
-                                          // Allow clicking to select if not disabled, or to deselect if already selected
                                           if (!isDisabled || isSelected) {
-                                            const newValue = isSelected ? 0 : 1;
-                                            // Set field value and mark as touched to trigger validation check
-                                            setFieldValue(fieldName, newValue, true);
+                                            setFieldValue(fieldName, isSelected ? 0 : 1, true);
                                           }
                                         }}
                                       >
-                                        <CardContent>
-                                          <Typography variant="h4">{contestant.name}</Typography>
-                                          <Typography variant="subtitle2">
+                                        <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                          <Typography variant="h6" gutterBottom>{contestant.name}</Typography>
+                                          <Typography variant="body2" color="text.secondary">
                                             {contestant.city}
                                           </Typography>
                                         </CardContent>
                                       </Card>
                                     );
                                   })}
-                                </FormControl>
+                                </Box>
+                                
                                 {errors[roleConfig.role] && (
-                                  <Typography color="error" variant="body2" sx={{ mt: 2 }}>
+                                  <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
                                     {errors[roleConfig.role]}
                                   </Typography>
                                 )}
                               </Box>
                             );
                           })}
-                          <Button
-                            type="submit"
-                            variant="contained"
-                            color="primary"
-                            size="large"
-                            sx={{ mt: 4, py: 1.5, px: 4 }}
-                            disabled={!isValid || !dirty}
-                          >
-                            אישור הצבעה
-                          </Button>
+                          
+                          <Box sx={{ textAlign: 'center', mt: 4 }}>
+                            <Button
+                              type="submit"
+                              variant="contained"
+                              size="large"
+                              disabled={!isValid || !dirty}
+                              sx={{
+                                px: 6,
+                                py: 2,
+                                borderRadius: 2,
+                                fontSize: '1.1rem'
+                              }}
+                            >
+                              אישור הצבעה
+                            </Button>
+                          </Box>
                         </Form>
                       )}
                     </Formik>
                   </>
                 ) : (
-                  <>
-                    <Typography variant="h2">מחכה למצביע....</Typography>
-                  </>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    py: 8,
+                    background: 'rgba(0,0,0,0.02)',
+                    borderRadius: 2
+                  }}>
+                    <Typography variant="h5" color="text.secondary">מחכה למצביע....</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      נא להמתין עד שיזוהה המצביע הבא
+                    </Typography>
+                  </Box>
                 )}
               </>
             ) : (
-              <>
-                <Typography>No voting configuration available</Typography>
-              </>
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h5" color="error">אין תצורת הצבעה זמינה</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  אנא פנה למנהל המערכת
+                </Typography>
+              </Box>
             )}
           </Paper>
         </Box>
