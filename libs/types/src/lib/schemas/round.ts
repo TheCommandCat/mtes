@@ -1,9 +1,10 @@
+import { WithId } from 'mongodb';
 import { Positions } from '../positions';
 import { Member } from './member';
 
 interface RoleConfig {
   role: Positions;
-  contestants: Member[];
+  contestants: WithId<Member>[];
   maxVotes: number;
 }
 

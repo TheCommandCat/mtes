@@ -1,8 +1,8 @@
 import { Member } from '@mtes/types';
 import * as db from '@mtes/database';
-import { ObjectId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 
-export const handleLoadVotingMember = async (namespace: any, member: Member, callback) => {
+export const handleLoadVotingMember = async (namespace: any, member: WithId<Member>, callback) => {
   console.log('🔌 WS: Load voting member');
   console.log('WS Status: ', namespace.connected);
 

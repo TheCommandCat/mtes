@@ -23,13 +23,7 @@ import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
 import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
 import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
 import AddRoundDialog from '../../components/mtes/add-round-dialog'; // Import the new component
-import {
-  Card,
-  CardContent,
-  Avatar,
-  Grid,
-  Chip
-} from '@mui/material';
+import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -38,10 +32,13 @@ interface Props {
   electionState: WithId<ElectionState>;
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { // Add members to destructuring
+const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
+  // Add members to destructuring
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
-  const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
+  const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
+    electionState.activeRound || null
+  );
 
   const { socket, connectionStatus } = useWebsocket([
     // handle ws eventes
@@ -108,33 +105,41 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
     >
       <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
         <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-          <Paper 
+          <Paper
             elevation={3}
-            sx={{ 
-              p: 3, 
+            sx={{
+              p: 3,
               textAlign: 'center',
               background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
               color: 'white',
               mb: 3
             }}
           >
-            <Typography variant="h4" fontWeight="bold">ניהול הבחירות</Typography>
+            <Typography variant="h4" fontWeight="bold">
+              ניהול הבחירות
+            </Typography>
           </Paper>
 
           <Paper elevation={2} sx={{ p: 4 }}>
             {activeRound ? (
               <Box>
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  mb: 4,
-                  pb: 3,
-                  borderBottom: '1px solid rgba(0,0,0,0.1)'
-                }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 4,
+                    pb: 3,
+                    borderBottom: '1px solid rgba(0,0,0,0.1)'
+                  }}
+                >
                   <Box>
-                    <Typography color="primary" gutterBottom>סבב פעיל</Typography>
-                    <Typography variant="h4" fontWeight="bold">{activeRound.name}</Typography>
+                    <Typography color="primary" gutterBottom>
+                      סבב פעיל
+                    </Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      {activeRound.name}
+                    </Typography>
                   </Box>
                   <Button
                     variant="outlined"
@@ -146,12 +151,14 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
                   </Button>
                 </Box>
 
-                <Box sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                  gap: 2,
-                  mb: 4
-                }}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                    gap: 2,
+                    mb: 4
+                  }}
+                >
                   {members.map(member => (
                     <Card
                       key={member._id.toString()}
@@ -167,9 +174,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
                     >
                       <CardContent sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            {member.name.charAt(0)}
-                          </Avatar>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>{member.name.charAt(0)}</Avatar>
                           <Box>
                             <Typography variant="h6">{member.name}</Typography>
                             <Typography variant="body2" color="text.secondary">
@@ -184,23 +189,26 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
               </Box>
             ) : selectedRound ? (
               <Box>
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  mb: 4,
-                  pb: 3,
-                  borderBottom: '1px solid rgba(0,0,0,0.1)'
-                }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mb: 4,
+                    pb: 3,
+                    borderBottom: '1px solid rgba(0,0,0,0.1)'
+                  }}
+                >
                   <Box>
-                    <Typography color="primary" gutterBottom>סבב נבחר</Typography>
-                    <Typography variant="h4" fontWeight="bold">{selectedRound.name}</Typography>
+                    <Typography color="primary" gutterBottom>
+                      סבב נבחר
+                    </Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      {selectedRound.name}
+                    </Typography>
                   </Box>
                   <Stack direction="row" spacing={2}>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setSelectedRound(null)}
-                    >
+                    <Button variant="outlined" onClick={() => setSelectedRound(null)}>
                       חזור
                     </Button>
                     <Button
@@ -213,28 +221,27 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
                   </Stack>
                 </Box>
 
-                <Paper
-                  elevation={1}
-                  sx={{ p: 3, mb: 4, bgcolor: 'background.default' }}
-                >
+                <Paper elevation={1} sx={{ p: 3, mb: 4, bgcolor: 'background.default' }}>
                   <Typography variant="h6" color="primary" gutterBottom>
                     מצביעים מורשים
                   </Typography>
-                  <Box sx={{ 
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: 2,
-                    mt: 2
-                  }}>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                      gap: 2,
+                      mt: 2
+                    }}
+                  >
                     {members.map(member => (
                       <Chip
                         key={member._id.toString()}
                         avatar={<Avatar>{member.name.charAt(0)}</Avatar>}
                         label={`${member.name} - ${member.city}`}
                         variant="outlined"
-                        sx={{ 
+                        sx={{
                           height: 'auto',
-                          '& .MuiChip-label': { 
+                          '& .MuiChip-label': {
                             whiteSpace: 'normal',
                             py: 1
                           }
@@ -272,13 +279,15 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
               </Box>
             ) : (
               <Box>
-                <Box sx={{
-                  mb: 4,
-                  p: 4,
-                  textAlign: 'center',
-                  bgcolor: 'background.default',
-                  borderRadius: 2
-                }}>
+                <Box
+                  sx={{
+                    mb: 4,
+                    p: 4,
+                    textAlign: 'center',
+                    bgcolor: 'background.default',
+                    borderRadius: 2
+                  }}
+                >
                   <Typography variant="h5" color="text.secondary" gutterBottom>
                     אין סבב פעיל
                   </Typography>
@@ -288,7 +297,9 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
                 </Box>
 
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="h6" gutterBottom>סבבים זמינים</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    סבבים זמינים
+                  </Typography>
                   <Grid container spacing={2}>
                     {rounds.map(round => (
                       <Grid item xs={12} sm={6} md={4} key={round._id.toString()}>
@@ -304,7 +315,9 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => { //
                           onClick={() => setSelectedRound(round)}
                         >
                           <CardContent>
-                            <Typography variant="h6" gutterBottom>{round.name}</Typography>
+                            <Typography variant="h6" gutterBottom>
+                              {round.name}
+                            </Typography>
                             <Typography variant="body2" color="text.secondary">
                               {round.roles.length} תפקידים
                             </Typography>

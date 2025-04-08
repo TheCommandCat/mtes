@@ -24,13 +24,14 @@ const extractContestantsFromBlock = (contestantsBlock: Line[]): Array<Contestant
   const LINES_TO_SKIP = 1;
 
   contestantsBlock = (contestantsBlock || []).splice(LINES_TO_SKIP);
+  
 
   return contestantsBlock.map(name => ({
     member: {
       name: name[0],
       city: name[1] as Cities
     } as Member,
-    position: name[2] as Positions,
+    position: name[2] as unknown as Positions, // find a better way to do this
     hidden: name[3] === 'true'
   }));
 };

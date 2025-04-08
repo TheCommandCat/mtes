@@ -6,12 +6,6 @@ export type WSVotingStandName = 'voting' | 'audience-display';
 
 export type WSRoomName = 'main';
 
-interface DivisionsMap {
-  [division: string]: any;
-}
-
-type DivisionNames<Map extends DivisionsMap> = keyof Map & (string | symbol);
-
 export interface WSServerEmittedEvents {
   votingMemberLoaded: (member: WithId<Member>) => void;
   roundLoaded: (roundId: string) => void;
@@ -19,7 +13,7 @@ export interface WSServerEmittedEvents {
 
 export interface WSClientEmittedEvents {
   loadVotingMember: (
-    member: Member,
+    member: WithId<Member>,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
