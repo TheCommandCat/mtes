@@ -3,17 +3,13 @@ import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
-import { TabContext, TabPanel } from '@mui/lab';
-import { Paper, Tabs, Tab, Typography, Box, Card, CardContent } from '@mui/material';
-import { ElectionState, DivisionWithEvent, Member, SafeUser, Role, Round, Vote } from '@mtes/types';
+import { Paper, Typography, Box, Card, CardContent, Button, FormControl } from '@mui/material';
+import { ElectionState, Member, SafeUser, Role, Round, Vote, Positions } from '@mtes/types'; // Assuming Vote type might be relevant for backend structure
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
-// import { useWebsocket } from '../../hooks/use-websocket';
-import { localizedRoles } from '../../localization/roles';
+import { localizedRoles } from '../../localization/roles'; // Assuming this maps Role enum/string to display names
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
-import { useQueryParam } from '../../hooks/use-query-param';
-import { Formik, Form, Field, FieldProps } from 'formik';
-import { Button, FormControl, FormLabel, RadioGroup, Radio, FormControlLabel } from '@mui/material';
+import { Formik, Form } from 'formik';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
 
 interface Props {
@@ -21,13 +17,19 @@ interface Props {
   electionState: WithId<ElectionState>;
 }
 
+// Assuming Member type has an _id property
+interface MemberWithId extends Member {
+  _id: string;
+}
+
 const Page: NextPage<Props> = ({ user, electionState }) => {
   const router = useRouter();
   const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
-  const [member, setMember] = useState<Member | null>(null);
+  const [member, setMember] = useState<MemberWithId | null>(null); // Use MemberWithId
 
-  function handleUpdateMember(member: Member) {
-    setMember(member);
+  function handleUpdateMember(memberData: Member) {
+    // Assuming the incoming member data might not have _id explicitly typed, cast it.
+    setMember(memberData as MemberWithId);
   }
 
   const { socket, connectionStatus } = useWebsocket([
@@ -37,9 +39,9 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
     },
     {
       name: 'roundLoaded',
-      handler: (round: WithId<Round>) => {
-        setRound(round);
-        setMember(null);
+      handler: (newRound: WithId<Round>) => {
+        setRound(newRound);
+        setMember(null); // Reset member when a new round starts
       }
     }
   ]);
@@ -55,108 +57,151 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
     >
       <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
         <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-          <Paper 
+          <Paper
             elevation={3}
-            sx={{ 
-              p: 3, 
+            sx={{
+              p: 3,
               textAlign: 'center',
               background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
               color: 'white'
             }}
           >
-            <Typography variant="h4" fontWeight="bold">מערכת הצבעה</Typography>
+            <Typography variant="h4" fontWeight="bold">
+              מערכת הצבעה
+            </Typography>
           </Paper>
 
           <Paper elevation={2} sx={{ mt: 3, p: 4 }}>
             {round ? (
               <>
-                <Box sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  mb: 4,
-                  pb: 3,
-                  borderBottom: '1px solid rgba(0,0,0,0.1)'
-                }}>
-                  <Typography color="primary" gutterBottom>סבב נוכחי</Typography>
-                  <Typography variant="h4" fontWeight="bold">{round.name}</Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    mb: 4,
+                    pb: 3,
+                    borderBottom: '1px solid rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <Typography color="primary" gutterBottom>
+                    סבב נוכחי
+                  </Typography>
+                  <Typography variant="h4" fontWeight="bold">
+                    {round.name}
+                  </Typography>
                 </Box>
 
                 {member ? (
                   <>
-                    <Paper 
-                      elevation={1} 
-                      sx={{ 
-                        p: 3, 
-                        mb: 4, 
+                    <Paper
+                      elevation={1}
+                      sx={{
+                        p: 3,
+                        mb: 4,
                         background: 'rgba(33, 150, 243, 0.05)',
                         border: '1px solid rgba(33, 150, 243, 0.2)',
                         borderRadius: 2
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ 
-                          width: 60, 
-                          height: 60, 
-                          borderRadius: '50%', 
-                          bgcolor: 'primary.main',
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '24px'
-                        }}>
+                        <Box
+                          sx={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: '50%',
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px'
+                          }}
+                        >
                           {member.name.charAt(0)}
                         </Box>
                         <Box>
-                          <Typography variant="h5" fontWeight="bold">{member.name}</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {member.name}
+                          </Typography>
                           <Typography color="text.secondary">{member.city}</Typography>
                         </Box>
                       </Box>
                     </Paper>
 
                     <Formik
+                      // Initial values: { "role1-contestantId": 0, "role1-contestantId2": 0, ... }
                       initialValues={Object.fromEntries(
-                        round.roles.map(role => [role.role, ''])
+                        round.roles.flatMap(role =>
+                          role.contestants.map(c => [
+                            `${role.role}-${c._id}`,
+                            0 // 0 = not selected, 1 = selected
+                          ])
+                        )
                       )}
                       validate={values => {
                         const errors: Record<string, string> = {};
                         round.roles.forEach(roleConfig => {
-                          if (!values[roleConfig.role]) {
-                            errors[roleConfig.role] = `יש לבחור מתמודד לתפקיד ${roleConfig.role}`;
+                          const selectedCount = Object.entries(values).filter(
+                            ([key, value]) => key.startsWith(roleConfig.role + '-') && value === 1
+                          ).length;
+
+                          if (selectedCount !== roleConfig.maxVotes) {
+                            errors[
+                              roleConfig.role
+                            ] = `יש לבחור ${roleConfig.maxVotes} מתמודדים לתפקיד ${roleConfig.role}`;
                           }
                         });
                         return errors;
                       }}
-                      onSubmit={(values, { setSubmitting }) => {
-                        const votes = Object.entries(values)
-                          .filter(([_, contestant]) => contestant) // Filter out empty selections
-                          .map(([role, contestant]) => ({
-                            role: role as Role,
-                            contestant
-                          }));
+                      onSubmit={(values, { setSubmitting, resetForm }) => {
+                        const formattedVotes: Record<Positions | string, string[]> = {};
+                        round.roles.forEach(roleConfig => {
+                          formattedVotes[roleConfig.role] = Object.entries(values)
+                            .filter(
+                              ([key, value]) => key.startsWith(roleConfig.role + '-') && value === 1
+                            )
+                            .map(([key]) => key.split('-')[1]); // Extract contestant ID
+                        });
 
-                          
-                          
-                        console.log(JSON.stringify({
-                            round: round._id,
-                            memberId: member,
-                            votes
-                          }));
+                        const payload = {
+                          roundId: round._id,
+                          memberId: member._id,
+                          votes: formattedVotes
+                        };
+
+                        console.log('Submitting payload:', JSON.stringify(payload, null, 2));
+
                         apiFetch('/api/events/vote', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ vote: {round: round.name, member: member.name, votes }}),
-                          
-                        }).then(response => {
-                          if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                          }
-                        });
-
-                        enqueueSnackbar('ההצבעה נשלחה בהצלחה!', { variant: 'success' });
-                        setSubmitting(false);
-                        setMember(null);
+                          body: JSON.stringify(payload)
+                        })
+                          .then(response => {
+                            if (!response.ok) {
+                              return response.text().then(text => {
+                                throw new Error(text || 'Network response was not ok');
+                              });
+                            }
+                            return response.json(); // Or response.text()
+                          })
+                          .then(data => {
+                            console.log('Vote successful:', data);
+                            enqueueSnackbar('ההצבעה נשלחה בהצלחה!', {
+                              variant: 'success'
+                            });
+                            setMember(null); // Reset member for next voter
+                            resetForm(); // Reset form fields
+                          })
+                          .catch(error => {
+                            console.error('Vote submission failed:', error);
+                            enqueueSnackbar(`שגיאה בשליחת ההצבעה: ${error.message}`, {
+                              variant: 'error'
+                            });
+                          })
+                          .finally(() => {
+                            setSubmitting(false);
+                          });
                       }}
                     >
                       {({
@@ -166,12 +211,14 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                         errors,
                         touched,
                         isValid,
-                        dirty
+                        dirty,
+                        isSubmitting
                       }) => (
                         <Form onSubmit={handleSubmit}>
                           {round.roles.map(roleConfig => {
-                            const selectedVotes = Object.entries(values).filter(
-                              ([key, value]) => key.startsWith(roleConfig.role)
+                            // Calculate current selections for this role
+                            const selectedCount = Object.entries(values).filter(
+                              ([key, value]) => key.startsWith(roleConfig.role + '-') && value === 1
                             ).length;
 
                             return (
@@ -186,40 +233,70 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                                       : `בחר ${roleConfig.maxVotes} מתמודדים`}
                                   </Typography>
                                   <Box sx={{ mt: 1 }}>
-                                    <Typography variant="body2" color={selectedVotes === roleConfig.maxVotes ? 'success.main' : 'info.main'}>
-                                      {selectedVotes} / {roleConfig.maxVotes} נבחרו
+                                    <Typography
+                                      variant="body2"
+                                      color={
+                                        selectedCount === roleConfig.maxVotes
+                                          ? 'success.main'
+                                          : 'info.main'
+                                      }
+                                    >
+                                      {selectedCount} / {roleConfig.maxVotes} נבחרו
                                     </Typography>
                                   </Box>
                                 </Box>
 
-                                <Box sx={{
-                                  display: 'grid',
-                                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                                  gap: 2,
-                                  justifyItems: 'center'
-                                }}>
+                                <Box
+                                  sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                                    gap: 2,
+                                    justifyItems: 'center'
+                                  }}
+                                >
                                   {roleConfig.contestants.map(contestant => {
-                                    const isSelected = values[roleConfig.role] === contestant.name;
+                                    const fieldName = `${roleConfig.role}-${contestant._id}`;
+                                    const isSelected = values[fieldName] === 1;
+                                    // Disable clicking if max votes reached and this one isn't selected
+                                    const isDisabled =
+                                      !isSelected && selectedCount >= roleConfig.maxVotes;
 
                                     return (
                                       <Card
                                         key={contestant.name}
+                                        variant="outlined"
                                         sx={{
                                           width: '100%',
-                                          cursor: 'pointer',
+                                          cursor: isDisabled ? 'not-allowed' : 'pointer',
                                           transition: 'all 0.2s ease',
                                           transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                                          border: isSelected ? '2px solid #2196F3' : '1px solid rgba(0,0,0,0.12)',
+                                          border: isSelected
+                                            ? '2px solid #2196F3'
+                                            : '1px solid rgba(0,0,0,0.12)',
+                                          opacity: isDisabled ? 0.6 : 1,
+                                          userSelect: 'none',
                                           '&:hover': {
-                                            boxShadow: 4
+                                            boxShadow: isDisabled ? 1 : 4
                                           }
                                         }}
                                         onClick={() => {
-                                          setFieldValue(roleConfig.role, isSelected ? '' : contestant.name, true);
+                                          if (isSelected) {
+                                            // Always allow deselection
+                                            setFieldValue(fieldName, 0, true);
+                                          } else if (!isDisabled) {
+                                            // Allow selection only if not disabled
+                                            setFieldValue(fieldName, 1, true);
+                                          }
+                                          // Optional: Add feedback if trying to select when disabled
+                                          // else {
+                                          //   enqueueSnackbar(`ניתן לבחור עד ${roleConfig.maxVotes} מתמודדים לתפקיד זה`, { variant: 'warning' });
+                                          // }
                                         }}
                                       >
                                         <CardContent sx={{ textAlign: 'center', p: 3 }}>
-                                          <Typography variant="h6" gutterBottom>{contestant.name}</Typography>
+                                          <Typography variant="h6" gutterBottom>
+                                            {contestant.name}
+                                          </Typography>
                                           <Typography variant="body2" color="text.secondary">
                                             {contestant.city}
                                           </Typography>
@@ -228,22 +305,25 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                                     );
                                   })}
                                 </Box>
-                                
-                                {errors[roleConfig.role] && (
-                                  <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
-                                    {errors[roleConfig.role]}
-                                  </Typography>
-                                )}
+
+                                {errors[roleConfig.role] &&
+                                  touched[
+                                    `${roleConfig.role}-${roleConfig.contestants[0]?._id}`
+                                  ] && ( // Show error if touched any field related to the role
+                                    <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+                                      {errors[roleConfig.role]}
+                                    </Typography>
+                                  )}
                               </Box>
                             );
                           })}
-                          
+
                           <Box sx={{ textAlign: 'center', mt: 4 }}>
                             <Button
                               type="submit"
                               variant="contained"
                               size="large"
-                              disabled={!isValid || !dirty}
+                              disabled={!isValid || !dirty || isSubmitting}
                               sx={{
                                 px: 6,
                                 py: 2,
@@ -251,7 +331,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                                 fontSize: '1.1rem'
                               }}
                             >
-                              אישור הצבעה
+                              {isSubmitting ? 'שולח...' : 'אישור הצבעה'}
                             </Button>
                           </Box>
                         </Form>
@@ -259,13 +339,17 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                     </Formik>
                   </>
                 ) : (
-                  <Box sx={{ 
-                    textAlign: 'center', 
-                    py: 8,
-                    background: 'rgba(0,0,0,0.02)',
-                    borderRadius: 2
-                  }}>
-                    <Typography variant="h5" color="text.secondary">מחכה למצביע....</Typography>
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      py: 8,
+                      background: 'rgba(0,0,0,0.02)',
+                      borderRadius: 2
+                    }}
+                  >
+                    <Typography variant="h5" color="text.secondary">
+                      מחכה למצביע....
+                    </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                       נא להמתין עד שיזוהה המצביע הבא
                     </Typography>
@@ -274,7 +358,9 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
               </>
             ) : (
               <Box sx={{ textAlign: 'center', py: 8 }}>
-                <Typography variant="h5" color="error">אין תצורת הצבעה זמינה</Typography>
+                <Typography variant="h5" color="error">
+                  אין תצורת הצבעה זמינה
+                </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   אנא פנה למנהל המערכת
                 </Typography>
