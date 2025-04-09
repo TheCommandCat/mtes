@@ -254,7 +254,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
                 <Box sx={{ mb: 4 }}>
                   {selectedRound.roles.map(role => (
                     <Paper
-                      key={role.role}
+                      key={role.role.toString()}
                       elevation={1}
                       sx={{ p: 3, mb: 2, bgcolor: 'background.default' }}
                     >
