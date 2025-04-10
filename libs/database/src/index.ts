@@ -6,3 +6,4 @@ export * from './lib/crud/election-states';
 export * from './lib/crud/members';
 export * from './lib/crud/contestants';
 export * from './lib/crud/rounds';
+export * from './lib/crud/votes';

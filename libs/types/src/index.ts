@@ -10,3 +10,4 @@ export * from './lib/schemas/election-state';
 export * from './lib/schemas/member';
 export * from './lib/schemas/round';
 export * from './lib/positions';
+export * from './lib/schemas/vote';
