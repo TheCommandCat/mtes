@@ -7,8 +7,7 @@ import { Positions } from 'libs/types/src/lib/positions';
 
 const MEMBERS_BLOCK_ID = 1;
 const Contestants_BLOCK_ID = 2;
-const JUDGING_SESSIONS_BLOCK_ID = 3;
-const RANKING_MATCHES_BLOCK_ID = 4;
+const STANDS_BLOCK_ID = 3;
 
 const extractMembersFromBlock = (memberBlock: Line[]): Array<Member> => {
   const LINES_TO_SKIP = 1;
@@ -36,18 +35,27 @@ const extractContestantsFromBlock = (contestantsBlock: Line[]): Array<Contestant
   }));
 };
 
+const extractStandsFromBlock = (standsBlock: Line[]): number => {
+  
+  // const LINES_TO_SKIP = 1;
+  // standsBlock = (standsBlock || []).splice(LINES_TO_SKIP);
+  
+  return parseInt(standsBlock[0][1]);
+}
+
 export const parseDivisionData = (
   csvData: string
-): { members: Array<Member>; contestants: Array<Contestant> } => {
+): { members: Array<Member>; contestants: Array<Contestant> ; numOfStands: number} => {
   const file = parse(csvData.trim());
   const version = parseInt(file.shift()?.[1]); // Version number: 2nd cell of 1st row.
   if (version !== 2) Promise.reject('MTES can only parse version 2 Data');
 
   const blocks = extractBlocksFromFile(file);
+  const numOfStands = extractStandsFromBlock(getBlock(blocks, STANDS_BLOCK_ID));
   const members = extractMembersFromBlock(getBlock(blocks, MEMBERS_BLOCK_ID));
   const contestants = extractContestantsFromBlock(getBlock(blocks, Contestants_BLOCK_ID));
 
-  return { members, contestants };
+  return { members, contestants, numOfStands };
 };
 
 export const getInitialElectionState = (): ElectionState => {

@@ -25,7 +25,7 @@ router.post(
       const timezone = req.body.timezone;
       const csvData = (req.files.file as fileUpload.UploadedFile)?.data.toString();
 
-      const { members, contestants } = parseDivisionData(csvData);
+      const { members, contestants, numOfStands } = parseDivisionData(csvData);
 
       console.log('📄 Inserting members and contestants');
 
@@ -41,7 +41,7 @@ router.post(
       console.log('✅ Inserted members and contestants');
 
       console.log('👤 Generating division users');
-      const users = getDivisionUsers();
+      const users = getDivisionUsers(numOfStands);
       console.log(users);
 
       if (!(await db.addUsers(users)).acknowledged) {
