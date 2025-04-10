@@ -41,7 +41,18 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
   );
 
   const { socket, connectionStatus } = useWebsocket([
-    // handle ws eventes
+    {
+      name: 'voteSubmitted',
+      handler: (votingMember: WithId<Member>) => {
+        enqueueSnackbar(`${votingMember.name} הגיש הצבעה`, { variant: 'info' });
+      }
+    },
+    {
+      name: 'voteProcessed',
+      handler: (votingMember: WithId<Member>) => {
+        enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה`, { variant: 'success' });
+      }
+    }
   ]);
 
   const handleSendMember = (member: Member) => {

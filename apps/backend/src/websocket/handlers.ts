@@ -43,3 +43,13 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
     callback({ ok: false, error: 'Failed to load round' });
   }
 };
+
+export const handleVoteSubmitted = async (namespace: any, member: WithId<Member>, callback) => {
+  namespace.emit('voteSubmitted', member);
+  callback({ ok: true });
+}
+
+export const handleVoteProcessed = async (namespace: any, member: WithId<Member>, callback) => {
+  namespace.emit('voteProcessed', member);
+  callback({ ok: true });
+}

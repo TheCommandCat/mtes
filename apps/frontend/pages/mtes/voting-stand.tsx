@@ -172,6 +172,18 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
 
                         console.log('Submitting payload:', JSON.stringify(payload, null, 2));
 
+                        socket.emit(
+                          'voteSubmitted',
+                          member,
+                          (processResponse: { ok: boolean; error?: string }) => {
+                            if (processResponse.ok) {
+                              console.log('Vote submitted successfully');
+                            } else {
+                              console.log('Vote submission failed:', processResponse.error);
+                            }
+                          }
+                        );
+
                         apiFetch('/api/events/vote', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
@@ -190,6 +202,17 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                             enqueueSnackbar('ההצבעה נשלחה בהצלחה!', {
                               variant: 'success'
                             });
+                            socket.emit(
+                              'voteProcessed',
+                              member,
+                              (processResponse: { ok: boolean; error?: string }) => {
+                                if (processResponse.ok) {
+                                  console.log('Vote processed successfully');
+                                } else {
+                                  console.log('Vote processing failed:', processResponse.error);
+                                }
+                              }
+                            );
                             setMember(null); // Reset member for next voter
                             resetForm(); // Reset form fields
                           })

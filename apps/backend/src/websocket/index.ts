@@ -3,12 +3,11 @@ import {
   WSServerEmittedEvents,
   WSClientEmittedEvents,
   WSInterServerEvents,
-  WSSocketData
 } from '@mtes/types';
-import { handleLoadRound, handleLoadVotingMember } from './handlers';
+import { handleLoadRound, handleLoadVotingMember, handleVoteProcessed, handleVoteSubmitted } from './handlers';
 
 const websocket = (
-  socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents, WSSocketData>
+  socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents>
 ) => {
   const namespace = socket.nsp;
   console.log(`🔌 WS: New connection established`);
@@ -21,6 +20,14 @@ const websocket = (
 
   socket.on('loadRound', (...args) => handleLoadRound(namespace, ...args));
 
+  socket.on('voteSubmitted', ((...args) => {
+    handleVoteSubmitted(namespace, ...args);
+  }));
+
+  socket.on('voteProcessed', ((...args) => {
+    handleVoteProcessed(namespace,...args);
+  
+  }));
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);
   });
