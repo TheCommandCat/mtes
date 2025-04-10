@@ -6,6 +6,10 @@ export interface User {
   isAdmin: boolean;
   role?: Role;
   password: string;
+  roleAssociation?: {
+    type: 'stand';
+    value: number;
+  }
   lastPasswordSetDate: Date;
 }
 

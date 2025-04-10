@@ -55,7 +55,10 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
         enqueueSnackbar('לא נמצאו הרשאות מתאימות.', { variant: 'error' });
       }}
     >
-      <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
+      <Layout
+        title={`ממשק ${user.role} - עמדה ${user.roleAssociation?.value}`}
+        connectionStatus={connectionStatus}
+      >
         <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
           <Paper
             elevation={3}
