@@ -14,6 +14,7 @@ import { localizedRoles } from '../../localization/roles';
 const DivisionLoginForm: React.FC = () => {
   const [role, setRole] = useState<Role>('' as Role);
   const [password, setPassword] = useState<string>('');
+  const [association, setAssociation] = useState<number>();
 
   const loginRoles = ['election-manager', 'voting-stand'] as Role[];
 
@@ -27,7 +28,15 @@ const DivisionLoginForm: React.FC = () => {
       body: JSON.stringify({
         isAdmin: false,
         role,
-        password
+        password,
+        ...(association
+          ? {
+              roleAssociation: {
+                type: 'stand',
+                value: association
+              }
+            }
+          : undefined)
       })
     })
       .then(async res => {
@@ -76,6 +85,22 @@ const DivisionLoginForm: React.FC = () => {
           );
         })}
       </FormDropdown>
+      {role === 'voting-stand' && (
+        <FormDropdown
+          id="select-role-association"
+          value={association}
+          label={'קלפי'}
+          onChange={e => setAssociation(e.target.value)}
+        >
+          {[{ id: 1 }, { id: 2 }].map(a => {
+            return (
+              <MenuItem value={a.id} key={a.id}>
+                {a.id}
+              </MenuItem>
+            );
+          })}
+        </FormDropdown>
+      )}
       <TextField
         fullWidth
         variant="outlined"
