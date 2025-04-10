@@ -1,9 +1,10 @@
+import { ObjectId } from 'mongodb';
 import { Positions } from '../positions';
 import { Member } from './member';
 import { Round } from './round';
 
 export interface Vote {
-  round: Round; 
+  round: ObjectId; 
   role: Positions;
-  contestant: Member;
+  contestant: ObjectId;
 }

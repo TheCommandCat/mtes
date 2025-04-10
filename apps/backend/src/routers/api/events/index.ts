@@ -129,9 +129,9 @@ router.post('/vote', async (req: Request, res: Response) => {
           }
           
           const vote = {
-            round,
+            round: round._id,
             role: role as Positions,
-            contestant
+            contestant: contestant._id,
           };
 
           console.log('Vote:', JSON.stringify(vote));
