@@ -20,10 +20,11 @@ interface Props {
 const Page: NextPage<Props> = ({ user, electionState }) => {
   const router = useRouter();
   const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
-  const [member, setMember] = useState<WithId<Member> | null>(null); // Use MemberWithId
+  const [member, setMember] = useState<WithId<Member> | null>(null);
+  const votingStandId = user.roleAssociation?.value;
 
   function handleUpdateMember(memberData: Member, votingStand: number) {
-    if (user.roleAssociation?.value === votingStand) {
+    if (votingStandId === votingStand) {
       setMember(memberData as WithId<Member>);
     }
   }
@@ -174,6 +175,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                         socket.emit(
                           'voteSubmitted',
                           member,
+                          votingStandId,
                           (processResponse: { ok: boolean; error?: string }) => {
                             if (processResponse.ok) {
                               console.log('Vote submitted successfully');
@@ -204,6 +206,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                             socket.emit(
                               'voteProcessed',
                               member,
+                              votingStandId,
                               (processResponse: { ok: boolean; error?: string }) => {
                                 if (processResponse.ok) {
                                   console.log('Vote processed successfully');
