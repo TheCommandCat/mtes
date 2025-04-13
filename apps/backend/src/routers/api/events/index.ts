@@ -5,6 +5,16 @@ import { ElectionState, Positions, Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
+router.get('/votingStands', async (req: Request, res: Response) => {
+  console.log('⏬ Getting voting stands...');
+  const votingStandsIds = await db.getEventUsers();
+  return res.json(
+    votingStandsIds
+      .filter(user => user.role === 'voting-stand')
+      .map(user => user.roleAssociation.value)
+  );
+});
+
 router.get('/rounds', async (req: Request, res: Response) => {
   console.log('⏬ Getting rounds...');
   return res.json(await db.getRounds({}));
