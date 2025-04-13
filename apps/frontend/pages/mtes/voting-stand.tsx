@@ -17,19 +17,13 @@ interface Props {
   electionState: WithId<ElectionState>;
 }
 
-// Assuming Member type has an _id property
-interface MemberWithId extends Member {
-  _id: string;
-}
-
 const Page: NextPage<Props> = ({ user, electionState }) => {
   const router = useRouter();
   const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
-  const [member, setMember] = useState<MemberWithId | null>(null); // Use MemberWithId
+  const [member, setMember] = useState<WithId<Member> | null>(null); // Use MemberWithId
 
   function handleUpdateMember(memberData: Member) {
-    // Assuming the incoming member data might not have _id explicitly typed, cast it.
-    setMember(memberData as MemberWithId);
+    setMember(memberData as WithId<Member>);
   }
 
   const { socket, connectionStatus } = useWebsocket([
