@@ -58,6 +58,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
       name: 'voteProcessed',
       handler: (votingMember: WithId<Member>) => {
         enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה`, { variant: 'success' });
+        setVotingMember(null);
         setStandStatus('Empty');
       }
     }
@@ -208,7 +209,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
                         cursor: votingMember?.name === member.name ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s ease',
                         '&:hover': {
-                          transform: votingMember?.name !== member.name ? 'translateY(-2px)' : 'none',
+                          transform:
+                            votingMember?.name !== member.name ? 'translateY(-2px)' : 'none',
                           boxShadow: votingMember?.name !== member.name ? 3 : 1
                         },
                         opacity: votingMember?.name === member.name ? 0.6 : 1
