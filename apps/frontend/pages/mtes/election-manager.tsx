@@ -205,14 +205,15 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
                     <Card
                       key={member._id.toString()}
                       sx={{
-                        cursor: 'pointer',
+                        cursor: votingMember?.name === member.name ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s ease',
                         '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: 3
-                        }
+                          transform: votingMember?.name !== member.name ? 'translateY(-2px)' : 'none',
+                          boxShadow: votingMember?.name !== member.name ? 3 : 1
+                        },
+                        opacity: votingMember?.name === member.name ? 0.6 : 1
                       }}
-                      onClick={() => handleOpenDialog(member)}
+                      onClick={() => votingMember?.name !== member.name && handleOpenDialog(member)}
                     >
                       <CardContent sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
