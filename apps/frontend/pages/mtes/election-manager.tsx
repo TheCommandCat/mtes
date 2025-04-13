@@ -14,7 +14,7 @@ import {
   ListItemText,
   Stack
 } from '@mui/material';
-import { ElectionState, Member, Round, SafeUser } from '@mtes/types';
+import { ElectionState, Member, Round, SafeUser, VotingStates } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
@@ -24,6 +24,7 @@ import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
 import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
 import AddRoundDialog from '../../components/mtes/add-round-dialog'; // Import the new component
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
+import { StandStatusCard } from 'apps/frontend/components/mtes/stand-status-card';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -39,18 +40,22 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
+  const [standStatus, setStandStatus] = useState<VotingStates>('NotStarted');
+  const [votingMember, setVotingMember] = useState<Member | null>(null);
 
   const { socket, connectionStatus } = useWebsocket([
     {
       name: 'voteSubmitted',
       handler: (votingMember: WithId<Member>) => {
         enqueueSnackbar(`${votingMember.name} הגיש הצבעה`, { variant: 'info' });
+        setStandStatus('VotingSubmitted');
       }
     },
     {
       name: 'voteProcessed',
       handler: (votingMember: WithId<Member>) => {
         enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה`, { variant: 'success' });
+        setStandStatus('Empty');
       }
     }
   ]);
@@ -62,7 +67,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
     socket.emit('loadVotingMember', member, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Member sent successfully');
-
+        setStandStatus('Voting');
+        setVotingMember(member);
         enqueueSnackbar(`${member.name} נשלח להצבעה`, { variant: 'success' });
       } else {
         console.error('Error sending member');
@@ -77,6 +83,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
     socket.emit('loadRound', round._id, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Round started successfully');
+        enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
+        setStandStatus('Empty'); // Update standStatus to VotingSubmitted
       } else {
         console.error('Error starting round');
         enqueueSnackbar('שגיאה בהתחלת הסבב', { variant: 'error' });
@@ -92,6 +100,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
     socket.emit('loadRound', null, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Round stopped successfully');
+        enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
+        setStandStatus('NotStarted');
       } else {
         console.error('Error stopping round');
         enqueueSnackbar('שגיאה בהפסקת הסבב', { variant: 'error' });
@@ -132,6 +142,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
           </Paper>
 
           <Paper elevation={2} sx={{ p: 4 }}>
+            <StandStatusCard status={standStatus} member={votingMember} />
             {activeRound ? (
               <Box>
                 <Box
@@ -292,19 +303,22 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
               <Box>
                 <Box
                   sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     mb: 4,
-                    p: 4,
-                    textAlign: 'center',
-                    bgcolor: 'background.default',
-                    borderRadius: 2
+                    pb: 3,
+                    borderBottom: '1px solid rgba(0,0,0,0.1)'
                   }}
                 >
-                  <Typography variant="h5" color="text.secondary" gutterBottom>
-                    אין סבב פעיל
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    בחר סבב מהרשימה או צור סבב חדש
-                  </Typography>
+                  <Box>
+                    <Typography color="primary" gutterBottom>
+                      סבב נבחר
+                    </Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      אנא בחרו סבב
+                    </Typography>
+                  </Box>
                 </Box>
 
                 <Box sx={{ mb: 3 }}>
