@@ -24,11 +24,13 @@ export interface WSClientEmittedEvents {
 
   voteSubmitted: (
     member: WithId<Member>,
+    votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
   voteProcessed: (
     member: WithId<Member>,
+    votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

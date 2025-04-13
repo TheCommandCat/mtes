@@ -44,12 +44,12 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
   }
 };
 
-export const handleVoteSubmitted = async (namespace: any, member: WithId<Member>, callback) => {
-  namespace.emit('voteSubmitted', member);
+export const handleVoteSubmitted = async (namespace: any, member: WithId<Member>, votingStand: number, callback) => {
+  namespace.emit('voteSubmitted', member, votingStand);
   callback({ ok: true });
 }
 
-export const handleVoteProcessed = async (namespace: any, member: WithId<Member>, callback) => {
-  namespace.emit('voteProcessed', member);
+export const handleVoteProcessed = async (namespace: any, member: WithId<Member>, votingStand: number,  callback) => {
+  namespace.emit('voteProcessed', member, votingStand);
   callback({ ok: true });
 }
