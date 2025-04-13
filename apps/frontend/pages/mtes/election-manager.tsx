@@ -22,19 +22,20 @@ import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/u
 import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
 import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
 import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
-import AddRoundDialog from '../../components/mtes/add-round-dialog'; // Import the new component
+import AddRoundDialog from '../../components/mtes/add-round-dialog';
+import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
 import { StandStatusCard } from 'apps/frontend/components/mtes/stand-status-card';
 
 interface Props {
   user: WithId<SafeUser>;
-  members: WithId<Member>[]; // Add members prop
+  members: WithId<Member>[];
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
+  votingStands: number[];
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
-  // Add members to destructuring
+const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingStands }) => {
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
@@ -42,6 +43,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
   );
   const [standStatus, setStandStatus] = useState<VotingStates>('NotStarted');
   const [votingMember, setVotingMember] = useState<Member | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   const { socket, connectionStatus } = useWebsocket([
     {
@@ -60,21 +63,38 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
     }
   ]);
 
-  const handleSendMember = (member: Member) => {
+  const handleOpenDialog = (member: Member) => {
+    setSelectedMember(member);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setSelectedMember(null);
+  };
+
+  const handleSendMember = (member: Member, votingStand: number) => {
     console.log('Sending member:', member);
+    console.log('Voting stand:', votingStand);
     console.log('Socket:', socket.connected);
 
-    socket.emit('loadVotingMember', member, (response: { ok: boolean }) => {
+    socket.emit('loadVotingMember', member, votingStand, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Member sent successfully');
         setStandStatus('Voting');
         setVotingMember(member);
-        enqueueSnackbar(`${member.name} נשלח להצבעה`, { variant: 'success' });
+        enqueueSnackbar(`${member.name} נשלח להצבעה בעמדה ${votingStand}`, { variant: 'success' });
       } else {
         console.error('Error sending member');
         enqueueSnackbar('שגיאה בשליחת המצביע', { variant: 'error' });
       }
     });
+  };
+
+  const handleSelectVotingStand = (standId: number) => {
+    if (selectedMember) {
+      handleSendMember(selectedMember, standId);
+    }
   };
 
   const handleStartRound = (round: WithId<Round>) => {
@@ -192,7 +212,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
                           boxShadow: 3
                         }
                       }}
-                      onClick={() => handleSendMember(member)}
+                      onClick={() => handleOpenDialog(member)}
                     >
                       <CardContent sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -359,6 +379,17 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState }) => {
               </Box>
             )}
           </Paper>
+
+          {/* Voting Stand Selection Dialog */}
+          {selectedMember && (
+            <SelectVotingStandDialog
+              open={dialogOpen}
+              onClose={handleCloseDialog}
+              onSelect={handleSelectVotingStand}
+              votingStands={votingStands}
+              memberName={selectedMember.name}
+            />
+          )}
         </Box>
       </Layout>
     </RoleAuthorizer>
@@ -374,7 +405,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
       {
         rounds: '/api/events/rounds',
         electionState: '/api/events/state',
-        members: '/api/events/members' // Assuming this endpoint exists
+        members: '/api/events/members',
+        votingStands: '/api/events/votingStands'
       },
       ctx
     );

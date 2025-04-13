@@ -22,8 +22,10 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
   const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
   const [member, setMember] = useState<WithId<Member> | null>(null); // Use MemberWithId
 
-  function handleUpdateMember(memberData: Member) {
-    setMember(memberData as WithId<Member>);
+  function handleUpdateMember(memberData: Member, votingStand: number) {
+    if (user.roleAssociation?.value === votingStand) {
+      setMember(memberData as WithId<Member>);
+    }
   }
 
   const { socket, connectionStatus } = useWebsocket([
