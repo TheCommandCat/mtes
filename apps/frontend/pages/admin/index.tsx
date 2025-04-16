@@ -2,17 +2,13 @@ import { GetServerSideProps, NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { Paper, Typography, Stack, ListItemButton, Tab, Tabs } from '@mui/material';
 import { WithId } from 'mongodb';
-import { ElectionEvent, EventUserAllowedRoles, User } from '@mtes/types';
+import { ElectionEvent, User } from '@mtes/types';
 import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
 import Layout from '../../components/layout';
-import EventSelector from '../../components/general/event-selector';
-import { TabContext, TabPanel } from '@mui/lab';
 import UploadFileButton from 'apps/frontend/components/general/upload-file';
-import GenerateScheduleButton from 'apps/frontend/components/admin/generate-schedule';
 import DownloadUsersButton from 'apps/frontend/components/admin/download-users';
 import EditDivisionForm from 'apps/frontend/components/admin/edit-division-form';
 import { useState } from 'react';
-import DeleteDivisionData from 'apps/frontend/components/admin/delete-division-data';
 import dayjs from 'dayjs';
 import { enqueueSnackbar } from 'notistack';
 
@@ -32,6 +28,7 @@ const Page: NextPage<Props> = ({ user, events }) => {
         name: 'אירוע חדש',
         eventUsers: { 'election-manager': true, 'voting-stand': true },
         hasState: false,
+        votingStandsIds: [1, 2, 3],
         startDate: dayjs(),
         endDate: dayjs()
       })

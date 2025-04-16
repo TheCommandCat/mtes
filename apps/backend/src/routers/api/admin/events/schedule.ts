@@ -26,7 +26,7 @@ router.post(
 
       const { members, numOfStands } = parseDivisionData(csvData);
 
-      console.log('📄 Inserting members and contestants');
+      console.log('📄 Inserting members');
 
       if (!(await db.addMembers(members)).acknowledged) {
         res.status(500).json({ error: 'Could not insert members!' });
@@ -44,6 +44,11 @@ router.post(
         return;
       }
       console.log('✅ Generated division users');
+
+      await db.updateElectionEvent({
+        votingStandsIds: Array.from({ length: numOfStands }, (_, i) => i + 1)
+      });
+      console.log('✅ Updated voting stands IDs');
 
       console.log('🔐 Creating Election state');
       console.log('✅ Created Election state');
