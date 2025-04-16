@@ -13,6 +13,12 @@ router.get('/events', (req: Request, res: Response) => {
   });
 });
 
+router.get('/event', (req: Request, res: Response) => {
+  db.getElectionEvent().then(event => {
+    res.status(200).json(event);
+  });
+});
+
 // router.use('/divisions', divisionsRouter);
 
 // router.use('/portal', portalRouter);

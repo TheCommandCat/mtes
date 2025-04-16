@@ -68,7 +68,7 @@ router.put('/', (req: Request, res: Response) => {
 router.delete(
   '/data',
   asyncHandler(async (req: Request, res: Response) => {
-    console.log(`🚮 Deleting data from event}`);
+    console.log(`🚮 Deleting data from event`);
     try {
       await cleanDivisionData();
       // await db.updateDivision({ hasState: false });

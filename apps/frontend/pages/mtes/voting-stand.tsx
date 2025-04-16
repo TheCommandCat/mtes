@@ -3,11 +3,10 @@ import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
-import { Paper, Typography, Box, Card, CardContent, Button, FormControl } from '@mui/material';
-import { ElectionState, Member, SafeUser, Role, Round, Vote, Positions } from '@mtes/types'; // Assuming Vote type might be relevant for backend structure
+import { Paper, Typography, Box, Card, CardContent, Button } from '@mui/material';
+import { ElectionState, Member, SafeUser, Round, Positions } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
-import { localizedRoles } from '../../localization/roles'; // Assuming this maps Role enum/string to display names
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { Formik, Form } from 'formik';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
@@ -167,7 +166,8 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                         const payload = {
                           roundId: round._id,
                           memberId: member._id,
-                          votes: formattedVotes
+                          votes: formattedVotes,
+                          votingStandId
                         };
 
                         console.log('Submitting payload:', JSON.stringify(payload, null, 2));

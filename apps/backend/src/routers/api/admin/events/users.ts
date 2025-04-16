@@ -19,10 +19,11 @@ router.get(
 
     const credentials = await Promise.all(
       users.map(async user => {
-        const { role, password } = user;
+        const { role, password, roleAssociation } = user;
 
         return {
           role,
+          value: roleAssociation ? roleAssociation.value : 'undefined',
           password
         };
       })
@@ -39,6 +40,10 @@ router.get(
         {
           label: 'תפקיד',
           value: 'role'
+        },
+        {
+          label: 'ערך תפקיד',
+          value: 'value'
         },
         {
           label: 'סיסמא',

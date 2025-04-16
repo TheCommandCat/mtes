@@ -1,5 +1,5 @@
 import { WithId } from 'mongodb';
-import { Division, DivisionScheduleEntry } from './division';
+import { Division } from './division';
 import { EventUserAllowedRoles } from '@mtes/types';
 
 export interface ElectionEvent {
@@ -8,6 +8,7 @@ export interface ElectionEvent {
   endDate: Date;
   color?: string;
   eventUsers: Array<EventUserAllowedRoles>;
+  votingStandsIds: number[];
   hasState: boolean;
 }
 

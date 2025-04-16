@@ -7,4 +7,5 @@ export interface Vote {
   round: ObjectId; 
   role: Positions;
   contestant: ObjectId;
+  votingStandId: number;
 }

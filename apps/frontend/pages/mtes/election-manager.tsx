@@ -2,26 +2,13 @@ import { useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
-import { ObjectId, WithId } from 'mongodb';
-import {
-  Paper,
-  Typography,
-  Box,
-  Button,
-  List,
-  Divider,
-  ListItem,
-  ListItemText,
-  Stack
-} from '@mui/material';
-import { ElectionState, Member, Round, SafeUser, VotingStates } from '@mtes/types';
+import { WithId } from 'mongodb';
+import { Paper, Typography, Box, Button, Stack } from '@mui/material';
+import { ElectionEvent, ElectionState, Member, Round, SafeUser, VotingStates } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
-import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
-import { SelectedRound } from 'apps/frontend/components/mtes/selected-round';
-import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
-import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
+import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
@@ -32,34 +19,50 @@ interface Props {
   members: WithId<Member>[];
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
-  votingStands: number[];
+  event: ElectionEvent;
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingStands }) => {
+const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
-  const [standStatus, setStandStatus] = useState<VotingStates>('NotStarted');
-  const [votingMember, setVotingMember] = useState<Member | null>(null);
+
+  const [standStatuses, setStandStatuses] = useState<
+    Record<number, { status: VotingStates; member: Member | null }>
+  >(
+    Object.fromEntries(
+      event.votingStandsIds.map(id => [
+        id,
+        { status: electionState.activeRound ? 'Empty' : 'NotStarted', member: null }
+      ])
+    )
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   const { socket, connectionStatus } = useWebsocket([
     {
       name: 'voteSubmitted',
-      handler: (votingMember: WithId<Member>) => {
-        enqueueSnackbar(`${votingMember.name} הגיש הצבעה`, { variant: 'info' });
-        setStandStatus('VotingSubmitted');
+      handler: (votingMember: WithId<Member>, standId: number) => {
+        enqueueSnackbar(`${votingMember.name} הגיש הצבעה בעמדה ${standId}`, { variant: 'info' });
+        setStandStatuses(prev => ({
+          ...prev,
+          [standId]: { ...prev[standId], status: 'VotingSubmitted' }
+        }));
       }
     },
     {
       name: 'voteProcessed',
-      handler: (votingMember: WithId<Member>) => {
-        enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה`, { variant: 'success' });
-        setVotingMember(null);
-        setStandStatus('Empty');
+      handler: (votingMember: WithId<Member>, standId: number) => {
+        enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה בעמדה ${standId}`, {
+          variant: 'success'
+        });
+        setStandStatuses(prev => ({
+          ...prev,
+          [standId]: { status: 'Empty', member: null }
+        }));
       }
     }
   ]);
@@ -82,8 +85,10 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
     socket.emit('loadVotingMember', member, votingStand, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Member sent successfully');
-        setStandStatus('Voting');
-        setVotingMember(member);
+        setStandStatuses(prev => ({
+          ...prev,
+          [votingStand]: { status: 'Voting', member }
+        }));
         enqueueSnackbar(`${member.name} נשלח להצבעה בעמדה ${votingStand}`, { variant: 'success' });
       } else {
         console.error('Error sending member');
@@ -105,13 +110,18 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
       if (response.ok) {
         console.log('Round started successfully');
         enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
-        setStandStatus('Empty'); // Update standStatus to VotingSubmitted
+        setStandStatuses(prev => {
+          const newStatuses = { ...prev };
+          Object.keys(newStatuses).forEach(standId => {
+            newStatuses[parseInt(standId)] = { status: 'Empty', member: null };
+          });
+          return newStatuses;
+        });
       } else {
         console.error('Error starting round');
         enqueueSnackbar('שגיאה בהתחלת הסבב', { variant: 'error' });
       }
     });
-    enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
   };
 
   const handleStopRound = () => {
@@ -122,16 +132,20 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
       if (response.ok) {
         console.log('Round stopped successfully');
         enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
-        setStandStatus('NotStarted');
+        setStandStatuses(prev => {
+          const newStatuses = { ...prev };
+          Object.keys(newStatuses).forEach(standId => {
+            newStatuses[parseInt(standId)] = { status: 'NotStarted', member: null };
+          });
+          return newStatuses;
+        });
       } else {
         console.error('Error stopping round');
         enqueueSnackbar('שגיאה בהפסקת הסבב', { variant: 'error' });
       }
     });
-    enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
   };
 
-  // Function to refresh server-side props
   const refreshData = () => {
     router.replace(router.asPath);
   };
@@ -163,7 +177,16 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
           </Paper>
 
           <Paper elevation={2} sx={{ p: 4 }}>
-            <StandStatusCard status={standStatus} member={votingMember} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 4 }}>
+              {event.votingStandsIds.map(standId => (
+                <StandStatusCard
+                  key={standId}
+                  standId={standId}
+                  status={standStatuses[standId].status}
+                  member={standStatuses[standId].member}
+                />
+              ))}
+            </Box>
             {activeRound ? (
               <Box>
                 <Box
@@ -206,16 +229,34 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
                     <Card
                       key={member._id.toString()}
                       sx={{
-                        cursor: votingMember?.name === member.name ? 'not-allowed' : 'pointer',
+                        cursor: Object.values(standStatuses).some(
+                          s => s.member?.name === member.name
+                        )
+                          ? 'not-allowed'
+                          : 'pointer',
                         transition: 'all 0.2s ease',
                         '&:hover': {
-                          transform:
-                            votingMember?.name !== member.name ? 'translateY(-2px)' : 'none',
-                          boxShadow: votingMember?.name !== member.name ? 3 : 1
+                          transform: Object.values(standStatuses).some(
+                            s => s.member?.name === member.name
+                          )
+                            ? 'none'
+                            : 'translateY(-2px)',
+                          boxShadow: Object.values(standStatuses).some(
+                            s => s.member?.name === member.name
+                          )
+                            ? 1
+                            : 3
                         },
-                        opacity: votingMember?.name === member.name ? 0.6 : 1
+                        opacity: Object.values(standStatuses).some(
+                          s => s.member?.name === member.name
+                        )
+                          ? 0.6
+                          : 1
                       }}
-                      onClick={() => votingMember?.name !== member.name && handleOpenDialog(member)}
+                      onClick={() =>
+                        !Object.values(standStatuses).some(s => s.member?.name === member.name) &&
+                        handleOpenDialog(member)
+                      }
                     >
                       <CardContent sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -389,7 +430,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, votingSta
               open={dialogOpen}
               onClose={handleCloseDialog}
               onSelect={handleSelectVotingStand}
-              votingStands={votingStands}
+              votingStands={event.votingStandsIds}
               memberName={selectedMember.name}
             />
           )}
@@ -409,7 +450,7 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
         rounds: '/api/events/rounds',
         electionState: '/api/events/state',
         members: '/api/events/members',
-        votingStands: '/api/events/votingStands'
+        event: '/public/event'
       },
       ctx
     );

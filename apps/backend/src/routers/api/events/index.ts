@@ -102,59 +102,61 @@ router.put('/state', (req: Request, res: Response) => {
 });
 
 router.post('/vote', async (req: Request, res: Response) => {
-  const { roundId, memberId, votes } = req.body;
-  
-  if (!roundId || !memberId || !votes) {
+  const { roundId, memberId, votes, votingStandId } = req.body;
+
+  if (!roundId || !memberId || !votes || votingStandId === undefined) {
     console.log('❌ Missing required vote data');
     return res.status(400).json({ ok: false, message: 'Missing required vote data' });
   }
 
   try {
     // Get the round and member objects
-    const round = await db.getRound({_id: new ObjectId(roundId)});
-    const member = await db.getMember({_id: new ObjectId(memberId)});
-    
+    const round = await db.getRound({ _id: new ObjectId(roundId) });
+    const member = await db.getMember({ _id: new ObjectId(memberId) });
+
     if (!round) {
       console.log(`❌ Round with ID ${roundId} not found`);
       return res.status(404).json({ ok: false, message: 'Round not found' });
     }
-    
+
     if (!member) {
       console.log(`❌ Member with ID ${memberId} not found`);
       return res.status(404).json({ ok: false, message: 'Member not found' });
     }
 
     console.log(`⏬ Processing vote for ${member.name} in round ${round.name}`);
-    
+
     // Here you would process the votes and save them to the database
     // For each role and its selected contestants in the votes object
     const votePromises = Object.entries(votes).map(async ([role, contestantIds]) => {
       // If contestantIds is an array, process each contestant
       if (Array.isArray(contestantIds)) {
-        return Promise.all(contestantIds.map(async (contestantId) => {
-          const contestant = await db.getMember({_id: new ObjectId(contestantId)});
-          if (!contestant) {
-            console.log(`❌ Contestant with ID ${contestantId} not found`);
-            return null;
-          }
-          
-          const vote = {
-            round: round._id,
-            role: role as Positions,
-            contestant: contestant._id,
-          };
+        return Promise.all(
+          contestantIds.map(async contestantId => {
+            const contestant = await db.getMember({ _id: new ObjectId(contestantId) });
+            if (!contestant) {
+              console.log(`❌ Contestant with ID ${contestantId} not found`);
+              return null;
+            }
 
-          console.log('Vote:', JSON.stringify(vote));
-          
-          
-          return db.addVote(vote);
-        }));
+            const vote = {
+              round: round._id,
+              role: role as Positions,
+              contestant: contestant._id,
+              votingStandId
+            };
+
+            console.log('Vote:', JSON.stringify(vote));
+
+            return db.addVote(vote);
+          })
+        );
       }
       return [];
     });
-    
+
     await Promise.all(votePromises);
-    
+
     console.log('✅ Votes recorded successfully');
     return res.json({ ok: true });
   } catch (error) {

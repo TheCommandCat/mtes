@@ -1,5 +1,4 @@
-import { ObjectId } from 'mongodb';
-import { Role, RoleAssociation } from '../roles';
+import { Role } from '../roles';
 
 export interface User {
   username?: string;
@@ -9,7 +8,7 @@ export interface User {
   roleAssociation?: {
     type: 'stand';
     value: number;
-  }
+  };
   lastPasswordSetDate: Date;
 }
 

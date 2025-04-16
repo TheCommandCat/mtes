@@ -22,10 +22,9 @@ router.post(
 
     try {
       console.log('👓 Parsing file...');
-      const timezone = req.body.timezone;
       const csvData = (req.files.file as fileUpload.UploadedFile)?.data.toString();
 
-      const { members, contestants, numOfStands } = parseDivisionData(csvData);
+      const { members, numOfStands } = parseDivisionData(csvData);
 
       console.log('📄 Inserting members and contestants');
 
@@ -33,12 +32,8 @@ router.post(
         res.status(500).json({ error: 'Could not insert members!' });
         return;
       }
-      if (!(await db.addContestants(contestants)).acknowledged) {
-        res.status(500).json({ error: 'Could not insert contestants!' });
-        return;
-      }
 
-      console.log('✅ Inserted members and contestants');
+      console.log('✅ Inserted members');
 
       console.log('👤 Generating division users');
       const users = getDivisionUsers(numOfStands);

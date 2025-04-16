@@ -1,12 +1,7 @@
-﻿Version Number,2,,,,,,,,,,
-Block Format,1,,,,,,,,,,
-number of members,3,,,,,,,,,,
-ניר חן,Tel Aviv - Yafo,,,,,,,,,,
-אורי אייזנברג,Tel Aviv - Yafo,,,,,,,,,,
-דרור כהן,Petah Tikva,,,,,,,,,,
-Block Format,2,,,,,,,,,,
-number of contestants,2,,,,,,,,,,
-ניר חן,Tel Aviv - Yafo,Chairman,,,,,,,,,
-דרור כהן,Petah Tikva,Secretary,true,,,,,,,,
-Block Format,3,,,,,,,,,,
-Number of voting stands,2,,,,,,,,,,
+﻿Block Format,1
+number of members,3
+ניר חן,Tel Aviv - Yafo
+אורי אייזנברג,Tel Aviv - Yafo
+דרור כהן,Petah Tikva
+Block Format,2
+Number of voting stands,2
