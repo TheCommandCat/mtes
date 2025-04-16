@@ -30,7 +30,7 @@ import { Member, Positions, Position, Round } from '@mtes/types'; // Import nece
 interface RoleConfigFormState {
   role: Positions | ''; // Allow empty initial state
   contestants: Member[];
-  maxVotes: number | '';
+  maxVotes: number;
 }
 
 // Define the structure for the data sent to the API
@@ -57,7 +57,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
   const [open, setOpen] = useState(false);
   const [roundName, setRoundName] = useState('');
   const [roles, setRoles] = useState<RoleConfigFormState[]>([
-    { role: '', contestants: [], maxVotes: '' } // Start with one empty role
+    { role: '', contestants: [], maxVotes: 1 } // Default maxVotes to 1
   ]);
   const [allowedMembers, setAllowedMembers] = useState<Member[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,14 +75,14 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
     setOpen(false);
     // Reset form on close
     setRoundName('');
-    setRoles([{ role: '', contestants: [], maxVotes: '' }]);
+    setRoles([{ role: '', contestants: [], maxVotes: 1 }]);
     setAllowedMembers([]);
     setHasAttemptedSubmit(false); // Reset on close
   };
 
   // --- Role Management ---
   const handleAddRole = () => {
-    setRoles([...roles, { role: '', contestants: [], maxVotes: '' }]);
+    setRoles([...roles, { role: '', contestants: [], maxVotes: 1 }]);
   };
 
   const handleRemoveRole = (index: number) => {
@@ -386,27 +386,23 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
                         fullWidth
                         variant="outlined"
                         value={role.maxVotes}
-                        onChange={e =>
-                          handleRoleChange(
-                            index,
-                            'maxVotes',
-                            e.target.value === '' ? '' : parseInt(e.target.value, 10)
-                          )
-                        }
+                        onChange={e => {
+                          const value =
+                            e.target.value === '' ? 1 : Math.max(1, parseInt(e.target.value, 10));
+                          handleRoleChange(index, 'maxVotes', value);
+                        }}
                         required
                         InputProps={{ inputProps: { min: 1 } }}
                         disabled={isSubmitting}
                         // Conditional error
                         error={
                           hasAttemptedSubmit &&
-                          (role.maxVotes === '' ||
-                            (typeof role.maxVotes === 'number' && role.maxVotes <= 0))
+                          (typeof role.maxVotes !== 'number' || role.maxVotes <= 0)
                         }
                         // Conditional helper text
                         helperText={
                           hasAttemptedSubmit &&
-                          (role.maxVotes === '' ||
-                            (typeof role.maxVotes === 'number' && role.maxVotes <= 0))
+                          (typeof role.maxVotes !== 'number' || role.maxVotes <= 0)
                             ? 'Must be > 0'
                             : ''
                         }
