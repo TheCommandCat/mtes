@@ -22,26 +22,21 @@ router.post(
 
     try {
       console.log('👓 Parsing file...');
-      const timezone = req.body.timezone;
       const csvData = (req.files.file as fileUpload.UploadedFile)?.data.toString();
 
-      const { members, contestants } = parseDivisionData(csvData);
+      const { members, numOfStands } = parseDivisionData(csvData);
 
-      console.log('📄 Inserting members and contestants');
+      console.log('📄 Inserting members');
 
       if (!(await db.addMembers(members)).acknowledged) {
         res.status(500).json({ error: 'Could not insert members!' });
         return;
       }
-      if (!(await db.addContestants(contestants)).acknowledged) {
-        res.status(500).json({ error: 'Could not insert contestants!' });
-        return;
-      }
 
-      console.log('✅ Inserted members and contestants');
+      console.log('✅ Inserted members');
 
       console.log('👤 Generating division users');
-      const users = getDivisionUsers();
+      const users = getDivisionUsers(numOfStands);
       console.log(users);
 
       if (!(await db.addUsers(users)).acknowledged) {
@@ -49,6 +44,11 @@ router.post(
         return;
       }
       console.log('✅ Generated division users');
+
+      await db.updateElectionEvent({
+        votingStandsIds: Array.from({ length: numOfStands }, (_, i) => i + 1)
+      });
+      console.log('✅ Updated voting stands IDs');
 
       console.log('🔐 Creating Election state');
       console.log('✅ Created Election state');

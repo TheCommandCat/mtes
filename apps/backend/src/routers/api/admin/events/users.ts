@@ -7,7 +7,7 @@ import * as db from '@mtes/database';
 const router = express.Router({ mergeParams: true });
 
 router.get('/', (req: Request, res: Response) => {
-  db.getDivisionUsers().then(users => {
+  db.getEventUsers().then(users => {
     return res.json(users);
   });
 });
@@ -15,14 +15,15 @@ router.get('/', (req: Request, res: Response) => {
 router.get(
   '/export',
   asyncHandler(async (req: Request, res: Response) => {
-    const users = await db.getDivisionUsersWithCredentials();
+    const users = await db.getEventUsersWithCredentials();
 
     const credentials = await Promise.all(
       users.map(async user => {
-        const { role, password } = user;
+        const { role, password, roleAssociation } = user;
 
         return {
           role,
+          value: roleAssociation ? roleAssociation.value : 'undefined',
           password
         };
       })
@@ -39,6 +40,10 @@ router.get(
         {
           label: 'תפקיד',
           value: 'role'
+        },
+        {
+          label: 'ערך תפקיד',
+          value: 'value'
         },
         {
           label: 'סיסמא',

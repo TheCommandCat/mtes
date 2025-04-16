@@ -1,12 +1,13 @@
 import { Member, VotingStates } from '@mtes/types';
 import { Box, Typography } from '@mui/material';
 
-interface StandStatudCardProps {
+interface StandStatusCardProps {
+  standId: number;
   status: VotingStates;
   member?: Member | null;
 }
 
-export const StandStatusCard: React.FC<StandStatudCardProps> = ({ status, member }) => {
+export const StandStatusCard: React.FC<StandStatusCardProps> = ({ standId, status, member }) => {
   switch (status) {
     case 'NotStarted':
       return (
@@ -20,6 +21,9 @@ export const StandStatusCard: React.FC<StandStatudCardProps> = ({ status, member
             boxShadow: 1
           }}
         >
+          <Typography variant="h4" color="text.primary" gutterBottom>
+            עמדה {standId}
+          </Typography>
           <Typography variant="h5" color="text.secondary" gutterBottom>
             אין סבב פעיל
           </Typography>
@@ -41,11 +45,14 @@ export const StandStatusCard: React.FC<StandStatudCardProps> = ({ status, member
             boxShadow: 1
           }}
         >
+          <Typography variant="h4" color="text.primary" gutterBottom>
+            עמדה {standId}
+          </Typography>
           <Typography variant="h5" color="text.secondary" gutterBottom>
             {member?.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Is Voting
+            בהצבעה
           </Typography>
         </Box>
       );
@@ -57,16 +64,19 @@ export const StandStatusCard: React.FC<StandStatudCardProps> = ({ status, member
             mb: 4,
             p: 4,
             textAlign: 'center',
-            bgcolor: '#e8f5e9', // Light green background
+            bgcolor: '#e8f5e9',
             borderRadius: 2,
             boxShadow: 1
           }}
         >
+          <Typography variant="h4" color="text.primary" gutterBottom>
+            עמדה {standId}
+          </Typography>
           <Typography variant="h5" color="text.secondary" gutterBottom>
             {member?.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Submmited Vote
+            הצבעה הוגשה
           </Typography>
         </Box>
       );
@@ -78,16 +88,19 @@ export const StandStatusCard: React.FC<StandStatudCardProps> = ({ status, member
             mb: 4,
             p: 4,
             textAlign: 'center',
-            bgcolor: '#e3f2fd', // Light blue background
+            bgcolor: '#e3f2fd',
             borderRadius: 2,
             boxShadow: 1
           }}
         >
+          <Typography variant="h4" color="text.primary" gutterBottom>
+            עמדה {standId}
+          </Typography>
           <Typography variant="h5" color="text.secondary" gutterBottom>
             No Member
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Choose memebr from list
+            בחר מצביע מהרשימה
           </Typography>
         </Box>
       );

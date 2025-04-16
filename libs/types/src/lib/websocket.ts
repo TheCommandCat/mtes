@@ -4,13 +4,14 @@ import { Member } from './schemas/member';
 
 
 export interface WSServerEmittedEvents {
-  votingMemberLoaded: (member: WithId<Member>) => void;
+  votingMemberLoaded: (member: WithId<Member>, votingStand: number) => void;
   roundLoaded: (roundId: string) => void;
 }
 
 export interface WSClientEmittedEvents {
   loadVotingMember: (
     member: WithId<Member>,
+    votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
@@ -23,11 +24,13 @@ export interface WSClientEmittedEvents {
 
   voteSubmitted: (
     member: WithId<Member>,
+    votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
   voteProcessed: (
     member: WithId<Member>,
+    votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

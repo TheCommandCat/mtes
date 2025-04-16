@@ -5,17 +5,19 @@ import { WithId } from 'mongodb';
 import { Button, Box, Typography, Stack, MenuItem, TextField } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { Role, RoleAssociationType, getAssociationType } from '@mtes/types';
-// import { localizedJudgingCategory } from '@lems/season';
+import { Role, RoleTypes } from '@mtes/types';
 import FormDropdown from './form-dropdown';
 import { apiFetch } from '../../lib/utils/fetch';
 import { localizedRoles } from '../../localization/roles';
 
-const DivisionLoginForm: React.FC = () => {
+interface DivisionLoginFormProps {
+  votingStands?: number[];
+}
+
+const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) => {
   const [role, setRole] = useState<Role>('' as Role);
   const [password, setPassword] = useState<string>('');
-
-  const loginRoles = ['election-manager', 'voting-stand'] as Role[];
+  const [association, setAssociation] = useState<number>();
 
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
@@ -27,7 +29,15 @@ const DivisionLoginForm: React.FC = () => {
       body: JSON.stringify({
         isAdmin: false,
         role,
-        password
+        password,
+        ...(association
+          ? {
+              roleAssociation: {
+                type: 'stand',
+                value: association
+              }
+            }
+          : undefined)
       })
     })
       .then(async res => {
@@ -68,7 +78,7 @@ const DivisionLoginForm: React.FC = () => {
           setRole(e.target.value as Role);
         }}
       >
-        {loginRoles.map((r: Role) => {
+        {RoleTypes.map((r: Role) => {
           return (
             <MenuItem value={r as Role} key={r as Role}>
               {localizedRoles[r as Role].name}
@@ -76,6 +86,20 @@ const DivisionLoginForm: React.FC = () => {
           );
         })}
       </FormDropdown>
+      {role === 'voting-stand' && (
+        <FormDropdown
+          id="select-role-association"
+          value={association}
+          label={'קלפי'}
+          onChange={e => setAssociation(e.target.value)}
+        >
+          {votingStands?.map(stand => (
+            <MenuItem value={stand} key={stand}>
+              קלפי {stand}
+            </MenuItem>
+          ))}
+        </FormDropdown>
+      )}
       <TextField
         fullWidth
         variant="outlined"
@@ -89,7 +113,7 @@ const DivisionLoginForm: React.FC = () => {
       <Box justifyContent="flex-end" display="flex" pt={4}>
         <Button
           endIcon={<ChevronLeftIcon />}
-          disabled={!role || !password}
+          disabled={!role || !password || (role === 'voting-stand' && !association)}
           type="submit"
           variant="contained"
         >

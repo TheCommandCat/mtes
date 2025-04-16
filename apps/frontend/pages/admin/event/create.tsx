@@ -107,6 +107,7 @@ const Page: NextPage = () => {
         (a, r) => ({ ...a, [r]: true }),
         {} as Record<EventUserAllowedRoles, boolean>
       ),
+      votingStands: 1,
       startDate: getDefaultDate(),
       endDate: getDefaultDate(),
       divisions: [{ name: '123', color: DivisionSwatches[0] }]

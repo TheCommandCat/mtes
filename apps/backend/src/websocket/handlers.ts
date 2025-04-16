@@ -2,12 +2,12 @@ import { Member } from '@mtes/types';
 import * as db from '@mtes/database';
 import { ObjectId, WithId } from 'mongodb';
 
-export const handleLoadVotingMember = async (namespace: any, member: WithId<Member>, callback) => {
+export const handleLoadVotingMember = async (namespace: any, member: WithId<Member>, votingStand: number, callback) => {
   console.log('🔌 WS: Load voting member');
   console.log('WS Status: ', namespace.connected);
 
   try {
-    namespace.emit('votingMemberLoaded', member);
+    namespace.emit('votingMemberLoaded', member, votingStand);
     callback({ ok: true });
   } catch (error) {
     console.error('Error loading voting member:', error);
@@ -44,12 +44,12 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
   }
 };
 
-export const handleVoteSubmitted = async (namespace: any, member: WithId<Member>, callback) => {
-  namespace.emit('voteSubmitted', member);
+export const handleVoteSubmitted = async (namespace: any, member: WithId<Member>, votingStand: number, callback) => {
+  namespace.emit('voteSubmitted', member, votingStand);
   callback({ ok: true });
 }
 
-export const handleVoteProcessed = async (namespace: any, member: WithId<Member>, callback) => {
-  namespace.emit('voteProcessed', member);
+export const handleVoteProcessed = async (namespace: any, member: WithId<Member>, votingStand: number,  callback) => {
+  namespace.emit('voteProcessed', member, votingStand);
   callback({ ok: true });
 }

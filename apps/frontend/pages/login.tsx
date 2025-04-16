@@ -3,17 +3,25 @@ import { GetServerSideProps, NextPage } from 'next';
 import { Paper, Box, Link, Stack, Typography } from '@mui/material';
 import Layout from '../components/layout';
 import AdminLoginForm from '../components/general/login/admin-login-form';
-import { User } from '@mtes/types';
-import { apiFetch } from '../lib/utils/fetch';
+import { ElectionEvent, User } from '@mtes/types';
+import { apiFetch, serverSideGetRequests } from '../lib/utils/fetch';
 import DivisionLoginForm from '../components/login/division-login-form';
 
-const Page: NextPage = () => {
+interface LoginProps {
+  event?: ElectionEvent;
+}
+
+const Page: NextPage<LoginProps> = ({ event }) => {
   const [isAdminLogin, setIsAdminLogin] = useState<boolean>(false);
 
   return (
     <Layout maxWidth="sm">
       <Paper sx={{ p: 4, mt: 4 }}>
-        {isAdminLogin ? <AdminLoginForm /> : <DivisionLoginForm />}
+        {isAdminLogin ? (
+          <AdminLoginForm />
+        ) : (
+          <DivisionLoginForm votingStands={event?.votingStandsIds} />
+        )}
       </Paper>
 
       <Box
@@ -42,12 +50,19 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
     return response.ok ? response.json() : undefined;
   });
 
+  const data = await serverSideGetRequests(
+    {
+      event: '/public/event'
+    },
+    ctx
+  );
+
   if (user) {
     return user.isAdmin
       ? { redirect: { destination: `/admin`, permanent: false } }
       : { redirect: { destination: `/mtes`, permanent: false } };
   } else {
-    return { props: {} };
+    return { props: { ...data } };
   }
 };
 

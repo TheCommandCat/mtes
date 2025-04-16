@@ -3,11 +3,10 @@ import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
-import { Paper, Typography, Box, Card, CardContent, Button, FormControl } from '@mui/material';
-import { ElectionState, Member, SafeUser, Role, Round, Vote, Positions } from '@mtes/types'; // Assuming Vote type might be relevant for backend structure
+import { Paper, Typography, Box, Card, CardContent, Button } from '@mui/material';
+import { ElectionState, Member, SafeUser, Round, Positions } from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
-import { localizedRoles } from '../../localization/roles'; // Assuming this maps Role enum/string to display names
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { Formik, Form } from 'formik';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
@@ -17,19 +16,16 @@ interface Props {
   electionState: WithId<ElectionState>;
 }
 
-// Assuming Member type has an _id property
-interface MemberWithId extends Member {
-  _id: string;
-}
-
 const Page: NextPage<Props> = ({ user, electionState }) => {
   const router = useRouter();
   const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
-  const [member, setMember] = useState<MemberWithId | null>(null); // Use MemberWithId
+  const [member, setMember] = useState<WithId<Member> | null>(null);
+  const votingStandId = user.roleAssociation?.value;
 
-  function handleUpdateMember(memberData: Member) {
-    // Assuming the incoming member data might not have _id explicitly typed, cast it.
-    setMember(memberData as MemberWithId);
+  function handleUpdateMember(memberData: Member, votingStand: number) {
+    if (votingStandId === votingStand) {
+      setMember(memberData as WithId<Member>);
+    }
   }
 
   const { socket, connectionStatus } = useWebsocket([
@@ -55,7 +51,10 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
         enqueueSnackbar('לא נמצאו הרשאות מתאימות.', { variant: 'error' });
       }}
     >
-      <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
+      <Layout
+        title={`ממשק ${user.role} - עמדה ${user.roleAssociation?.value}`}
+        connectionStatus={connectionStatus}
+      >
         <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
           <Paper
             elevation={3}
@@ -167,7 +166,8 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                         const payload = {
                           roundId: round._id,
                           memberId: member._id,
-                          votes: formattedVotes
+                          votes: formattedVotes,
+                          votingStandId
                         };
 
                         console.log('Submitting payload:', JSON.stringify(payload, null, 2));
@@ -175,6 +175,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                         socket.emit(
                           'voteSubmitted',
                           member,
+                          votingStandId,
                           (processResponse: { ok: boolean; error?: string }) => {
                             if (processResponse.ok) {
                               console.log('Vote submitted successfully');
@@ -205,6 +206,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                             socket.emit(
                               'voteProcessed',
                               member,
+                              votingStandId,
                               (processResponse: { ok: boolean; error?: string }) => {
                                 if (processResponse.ok) {
                                   console.log('Vote processed successfully');
