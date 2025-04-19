@@ -124,8 +124,9 @@ router.post('/vote', async (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, message: 'Member not found' });
     }
 
-    if (db.hasMemberVoted(round._id.toString(), member._id.toString())) {
-      console.log(`❌ Member ${member.name} has already voted in round ${round.name}`);
+    const hasMemberVoted = await db.hasMemberVoted(round._id.toString(), member._id.toString());
+    if (hasMemberVoted) {
+      console.log(`❌ Member has already voted in this round`);
       return res.status(400).json({ ok: false, message: 'Member has already voted' });
     }
 
@@ -168,6 +169,19 @@ router.post('/vote', async (req: Request, res: Response) => {
     console.error('❌ Error processing vote:', error);
     return res.status(500).json({ ok: false, message: 'Internal server error' });
   }
+});
+
+router.get('/votedMembers', async (req: Request, res: Response) => {
+  console.log('⏬ Getting voted members...');
+  const electionState = await db.getElectionState();
+  const roundId = electionState.activeRound._id.toString();
+  if (!roundId) {
+    console.log('❌ Round ID is null or undefined');
+    res.status(400).json({ ok: false, message: 'Round ID is missing' });
+    return;
+  }
+  const votedMembers = await db.getVotedMembers(roundId);
+  return res.json(votedMembers);
 });
 
 export default router;

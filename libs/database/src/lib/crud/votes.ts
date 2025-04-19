@@ -30,9 +30,18 @@ export function removeVotingStatus(roundId: string, memberId: string) {
 }
 
 // Check if member has voted
-export function hasMemberVoted(roundId: string, memberId: string) {
-  return db.collection<VotingStatus>('votingStatus').findOne({
+export async function hasMemberVoted(roundId: string, memberId: string) {
+  const status = await db.collection<VotingStatus>('votingStatus').findOne({
     memberId: new ObjectId(memberId),
     roundId: new ObjectId(roundId)
   });
+
+  return status !== null;
+}
+
+export function getVotedMembers(roundId: string) {
+  return db
+    .collection<VotingStatus>('votingStatus')
+    .find({ roundId: new ObjectId(roundId) })
+    .toArray();
 }
