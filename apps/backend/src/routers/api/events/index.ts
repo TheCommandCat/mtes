@@ -143,7 +143,6 @@ router.post('/vote', async (req: Request, res: Response) => {
               round: round._id,
               role: role as Positions,
               contestant: contestant._id,
-              votingStandId
             };
 
             console.log('Vote:', JSON.stringify(vote));

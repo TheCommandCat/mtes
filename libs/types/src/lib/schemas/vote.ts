@@ -4,8 +4,7 @@ import { Member } from './member';
 import { Round } from './round';
 
 export interface Vote {
-  round: ObjectId; 
+  round: ObjectId;
   role: Positions;
   contestant: ObjectId;
-  votingStandId: number;
 }
