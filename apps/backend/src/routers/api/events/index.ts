@@ -124,7 +124,13 @@ router.post('/vote', async (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, message: 'Member not found' });
     }
 
-    console.log(`⏬ Processing vote for ${member.name} in round ${round.name}`);
+    const hasMemberVoted = await db.hasMemberVoted(round._id.toString(), member._id.toString());
+    if (hasMemberVoted) {
+      console.log(`❌ Member has already voted in this round`);
+      return res.status(400).json({ ok: false, message: 'Member has already voted' });
+    }
+
+    console.log(`⏬ Processing vote for ${member.name} in round - ${round.name}`);
 
     // Here you would process the votes and save them to the database
     // For each role and its selected contestants in the votes object
@@ -142,8 +148,7 @@ router.post('/vote', async (req: Request, res: Response) => {
             const vote = {
               round: round._id,
               role: role as Positions,
-              contestant: contestant._id,
-              votingStandId
+              contestant: contestant._id
             };
 
             console.log('Vote:', JSON.stringify(vote));
@@ -156,6 +161,7 @@ router.post('/vote', async (req: Request, res: Response) => {
     });
 
     await Promise.all(votePromises);
+    await db.markMemberVoted(round._id.toString(), member._id.toString());
 
     console.log('✅ Votes recorded successfully');
     return res.json({ ok: true });
@@ -163,6 +169,23 @@ router.post('/vote', async (req: Request, res: Response) => {
     console.error('❌ Error processing vote:', error);
     return res.status(500).json({ ok: false, message: 'Internal server error' });
   }
+});
+
+router.get('/votedMembers/:roundId', async (req: Request, res: Response) => {
+  const { roundId } = req.params;
+  if (!roundId) {
+    console.log('❌ Round ID is null or undefined');
+    res.status(400).json({ ok: false, message: 'Round ID is missing' });
+    return;
+  }
+  console.log(`⏬ Getting voted members for round ${roundId}`);
+  const votedMembers = await db.getVotedMembers(roundId);
+  if (!votedMembers) {
+    console.log(`❌ Could not get voted members`);
+    res.status(500).json({ ok: false, message: 'Could not get voted members' });
+    return;
+  }
+  res.json({ ok: true, votedMembers });
 });
 
 export default router;

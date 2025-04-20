@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import { Paper, Typography, Box, Button, Stack } from '@mui/material';
-import { ElectionEvent, ElectionState, Member, Round, SafeUser, VotingStates } from '@mtes/types';
+import {
+  ElectionEvent,
+  ElectionState,
+  Member,
+  Round,
+  SafeUser,
+  VotingStates,
+  VotingStatus
+} from '@mtes/types';
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
-import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
@@ -28,7 +36,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
-
   const [standStatuses, setStandStatuses] = useState<
     Record<number, { status: VotingStates; member: Member | null }>
   >(
@@ -41,6 +48,25 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
+
+  const getVotedMembers = async (roundId: string) => {
+    const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
+      method: 'GET'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setVotedMembers(data.votedMembers);
+    } else {
+      console.error('Error fetching voted members:', response.statusText);
+    }
+  };
+
+  useEffect(() => {
+    if (activeRound) {
+      getVotedMembers(activeRound._id.toString());
+    }
+  }, [activeRound]);
 
   const { socket, connectionStatus } = useWebsocket([
     {
@@ -63,6 +89,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           ...prev,
           [standId]: { status: 'Empty', member: null }
         }));
+        getVotedMembers(activeRound?._id.toString() || '');
       }
     }
   ]);
@@ -150,6 +177,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     router.replace(router.asPath);
   };
 
+  console.log(votedMembers);
+
   return (
     <RoleAuthorizer
       user={user}
@@ -217,60 +246,141 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                   </Button>
                 </Box>
 
-                <Box
+                <Paper
+                  elevation={2}
                   sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                    gap: 2,
-                    mb: 4
+                    p: 4,
+                    mb: 4,
+                    background: 'linear-gradient(to right, #f5f5f5, #ffffff)',
+                    borderRadius: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
                   }}
                 >
-                  {members.map(member => (
-                    <Card
-                      key={member._id.toString()}
-                      sx={{
-                        cursor: Object.values(standStatuses).some(
-                          s => s.member?.name === member.name
-                        )
-                          ? 'not-allowed'
-                          : 'pointer',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          transform: Object.values(standStatuses).some(
-                            s => s.member?.name === member.name
-                          )
-                            ? 'none'
-                            : 'translateY(-2px)',
-                          boxShadow: Object.values(standStatuses).some(
-                            s => s.member?.name === member.name
-                          )
-                            ? 1
-                            : 3
-                        },
-                        opacity: Object.values(standStatuses).some(
-                          s => s.member?.name === member.name
-                        )
-                          ? 0.6
-                          : 1
-                      }}
-                      onClick={() =>
-                        !Object.values(standStatuses).some(s => s.member?.name === member.name) &&
-                        handleOpenDialog(member)
-                      }
-                    >
-                      <CardContent sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>{member.name.charAt(0)}</Avatar>
-                          <Box>
-                            <Typography variant="h6">{member.name}</Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {member.city}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  <Typography variant="h5" color="primary" gutterBottom>
+                    סטטוס הצבעה
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="h3" fontWeight="bold" color="primary">
+                      {votedMembers.length}
+                    </Typography>
+                    <Typography variant="h4" color="text.secondary">
+                      /
+                    </Typography>
+                    <Typography variant="h3" fontWeight="bold">
+                      {members.length}
+                    </Typography>
+                  </Box>
+                  <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1 }}>
+                    {Math.round((votedMembers.length / members.length) * 100)}% מהמצביעים השלימו
+                    הצבעה
+                  </Typography>
+                </Paper>
+
+                {/* Non-voted members section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    ממתינים להצבעה ({members.length - votedMembers.length})
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                      gap: 2
+                    }}
+                  >
+                    {members.map(member => {
+                      const hasVoted = votedMembers.some(
+                        vm => vm.memberId.toString() === member._id.toString()
+                      );
+                      const isCurrentlyVoting = Object.values(standStatuses).some(
+                        s => s.member?.name === member.name
+                      );
+
+                      if (hasVoted) return null;
+
+                      return (
+                        <Card
+                          key={member._id.toString()}
+                          sx={{
+                            cursor: isCurrentlyVoting ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              transform: isCurrentlyVoting ? 'none' : 'translateY(-2px)',
+                              boxShadow: isCurrentlyVoting ? 1 : 3
+                            },
+                            opacity: isCurrentlyVoting ? 0.6 : 1
+                          }}
+                          onClick={() => !isCurrentlyVoting && handleOpenDialog(member)}
+                        >
+                          <CardContent sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                {member.name.charAt(0)}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="h6">{member.name}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {member.city}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </Box>
+                </Box>
+
+                {/* Voted members section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" color="success.main" gutterBottom>
+                    הצביעו ({votedMembers.length})
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                      gap: 2
+                    }}
+                  >
+                    {members.map(member => {
+                      const hasVoted = votedMembers.some(
+                        vm => vm.memberId.toString() === member._id.toString()
+                      );
+
+                      if (!hasVoted) return null;
+
+                      return (
+                        <Card
+                          key={member._id.toString()}
+                          sx={{
+                            cursor: 'not-allowed',
+                            bgcolor: 'jobseeker.main',
+                            opacity: 0.8
+                          }}
+                        >
+                          <CardContent sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar sx={{ bgcolor: 'success.main' }}>
+                                {member.name.charAt(0)}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="h6">{member.name}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {member.city}
+                                </Typography>
+                                <Typography variant="body2" color="success.dark">
+                                  הצביע
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </Box>
                 </Box>
               </Box>
             ) : selectedRound ? (
@@ -290,7 +400,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                       סבב נבחר
                     </Typography>
                     <Typography variant="h4" fontWeight="bold">
-                      {selectedRound.name}
+                      {selectedRound?.name}
                     </Typography>
                   </Box>
                   <Stack direction="row" spacing={2}>
@@ -299,7 +409,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                     </Button>
                     <Button
                       variant="contained"
-                      onClick={() => handleStartRound(selectedRound)}
+                      onClick={() => selectedRound && handleStartRound(selectedRound)}
                       sx={{ px: 4 }}
                     >
                       התחל סבב
@@ -338,7 +448,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                 </Paper>
 
                 <Box sx={{ mb: 4 }}>
-                  {selectedRound.roles.map(role => (
+                  {selectedRound?.roles.map(role => (
                     <Paper
                       key={role.role.toString()}
                       elevation={1}
