@@ -173,6 +173,20 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     });
   };
 
+  const handleCancelMember = (standId: number) => {
+    socket.emit('loadVotingMember', null, standId, (response: { ok: boolean }) => {
+      if (response.ok) {
+        setStandStatuses(prev => ({
+          ...prev,
+          [standId]: { status: 'Empty', member: null }
+        }));
+        enqueueSnackbar(`המצביע בוטל מעמדה ${standId}`, { variant: 'info' });
+      } else {
+        enqueueSnackbar('שגיאה בביטול המצביע', { variant: 'error' });
+      }
+    });
+  };
+
   const refreshData = () => {
     router.replace(router.asPath);
   };
@@ -213,6 +227,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                   standId={standId}
                   status={standStatuses[standId].status}
                   member={standStatuses[standId].member}
+                  onCancel={handleCancelMember}
                 />
               ))}
             </Box>

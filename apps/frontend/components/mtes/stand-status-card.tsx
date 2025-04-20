@@ -1,13 +1,19 @@
 import { Member, VotingStates } from '@mtes/types';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 
 interface StandStatusCardProps {
   standId: number;
   status: VotingStates;
   member?: Member | null;
+  onCancel: (standId: number) => void;
 }
 
-export const StandStatusCard: React.FC<StandStatusCardProps> = ({ standId, status, member }) => {
+export const StandStatusCard: React.FC<StandStatusCardProps> = ({
+  standId,
+  status,
+  member,
+  onCancel
+}) => {
   switch (status) {
     case 'NotStarted':
       return (
@@ -54,6 +60,18 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({ standId, statu
           <Typography variant="body2" color="text.secondary">
             בהצבעה
           </Typography>
+          {onCancel && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => onCancel(standId)}
+              sx={{
+                mt: 2
+              }}
+            >
+              ביטול הצבעה
+            </Button>
+          )}
         </Box>
       );
 
