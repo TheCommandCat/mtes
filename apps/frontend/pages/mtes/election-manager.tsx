@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
@@ -16,7 +16,7 @@ import {
 import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
-import { getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
@@ -28,16 +28,14 @@ interface Props {
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
   event: ElectionEvent;
-  votedMembers: WithId<VotingStatus>[];
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds, electionState, event, votedMembers }) => {
+const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
-
   const [standStatuses, setStandStatuses] = useState<
     Record<number, { status: VotingStates; member: Member | null }>
   >(
@@ -50,6 +48,25 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event, vo
   );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
+
+  const getVotedMembers = async (roundId: string) => {
+    const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
+      method: 'GET'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setVotedMembers(data.votedMembers);
+    } else {
+      console.error('Error fetching voted members:', response.statusText);
+    }
+  };
+
+  useEffect(() => {
+    if (activeRound) {
+      getVotedMembers(activeRound._id.toString());
+    }
+  }, [activeRound]);
 
   const { socket, connectionStatus } = useWebsocket([
     {
@@ -72,6 +89,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event, vo
           ...prev,
           [standId]: { status: 'Empty', member: null }
         }));
+        getVotedMembers(activeRound?._id.toString() || '');
       }
     }
   ]);
@@ -542,8 +560,7 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
         rounds: '/api/events/rounds',
         electionState: '/api/events/state',
         members: '/api/events/members',
-        event: '/public/event',
-        votedMembers: '/api/events/votedMembers'
+        event: '/public/event'
       },
       ctx
     );

@@ -171,17 +171,21 @@ router.post('/vote', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/votedMembers', async (req: Request, res: Response) => {
-  console.log('⏬ Getting voted members...');
-  const electionState = await db.getElectionState();
-  const roundId = electionState.activeRound._id.toString();
+router.get('/votedMembers/:roundId', async (req: Request, res: Response) => {
+  const { roundId } = req.params;
   if (!roundId) {
     console.log('❌ Round ID is null or undefined');
     res.status(400).json({ ok: false, message: 'Round ID is missing' });
     return;
   }
+  console.log(`⏬ Getting voted members for round ${roundId}`);
   const votedMembers = await db.getVotedMembers(roundId);
-  return res.json(votedMembers);
+  if (!votedMembers) {
+    console.log(`❌ Could not get voted members`);
+    res.status(500).json({ ok: false, message: 'Could not get voted members' });
+    return;
+  }
+  res.json({ ok: true, votedMembers });
 });
 
 export default router;
