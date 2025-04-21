@@ -54,9 +54,37 @@ router.post('/addRound', async (req: Request, res: Response) => {
   res.json({ ok: true, id: roundResult.insertedId });
 });
 
+router.put('/updateRound', async (req: Request, res: Response) => {
+  const { roundId, round } = req.body as { roundId: string; round: Partial<Round> };
+
+  if (!roundId) {
+    console.log('❌ Round ID is null or undefined');
+    res.status(400).json({ ok: false, message: 'Round ID is missing' });
+    return;
+  }
+
+  if (!round || Object.keys(round).length === 0) {
+    console.log('❌ Round update object is empty');
+    res.status(400).json({ ok: false, message: 'No changes provided' });
+    return;
+  }
+
+  console.log('⏬ Updating Round...');
+  console.log('Changes:', round);
+
+  const roundResult = await db.updateRound({ _id: new ObjectId(roundId) }, round);
+
+  if (!roundResult.acknowledged) {
+    console.log(`❌ Could not update Round`);
+    res.status(500).json({ ok: false, message: 'Could not update round' });
+    return;
+  }
+
+  res.json({ ok: true });
+});
+
 router.delete('/deleteRound', async (req: Request, res: Response) => {
   const { roundId } = req.body as { roundId: string };
-  console.log(`Round ID: ${roundId}`);
   if (!roundId) {
     console.log('❌ Round ID is null or undefined');
     res.status(400).json({ ok: false, message: 'Round ID is missing' });

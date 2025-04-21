@@ -28,7 +28,8 @@ import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { apiFetch } from '../../lib/utils/fetch';
 import { WithId } from 'mongodb';
-import { Member, Position, Positions } from '@mtes/types'; // Add WithId import
+import { Member, Position, Positions, Round } from '@mtes/types'; // Add Round import
+import EditIcon from '@mui/icons-material/Edit';
 
 // --- Zod Schemas ---
 // Assuming Position is defined elsewhere, e.g.:
@@ -81,18 +82,37 @@ interface AddRoundPayload {
 interface AddRoundDialogProps {
   availableMembers: WithId<Member>[];
   onRoundCreated?: () => void;
+  initialRound?: WithId<Round>;
+  isEdit?: boolean;
 }
 
-const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRoundCreated }) => {
+const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
+  availableMembers,
+  onRoundCreated,
+  initialRound,
+  isEdit = false
+}) => {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const memberOptions = useMemo(() => availableMembers, [availableMembers]);
 
-  const initialValues: FormValues = {
-    roundName: '',
-    allowedMembers: [],
-    roles: [{ role: '' as Positions, contestants: [], maxVotes: 1 }]
-  };
+  const initialValues: FormValues = useMemo(() => {
+    if (isEdit && initialRound) {
+      return {
+        roundName: initialRound.name,
+        allowedMembers: initialRound.allowedMembers as WithId<Member>[],
+        roles: initialRound.roles.map(role => ({
+          ...role,
+          contestants: role.contestants as WithId<Member>[]
+        }))
+      };
+    }
+    return {
+      roundName: '',
+      allowedMembers: [] as WithId<Member>[],
+      roles: [{ role: '' as Positions, contestants: [] as WithId<Member>[], maxVotes: 1 }]
+    };
+  }, [isEdit, initialRound]);
 
   const handleClose = (isSubmitting: boolean) => {
     if (!isSubmitting) {
@@ -106,36 +126,78 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
     { setSubmitting, resetForm }: FormikHelpers<FormValues>
   ) => {
     try {
-      // Construct payload using validated values
-      const payload: AddRoundPayload = {
-        name: values.roundName,
-        roles: values.roles,
-        allowedMembers: values.allowedMembers,
-        startTime: null, // Explicitly set as per original logic
-        endTime: null // Explicitly set as per original logic
-      };
+      const endpoint = '/api/events/updateRound';
 
-      const res = await apiFetch('/api/events/addRound', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ round: payload }) // Assuming backend expects { round: ... }
-      });
+      if (isEdit && initialRound) {
+        // Create partial update by only including changed fields
+        const changes: Partial<Round> = {};
 
-      if (!res.ok) {
-        // Attempt to parse error message, provide fallback
-        let errorMsg = 'Failed to create round';
-        try {
-          const errorData = await res.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          // Ignore if response is not JSON or doesn't have message
+        if (values.roundName !== initialRound.name) {
+          changes.name = values.roundName;
         }
-        throw new Error(errorMsg);
+
+        // Deep compare arrays using JSON stringify
+        if (JSON.stringify(values.roles) !== JSON.stringify(initialRound.roles)) {
+          changes.roles = values.roles;
+        }
+
+        if (JSON.stringify(values.allowedMembers) !== JSON.stringify(initialRound.allowedMembers)) {
+          changes.allowedMembers = values.allowedMembers;
+        }
+
+        const res = await apiFetch(endpoint, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roundId: initialRound._id,
+            round: changes
+          })
+        });
+
+        if (!res.ok) {
+          let errorMsg = 'Failed to update round';
+          try {
+            const errorData = await res.json();
+            errorMsg = errorData.message || errorMsg;
+          } catch (e) {
+            // Ignore if response is not JSON or doesn't have message
+          }
+          throw new Error(errorMsg);
+        }
+
+        enqueueSnackbar('Round updated successfully!', { variant: 'success' });
+      } else {
+        // Creating new round
+        const payload: AddRoundPayload = {
+          name: values.roundName,
+          roles: values.roles,
+          allowedMembers: values.allowedMembers,
+          startTime: null,
+          endTime: null
+        };
+
+        const res = await apiFetch('/api/events/addRound', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ round: payload })
+        });
+
+        if (!res.ok) {
+          let errorMsg = 'Failed to create round';
+          try {
+            const errorData = await res.json();
+            errorMsg = errorData.message || errorMsg;
+          } catch (e) {
+            // Ignore if response is not JSON or doesn't have message
+          }
+          throw new Error(errorMsg);
+        }
+
+        enqueueSnackbar('Round created successfully!', { variant: 'success' });
+        resetForm();
       }
 
-      enqueueSnackbar('Round created successfully!', { variant: 'success' });
-      resetForm();
-      setOpen(false); // Close dialog on success
+      setOpen(false);
       onRoundCreated?.();
     } catch (error: any) {
       enqueueSnackbar(error.message || 'An unknown error occurred', {
@@ -148,14 +210,38 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
 
   return (
     <>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setOpen(true)}
-        startIcon={<AddIcon />}
-      >
-        Add New Round
-      </Button>
+      {isEdit ? (
+        <IconButton
+          size="small"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      ) : (
+        <IconButton
+          size="small"
+          onClick={() => {
+            setOpen(true);
+          }}
+          sx={{
+            backgroundColor: 'primary.main',
+            color: 'white',
+            transition: 'transform 0.2s, background-color 0.2s',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+              transform: 'scale(1.1)'
+            },
+            '&:active': {
+              transform: 'scale(0.95)'
+            }
+          }}
+        >
+          <AddIcon fontSize="small" />
+        </IconButton>
+      )}
+
       <Dialog
         open={open}
         onClose={() => handleClose(false)} // Pass isSubmitting status later if needed
@@ -180,7 +266,9 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
           }) => (
             // Form tag needs to be inside Formik context consumer
             <Form>
-              <DialogTitle>Create New Election Round</DialogTitle>
+              <DialogTitle>
+                {isEdit ? 'Edit Election Round' : 'Create New Election Round'}
+              </DialogTitle>
               <DialogContent>
                 <Box sx={{ mt: 1 }}>
                   {/* Round Name */}
@@ -382,7 +470,13 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({ availableMembers, onRou
                   Cancel
                 </Button>
                 <Button type="submit" variant="contained" disabled={isSubmitting}>
-                  {isSubmitting ? 'Creating...' : 'Create Round'}
+                  {isEdit
+                    ? isSubmitting
+                      ? 'Updating...'
+                      : 'Update Round'
+                    : isSubmitting
+                    ? 'Creating...'
+                    : 'Create Round'}
                 </Button>
               </DialogActions>
             </Form>
