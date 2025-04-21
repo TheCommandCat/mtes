@@ -3,7 +3,18 @@ import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
-import { Paper, Typography, Box, Button, Stack } from '@mui/material';
+import {
+  Paper,
+  Typography,
+  Box,
+  Button,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
+} from '@mui/material';
 import {
   ElectionEvent,
   ElectionState,
@@ -21,6 +32,9 @@ import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
 import { StandStatusCard } from 'apps/frontend/components/mtes/stand-status-card';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -49,6 +63,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
+  const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
+  const [roundToEdit, setRoundToEdit] = useState<WithId<Round> | null>(null);
 
   const getVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
@@ -187,8 +203,29 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     });
   };
 
+  const handleDeleteRound = async (round: WithId<Round>) => {
+    try {
+      const res = await apiFetch(`/api/events/deleteRound`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roundId: round._id })
+      });
+      if (!res.ok) throw new Error('Failed to delete round');
+      enqueueSnackbar('Round deleted successfully', { variant: 'success' });
+      refreshData();
+    } catch (error) {
+      enqueueSnackbar('Failed to delete round', { variant: 'error' });
+    }
+    setRoundToDelete(null);
+  };
+
   const refreshData = () => {
     router.replace(router.asPath);
+  };
+
+  const handleRoundEdited = () => {
+    setRoundToEdit(null);
+    refreshData();
   };
 
   console.log(votedMembers);
@@ -521,13 +558,57 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                           sx={{
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
+                            position: 'relative',
+                            bgcolor: 'background.paper',
                             '&:hover': {
                               transform: 'translateY(-2px)',
-                              boxShadow: 3
-                            }
+                              boxShadow: 3,
+                              '& .action-buttons': {
+                                opacity: 1
+                              }
+                            },
+                            borderColor: 'primary.main'
                           }}
                           onClick={() => setSelectedRound(round)}
                         >
+                          <Box
+                            className="action-buttons"
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              left: 8,
+                              display: 'flex',
+                              gap: 0.5,
+                              opacity: 0,
+                              transition: 'opacity 0.2s ease',
+                              bgcolor: 'rgba(255, 255, 255, 0.9)',
+                              borderRadius: 1,
+                              p: 0.5
+                            }}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <AddRoundDialog
+                              availableMembers={members}
+                              onRoundCreated={refreshData}
+                              initialRound={round}
+                              isEdit
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setRoundToDelete(round);
+                              }}
+                              sx={{
+                                color: 'error.main',
+                                '&:hover': {
+                                  bgcolor: 'error.50'
+                                }
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                           <CardContent>
                             <Typography variant="h6" gutterBottom>
                               {round.name}
@@ -535,6 +616,16 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                             <Typography variant="body2" color="text.secondary">
                               {round.roles.length} תפקידים
                             </Typography>
+                            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                              {round.roles.map(role => (
+                                <Chip
+                                  key={role.role}
+                                  label={role.role}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              ))}
+                            </Box>
                           </CardContent>
                         </Card>
                       </Grid>
@@ -543,11 +634,43 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                 </Box>
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
+                  <AddRoundDialog
+                    availableMembers={members}
+                    onRoundCreated={handleRoundEdited}
+                    initialRound={roundToEdit || undefined}
+                    isEdit={!!roundToEdit}
+                  />
                 </Box>
               </Box>
             )}
           </Paper>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog
+            open={roundToDelete !== null}
+            onClose={() => setRoundToDelete(null)}
+            aria-labelledby="delete-round-dialog-title"
+            aria-describedby="delete-round-dialog-description"
+          >
+            <DialogTitle id="delete-round-dialog-title">Delete Round</DialogTitle>
+            <DialogContent>
+              <DialogContentText id="delete-round-dialog-description">
+                {roundToDelete &&
+                  `Are you sure you want to delete the round "${roundToDelete.name}"? This action cannot be undone.`}
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setRoundToDelete(null)}>Cancel</Button>
+              <Button
+                onClick={() => roundToDelete && handleDeleteRound(roundToDelete)}
+                color="error"
+                variant="contained"
+                autoFocus
+              >
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           {/* Voting Stand Selection Dialog */}
           {selectedMember && (
