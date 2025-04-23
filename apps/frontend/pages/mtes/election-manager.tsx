@@ -44,12 +44,19 @@ interface Props {
   event: ElectionEvent;
 }
 
+interface RoleResult {
+  contestant: WithId<Member>;
+  votes: number;
+}
+
 const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
   const router = useRouter();
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
+  const [isRoundLocked, setIsRoundLocked] = useState(false);
+  const [roundResults, setRoundResults] = useState<any>(null);
   const [standStatuses, setStandStatuses] = useState<
     Record<number, { status: VotingStates; member: Member | null }>
   >(
@@ -81,6 +88,23 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   useEffect(() => {
     if (activeRound) {
       getVotedMembers(activeRound._id.toString());
+      const checkRoundLocked = async () => {
+        try {
+          const res = await apiFetch(`/api/events/roundStatus/${activeRound._id}`, {
+            method: 'GET'
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setIsRoundLocked(data.isLocked);
+            if (data.isLocked) {
+              loadRoundResults();
+            }
+          }
+        } catch (error) {
+          console.error('Error checking round status:', error);
+        }
+      };
+      checkRoundLocked();
     }
   }, [activeRound]);
 
@@ -228,6 +252,86 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     refreshData();
   };
 
+  const handleLockRound = async () => {
+    if (!activeRound) return;
+
+    const shouldLock = window.confirm(
+      'האם אתה בטוח שברצונך לנעול את הסבב? לא ניתן יהיה להצביע לאחר הנעילה.'
+    );
+
+    if (!shouldLock) return;
+
+    try {
+      const res = await apiFetch(`/api/events/lockRound/${activeRound._id}`, {
+        method: 'POST'
+      });
+
+      if (res.ok) {
+        setIsRoundLocked(true);
+        enqueueSnackbar('הסבב ננעל בהצלחה והתוצאות יוצגו כעת', { variant: 'success' });
+        loadRoundResults();
+      } else {
+        enqueueSnackbar('שגיאה בנעילת הסבב', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error locking round:', error);
+      enqueueSnackbar('שגיאה בנעילת הסבב', { variant: 'error' });
+    }
+  };
+
+  const loadRoundResults = async () => {
+    if (!activeRound) return;
+
+    try {
+      const res = await apiFetch(`/api/events/roundResults/${activeRound._id}`, {
+        method: 'GET'
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setRoundResults(data.results);
+      }
+    } catch (error) {
+      console.error('Error loading round results:', error);
+      enqueueSnackbar('שגיאה בטעינת תוצאות', { variant: 'error' });
+    }
+  };
+
+  const handleUnlockRound = async () => {
+    if (!activeRound) return;
+
+    const shouldUnlock = window.confirm(
+      'האם אתה בטוח שברצונך לבטל את נעילת הסבב? כל ההצבעות ימחקו והסבב יפתח מחדש.'
+    );
+
+    if (!shouldUnlock) return;
+
+    try {
+      const res = await apiFetch(`/api/events/unlockRound/${activeRound._id}`, {
+        method: 'POST'
+      });
+
+      if (res.ok) {
+        setIsRoundLocked(false);
+        setRoundResults(null);
+        setVotedMembers([]);
+        enqueueSnackbar('נעילת הסבב בוטלה והסבב נפתח מחדש', { variant: 'success' });
+      } else {
+        enqueueSnackbar('שגיאה בביטול נעילת הסבב', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error unlocking round:', error);
+      enqueueSnackbar('שגיאה בביטול נעילת הסבב', { variant: 'error' });
+    }
+  };
+
+  const handleGoBack = () => {
+    setActiveRound(null);
+    setIsRoundLocked(false);
+    setRoundResults(null);
+    setVotedMembers([]);
+  };
+
   console.log(votedMembers);
 
   return (
@@ -288,47 +392,272 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                       {activeRound.name}
                     </Typography>
                   </Box>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={handleStopRound}
-                    sx={{ px: 4, py: 1.5 }}
-                  >
-                    סיים סבב
-                  </Button>
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      onClick={handleGoBack}
+                      sx={{ px: 4, py: 1.5 }}
+                    >
+                      חזור
+                    </Button>
+                    {!isRoundLocked && (
+                      <>
+                        <Button
+                          variant="outlined"
+                          color="warning"
+                          onClick={handleLockRound}
+                          sx={{ px: 4, py: 1.5 }}
+                        >
+                          נעל סבב
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={handleStopRound}
+                          sx={{ px: 4, py: 1.5 }}
+                        >
+                          סיים סבב
+                        </Button>
+                      </>
+                    )}
+                    {isRoundLocked && (
+                      <>
+                        <Button
+                          variant="outlined"
+                          color="warning"
+                          onClick={handleUnlockRound}
+                          sx={{ px: 4, py: 1.5 }}
+                        >
+                          ביטול נעילה
+                        </Button>
+                      </>
+                    )}
+                  </Stack>
                 </Box>
 
-                <Paper
-                  elevation={2}
-                  sx={{
-                    p: 4,
-                    mb: 4,
-                    background: 'linear-gradient(to right, #f5f5f5, #ffffff)',
-                    borderRadius: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}
-                >
-                  <Typography variant="h5" color="primary" gutterBottom>
-                    סטטוס הצבעה
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h3" fontWeight="bold" color="primary">
-                      {votedMembers.length}
+                {roundResults ? (
+                  <Paper
+                    elevation={3}
+                    sx={{
+                      p: 4,
+                      mb: 4,
+                      bgcolor: 'background.paper',
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      borderRadius: 3
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      color="primary"
+                      gutterBottom
+                      align="center"
+                      sx={{
+                        mb: 4,
+                        fontWeight: 'bold',
+                        textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      תוצאות ההצבעה
                     </Typography>
-                    <Typography variant="h4" color="text.secondary">
-                      /
+
+                    {activeRound.roles.map(role => {
+                      const roleResults = (roundResults[role.role] || []) as RoleResult[];
+                      const maxVotes = Math.max(...roleResults.map((r: RoleResult) => r.votes));
+
+                      return (
+                        <Box key={role.role} sx={{ mb: 6 }}>
+                          <Typography
+                            variant="h5"
+                            sx={{
+                              mb: 3,
+                              color: 'text.primary',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              '&::before, &::after': {
+                                content: '""',
+                                flex: 1,
+                                borderBottom: '2px solid',
+                                borderImage:
+                                  'linear-gradient(to right, transparent, primary.main, transparent) 1',
+                                mx: 2
+                              }
+                            }}
+                          >
+                            {role.role}
+                          </Typography>
+
+                          <Box sx={{ px: 2 }}>
+                            {roleResults.map((result: RoleResult, index: number) => {
+                              const percentage = (result.votes / maxVotes) * 100;
+                              const isWinning = index === 0 && result.votes > 0;
+
+                              return (
+                                <Box
+                                  key={result.contestant._id.toString()}
+                                  sx={{
+                                    mb: 2,
+                                    p: 2,
+                                    borderRadius: 2,
+                                    bgcolor: isWinning ? 'success.soft' : 'background.default',
+                                    border: '1px solid',
+                                    borderColor: isWinning ? 'success.main' : 'divider',
+                                    transition: 'all 0.3s ease',
+                                    transform: isWinning ? 'scale(1.02)' : 'scale(1)',
+                                    boxShadow: isWinning ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 2,
+                                      position: 'relative',
+                                      zIndex: 1
+                                    }}
+                                  >
+                                    <Avatar
+                                      sx={{
+                                        width: 56,
+                                        height: 56,
+                                        bgcolor: isWinning ? 'success.main' : 'primary.main',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                      }}
+                                    >
+                                      {result.contestant.name.charAt(0)}
+                                    </Avatar>
+
+                                    <Box sx={{ flexGrow: 1 }}>
+                                      <Typography
+                                        variant="h6"
+                                        sx={{
+                                          fontWeight: isWinning ? 'bold' : 'medium',
+                                          color: isWinning ? 'success.dark' : 'text.primary'
+                                        }}
+                                      >
+                                        {result.contestant.name}
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        {result.contestant.city}
+                                      </Typography>
+                                    </Box>
+
+                                    <Box sx={{ textAlign: 'right', minWidth: 100 }}>
+                                      <Typography
+                                        variant="h5"
+                                        sx={{
+                                          fontWeight: 'bold',
+                                          color: isWinning ? 'success.dark' : 'primary.main'
+                                        }}
+                                      >
+                                        {result.votes}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        קולות
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+
+                                  {/* Progress bar background */}
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      height: '100%',
+                                      width: `${percentage}%`,
+                                      bgcolor: isWinning ? 'success.soft' : 'primary.soft',
+                                      opacity: 0.15,
+                                      transition: 'width 1s ease-out'
+                                    }}
+                                  />
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+
+                    {/* Add total votes summary */}
+                    <Box
+                      sx={{
+                        mt: 4,
+                        pt: 3,
+                        borderTop: '2px solid',
+                        borderColor: 'divider',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        סה"כ הצבעות
+                      </Typography>
+                      <Typography
+                        variant="h3"
+                        color="primary"
+                        sx={{
+                          fontWeight: 'bold',
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {votedMembers.length}
+                        <Typography
+                          component="span"
+                          variant="h5"
+                          color="text.secondary"
+                          sx={{ ml: 2 }}
+                        >
+                          מתוך {members.length}
+                        </Typography>
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          mt: 1,
+                          color: 'success.main',
+                          fontWeight: 'medium'
+                        }}
+                      >
+                        {Math.round((votedMembers.length / members.length) * 100)}% הצבעה הושלמה
+                      </Typography>
+                    </Box>
+                  </Paper>
+                ) : (
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      p: 4,
+                      mb: 4,
+                      background: 'linear-gradient(to right, #f5f5f5, #ffffff)',
+                      borderRadius: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Typography variant="h5" color="primary" gutterBottom>
+                      סטטוס הצבעה
                     </Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {members.length}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="h3" fontWeight="bold" color="primary">
+                        {votedMembers.length}
+                      </Typography>
+                      <Typography variant="h4" color="text.secondary">
+                        /
+                      </Typography>
+                      <Typography variant="h3" fontWeight="bold">
+                        {members.length}
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1 }}>
+                      {Math.round((votedMembers.length / members.length) * 100)}% מהמצביעים השלימו
+                      הצבעה
                     </Typography>
-                  </Box>
-                  <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1 }}>
-                    {Math.round((votedMembers.length / members.length) * 100)}% מהמצביעים השלימו
-                    הצבעה
-                  </Typography>
-                </Paper>
+                  </Paper>
+                )}
 
                 {/* Non-voted members section */}
                 <Box sx={{ mb: 4 }}>

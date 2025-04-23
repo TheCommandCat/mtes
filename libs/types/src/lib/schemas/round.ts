@@ -14,4 +14,5 @@ export interface Round {
   allowedMembers: Member[];
   startTime: Date | null;
   endTime: Date | null;
+  isLocked?: boolean;
 }
