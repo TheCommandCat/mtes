@@ -32,6 +32,7 @@ import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
 import { StandStatusCard } from 'apps/frontend/components/mtes/stand-status-card';
+import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
@@ -97,7 +98,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
             const data = await res.json();
             setIsRoundLocked(data.isLocked);
             if (data.isLocked) {
-              loadRoundResults();
+              handleShowResults(activeRound);
             }
           }
         } catch (error) {
@@ -256,7 +257,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     if (!activeRound) return;
 
     const shouldLock = window.confirm(
-      'האם אתה בטוח שברצונך לנעול את הסבב? לא ניתן יהיה להצביע לאחר הנעילה.'
+      'האם אתה בטוח שברצונך לנעול את הסבב? הסבב יסתיים ולא ניתן יהיה להצביע יותר.'
     );
 
     if (!shouldLock) return;
@@ -268,8 +269,26 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
 
       if (res.ok) {
         setIsRoundLocked(true);
-        enqueueSnackbar('הסבב ננעל בהצלחה והתוצאות יוצגו כעת', { variant: 'success' });
-        loadRoundResults();
+
+        // Load the results
+        const resultsRes = await apiFetch(`/api/events/roundResults/${activeRound._id}`, {
+          method: 'GET'
+        });
+        if (resultsRes.ok) {
+          const data = await resultsRes.json();
+          setRoundResults(data.results);
+          enqueueSnackbar(`הסבב ${activeRound.name} ננעל והתוצאות מוצגות`, { variant: 'success' });
+        }
+
+        // Stop voting on stands but keep round active to show results
+        socket.emit('loadRound', null);
+        setStandStatuses(prev => {
+          const newStatuses = { ...prev };
+          Object.keys(newStatuses).forEach(standId => {
+            newStatuses[parseInt(standId)] = { status: 'NotStarted', member: null };
+          });
+          return newStatuses;
+        });
       } else {
         enqueueSnackbar('שגיאה בנעילת הסבב', { variant: 'error' });
       }
@@ -279,21 +298,24 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     }
   };
 
-  const loadRoundResults = async () => {
-    if (!activeRound) return;
-
+  // Add new function to handle showing results for locked rounds
+  const handleShowResults = async (round: WithId<Round>) => {
     try {
-      const res = await apiFetch(`/api/events/roundResults/${activeRound._id}`, {
+      const res = await apiFetch(`/api/events/roundResults/${round._id}`, {
         method: 'GET'
       });
 
       if (res.ok) {
         const data = await res.json();
+        setActiveRound(round);
+        setIsRoundLocked(true);
         setRoundResults(data.results);
+      } else {
+        enqueueSnackbar('שגיאה בטעינת התוצאות', { variant: 'error' });
       }
     } catch (error) {
       console.error('Error loading round results:', error);
-      enqueueSnackbar('שגיאה בטעינת תוצאות', { variant: 'error' });
+      enqueueSnackbar('שגיאה בטעינת התוצאות', { variant: 'error' });
     }
   };
 
@@ -401,7 +423,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                     >
                       חזור
                     </Button>
-                    {!isRoundLocked && (
+                    {!isRoundLocked ? (
                       <>
                         <Button
                           variant="outlined"
@@ -409,7 +431,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                           onClick={handleLockRound}
                           sx={{ px: 4, py: 1.5 }}
                         >
-                          נעל סבב
+                          נעל וסיים סבב
                         </Button>
                         <Button
                           variant="outlined"
@@ -417,22 +439,10 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                           onClick={handleStopRound}
                           sx={{ px: 4, py: 1.5 }}
                         >
-                          סיים סבב
+                          סיים סבב ללא נעילה
                         </Button>
                       </>
-                    )}
-                    {isRoundLocked && (
-                      <>
-                        <Button
-                          variant="outlined"
-                          color="warning"
-                          onClick={handleUnlockRound}
-                          sx={{ px: 4, py: 1.5 }}
-                        >
-                          ביטול נעילה
-                        </Button>
-                      </>
-                    )}
+                    ) : null}
                   </Stack>
                 </Box>
 
@@ -876,91 +886,11 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                   </Box>
                 </Box>
 
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    סבבים זמינים
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {rounds.map(round => (
-                      <Grid item xs={12} sm={6} md={4} key={round._id.toString()}>
-                        <Card
-                          sx={{
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            position: 'relative',
-                            bgcolor: 'background.paper',
-                            '&:hover': {
-                              transform: 'translateY(-2px)',
-                              boxShadow: 3,
-                              '& .action-buttons': {
-                                opacity: 1
-                              }
-                            },
-                            borderColor: 'primary.main'
-                          }}
-                          onClick={() => setSelectedRound(round)}
-                        >
-                          <Box
-                            className="action-buttons"
-                            sx={{
-                              position: 'absolute',
-                              top: 8,
-                              left: 8,
-                              display: 'flex',
-                              gap: 0.5,
-                              opacity: 0,
-                              transition: 'opacity 0.2s ease',
-                              bgcolor: 'rgba(255, 255, 255, 0.9)',
-                              borderRadius: 1,
-                              p: 0.5
-                            }}
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <AddRoundDialog
-                              availableMembers={members}
-                              onRoundCreated={refreshData}
-                              initialRound={round}
-                              isEdit
-                            />
-                            <IconButton
-                              size="small"
-                              onClick={e => {
-                                e.stopPropagation();
-                                setRoundToDelete(round);
-                              }}
-                              sx={{
-                                color: 'error.main',
-                                '&:hover': {
-                                  bgcolor: 'error.50'
-                                }
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                          <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                              {round.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {round.roles.length} תפקידים
-                            </Typography>
-                            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                              {round.roles.map(role => (
-                                <Chip
-                                  key={role.role}
-                                  label={role.role}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              ))}
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Box>
+                <ControlRounds
+                  rounds={rounds}
+                  setSelectedRound={setSelectedRound}
+                  handleShowResults={handleShowResults}
+                />
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <AddRoundDialog
