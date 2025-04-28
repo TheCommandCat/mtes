@@ -7,13 +7,12 @@ import {
   Paper,
   Typography,
   Box,
-  Button,
-  Stack,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Button
 } from '@mui/material';
 import {
   ElectionEvent,
@@ -30,12 +29,13 @@ import { useWebsocket } from '../../hooks/use-websocket';
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
-import { Card, CardContent, Avatar, Grid, Chip } from '@mui/material';
-import { StandStatusCard } from 'apps/frontend/components/mtes/stand-status-card';
-import { ControlRounds } from 'apps/frontend/components/mtes/control-rounds';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import IconButton from '@mui/material/IconButton';
+import { ControlRounds } from '../../components/mtes/control-rounds';
+import { MembersGrid } from '../../components/mtes/members-grid';
+import { RoundResults } from '../../components/mtes/round-results';
+import { VotingStatus as VotingStatusComponent } from '../../components/mtes/voting-status';
+import { RoundHeader } from '../../components/mtes/round-header';
+import { RoundPreview } from '../../components/mtes/round-preview';
+import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -414,515 +414,71 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           </Paper>
 
           <Paper elevation={2} sx={{ p: 4 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 4 }}>
-              {event.votingStandsIds.map(standId => (
-                <StandStatusCard
-                  key={standId}
-                  standId={standId}
-                  status={standStatuses[standId].status}
-                  member={standStatuses[standId].member}
-                  onCancel={handleCancelMember}
-                />
-              ))}
-            </Box>
+            <VotingStandsGrid standStatuses={standStatuses} onCancel={handleCancelMember} />
+
             {activeRound ? (
               <Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 4,
-                    pb: 3,
-                    borderBottom: '1px solid rgba(0,0,0,0.1)'
-                  }}
-                >
-                  <Box>
-                    <Typography color="primary" gutterBottom>
-                      סבב פעיל
-                    </Typography>
-                    <Typography variant="h4" fontWeight="bold">
-                      {activeRound.name}
-                    </Typography>
-                  </Box>
-                  <Stack direction="row" spacing={2}>
-                    <Button
-                      variant="outlined"
-                      color="inherit"
-                      onClick={handleGoBack}
-                      sx={{ px: 4, py: 1.5 }}
-                    >
-                      חזור
-                    </Button>
-                    {!isRoundLocked ? (
-                      <>
-                        <Button
-                          variant="outlined"
-                          color="warning"
-                          onClick={handleLockRound}
-                          sx={{ px: 4, py: 1.5 }}
-                        >
-                          נעל וסיים סבב
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          onClick={handleStopRound}
-                          sx={{ px: 4, py: 1.5 }}
-                        >
-                          סיים סבב ללא נעילה
-                        </Button>
-                      </>
-                    ) : null}
-                  </Stack>
-                </Box>
+                <RoundHeader
+                  title={activeRound.name}
+                  isActive
+                  isLocked={isRoundLocked}
+                  onBack={handleGoBack}
+                  onLock={!isRoundLocked ? handleLockRound : undefined}
+                  onStop={!isRoundLocked ? handleStopRound : undefined}
+                />
 
                 {roundResults ? (
-                  <Paper
-                    elevation={3}
-                    sx={{
-                      p: 4,
-                      mb: 4,
-                      bgcolor: 'background.paper',
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
-                      borderRadius: 3
-                    }}
-                  >
-                    <Typography
-                      variant="h4"
-                      color="primary"
-                      gutterBottom
-                      align="center"
-                      sx={{
-                        mb: 4,
-                        fontWeight: 'bold',
-                        textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-                      }}
-                    >
-                      תוצאות ההצבעה
-                    </Typography>
-
-                    {activeRound.roles.map(role => {
-                      const roleResults = (roundResults[role.role] || []) as RoleResult[];
-                      const maxVotes = Math.max(...roleResults.map((r: RoleResult) => r.votes));
-
-                      return (
-                        <Box key={role.role} sx={{ mb: 6 }}>
-                          <Typography
-                            variant="h5"
-                            sx={{
-                              mb: 3,
-                              color: 'text.primary',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              '&::before, &::after': {
-                                content: '""',
-                                flex: 1,
-                                borderBottom: '2px solid',
-                                borderImage:
-                                  'linear-gradient(to right, transparent, primary.main, transparent) 1',
-                                mx: 2
-                              }
-                            }}
-                          >
-                            {role.role}
-                          </Typography>
-
-                          <Box sx={{ px: 2 }}>
-                            {roleResults.map((result: RoleResult, index: number) => {
-                              const percentage = (result.votes / maxVotes) * 100;
-                              const isWinning = index === 0 && result.votes > 0;
-
-                              return (
-                                <Box
-                                  key={result.contestant._id.toString()}
-                                  sx={{
-                                    mb: 2,
-                                    p: 2,
-                                    borderRadius: 2,
-                                    bgcolor: isWinning ? 'success.soft' : 'background.default',
-                                    border: '1px solid',
-                                    borderColor: isWinning ? 'success.main' : 'divider',
-                                    transition: 'all 0.3s ease',
-                                    transform: isWinning ? 'scale(1.02)' : 'scale(1)',
-                                    boxShadow: isWinning ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 2,
-                                      position: 'relative',
-                                      zIndex: 1
-                                    }}
-                                  >
-                                    <Avatar
-                                      sx={{
-                                        width: 56,
-                                        height: 56,
-                                        bgcolor: isWinning ? 'success.main' : 'primary.main',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                      }}
-                                    >
-                                      {result.contestant.name.charAt(0)}
-                                    </Avatar>
-
-                                    <Box sx={{ flexGrow: 1 }}>
-                                      <Typography
-                                        variant="h6"
-                                        sx={{
-                                          fontWeight: isWinning ? 'bold' : 'medium',
-                                          color: isWinning ? 'success.dark' : 'text.primary'
-                                        }}
-                                      >
-                                        {result.contestant.name}
-                                      </Typography>
-                                      <Typography variant="body2" color="text.secondary">
-                                        {result.contestant.city}
-                                      </Typography>
-                                    </Box>
-
-                                    <Box sx={{ textAlign: 'right', minWidth: 100 }}>
-                                      <Typography
-                                        variant="h5"
-                                        sx={{
-                                          fontWeight: 'bold',
-                                          color: isWinning ? 'success.dark' : 'primary.main'
-                                        }}
-                                      >
-                                        {result.votes}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        קולות
-                                      </Typography>
-                                    </Box>
-                                  </Box>
-
-                                  {/* Progress bar background */}
-                                  <Box
-                                    sx={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                      height: '100%',
-                                      width: `${percentage}%`,
-                                      bgcolor: isWinning ? 'success.soft' : 'primary.soft',
-                                      opacity: 0.15,
-                                      transition: 'width 1s ease-out'
-                                    }}
-                                  />
-                                </Box>
-                              );
-                            })}
-                          </Box>
-                        </Box>
-                      );
-                    })}
-
-                    {/* Add total votes summary */}
-                    <Box
-                      sx={{
-                        mt: 4,
-                        pt: 3,
-                        borderTop: '2px solid',
-                        borderColor: 'divider',
-                        textAlign: 'center'
-                      }}
-                    >
-                      <Typography variant="h6" color="text.secondary" gutterBottom>
-                        סה"כ הצבעות
-                      </Typography>
-                      <Typography
-                        variant="h3"
-                        color="primary"
-                        sx={{
-                          fontWeight: 'bold',
-                          textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-                        }}
-                      >
-                        {votedMembers.length}
-                        <Typography
-                          component="span"
-                          variant="h5"
-                          color="text.secondary"
-                          sx={{ ml: 2 }}
-                        >
-                          מתוך {members.length}
-                        </Typography>
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          mt: 1,
-                          color: 'success.main',
-                          fontWeight: 'medium'
-                        }}
-                      >
-                        {Math.round((votedMembers.length / members.length) * 100)}% הצבעה הושלמה
-                      </Typography>
-                    </Box>
-                  </Paper>
+                  <RoundResults
+                    round={activeRound}
+                    results={roundResults}
+                    votedMembers={votedMembers}
+                    totalMembers={members.length}
+                  />
                 ) : (
-                  <Paper
-                    elevation={2}
-                    sx={{
-                      p: 4,
-                      mb: 4,
-                      background: 'linear-gradient(to right, #f5f5f5, #ffffff)',
-                      borderRadius: 2,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <Typography variant="h5" color="primary" gutterBottom>
-                      סטטוס הצבעה
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Typography variant="h3" fontWeight="bold" color="primary">
-                        {votedMembers.length}
-                      </Typography>
-                      <Typography variant="h4" color="text.secondary">
-                        /
-                      </Typography>
-                      <Typography variant="h3" fontWeight="bold">
-                        {members.length}
-                      </Typography>
-                    </Box>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1 }}>
-                      {Math.round((votedMembers.length / members.length) * 100)}% מהמצביעים השלימו
-                      הצבעה
-                    </Typography>
-                  </Paper>
+                  <>
+                    <VotingStatusComponent
+                      votedCount={votedMembers.length}
+                      totalCount={members.length}
+                    />
+
+                    <MembersGrid
+                      members={members}
+                      votedMembers={votedMembers}
+                      standStatuses={standStatuses}
+                      showVoted={false}
+                      onMemberClick={handleOpenDialog}
+                    />
+
+                    <MembersGrid
+                      members={members}
+                      votedMembers={votedMembers}
+                      standStatuses={standStatuses}
+                      showVoted={true}
+                    />
+                  </>
                 )}
-
-                {/* Non-voted members section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" color="primary" gutterBottom>
-                    ממתינים להצבעה ({members.length - votedMembers.length})
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                      gap: 2
-                    }}
-                  >
-                    {members.map(member => {
-                      const hasVoted = votedMembers.some(
-                        vm => vm.memberId.toString() === member._id.toString()
-                      );
-                      const isCurrentlyVoting = Object.values(standStatuses).some(
-                        s => s.member?.name === member.name
-                      );
-
-                      if (hasVoted) return null;
-
-                      return (
-                        <Card
-                          key={member._id.toString()}
-                          sx={{
-                            cursor: isCurrentlyVoting ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              transform: isCurrentlyVoting ? 'none' : 'translateY(-2px)',
-                              boxShadow: isCurrentlyVoting ? 1 : 3
-                            },
-                            opacity: isCurrentlyVoting ? 0.6 : 1
-                          }}
-                          onClick={() => !isCurrentlyVoting && handleOpenDialog(member)}
-                        >
-                          <CardContent sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                                {member.name.charAt(0)}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="h6">{member.name}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {member.city}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </Box>
-                </Box>
-
-                {/* Voted members section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" color="success.main" gutterBottom>
-                    הצביעו ({votedMembers.length})
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                      gap: 2
-                    }}
-                  >
-                    {members.map(member => {
-                      const hasVoted = votedMembers.some(
-                        vm => vm.memberId.toString() === member._id.toString()
-                      );
-
-                      if (!hasVoted) return null;
-
-                      return (
-                        <Card
-                          key={member._id.toString()}
-                          sx={{
-                            cursor: 'not-allowed',
-                            bgcolor: 'jobseeker.main',
-                            opacity: 0.8
-                          }}
-                        >
-                          <CardContent sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Avatar sx={{ bgcolor: 'success.main' }}>
-                                {member.name.charAt(0)}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="h6">{member.name}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {member.city}
-                                </Typography>
-                                <Typography variant="body2" color="success.dark">
-                                  הצביע
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </Box>
-                </Box>
               </Box>
             ) : selectedRound ? (
               <Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 4,
-                    pb: 3,
-                    borderBottom: '1px solid rgba(0,0,0,0.1)'
-                  }}
-                >
-                  <Box>
-                    <Typography color="primary" gutterBottom>
-                      סבב נבחר
-                    </Typography>
-                    <Typography variant="h4" fontWeight="bold">
-                      {selectedRound?.name}
-                    </Typography>
-                  </Box>
-                  <Stack direction="row" spacing={2}>
-                    <Button variant="outlined" onClick={() => setSelectedRound(null)}>
-                      חזור
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => selectedRound && handleStartRound(selectedRound)}
-                      sx={{ px: 4 }}
-                    >
-                      התחל סבב
-                    </Button>
-                  </Stack>
-                </Box>
+                <RoundHeader
+                  title={selectedRound.name}
+                  onBack={() => setSelectedRound(null)}
+                  onStart={() => handleStartRound(selectedRound)}
+                />
 
-                <Paper elevation={1} sx={{ p: 3, mb: 4, bgcolor: 'background.default' }}>
-                  <Typography variant="h6" color="primary" gutterBottom>
-                    מצביעים מורשים
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                      gap: 2,
-                      mt: 2
-                    }}
-                  >
-                    {members.map(member => (
-                      <Chip
-                        key={member._id.toString()}
-                        avatar={<Avatar>{member.name.charAt(0)}</Avatar>}
-                        label={`${member.name} - ${member.city}`}
-                        variant="outlined"
-                        sx={{
-                          height: 'auto',
-                          '& .MuiChip-label': {
-                            whiteSpace: 'normal',
-                            py: 1
-                          }
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Paper>
-
-                <Box sx={{ mb: 4 }}>
-                  {selectedRound?.roles.map(role => (
-                    <Paper
-                      key={role.role.toString()}
-                      elevation={1}
-                      sx={{ p: 3, mb: 2, bgcolor: 'background.default' }}
-                    >
-                      <Typography variant="h6" color="primary" gutterBottom>
-                        {role.role}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        מקסימום הצבעות: {role.maxVotes}
-                      </Typography>
-                      <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {role.contestants.map(contestant => (
-                          <Chip
-                            key={contestant.name}
-                            label={`${contestant.name} - ${contestant.city}`}
-                            variant="outlined"
-                          />
-                        ))}
-                      </Box>
-                    </Paper>
-                  ))}
-                </Box>
+                <RoundPreview round={selectedRound} members={members} />
               </Box>
             ) : (
               <Box>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 4,
-                    pb: 3,
-                    borderBottom: '1px solid rgba(0,0,0,0.1)'
-                  }}
-                >
-                  <Box>
-                    <Typography color="primary" gutterBottom>
-                      סבב נבחר
-                    </Typography>
-                    <Typography variant="h4" fontWeight="bold">
-                      אנא בחרו סבב
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <AddRoundDialog
-                      availableMembers={members}
-                      onRoundCreated={handleRoundEdited}
-                      initialRound={roundToEdit || undefined}
-                      isEdit={!!roundToEdit}
-                    />
-                  </Box>
+                <RoundHeader title="אנא בחרו סבב" subtitle="סבב נבחר" />
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
+                  <AddRoundDialog
+                    availableMembers={members}
+                    onRoundCreated={handleRoundEdited}
+                    initialRound={roundToEdit || undefined}
+                    isEdit={!!roundToEdit}
+                  />
                 </Box>
 
                 <ControlRounds
