@@ -73,6 +73,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [roundToEdit, setRoundToEdit] = useState<WithId<Round> | null>(null);
+  const [lockedRounds, setLockedRounds] = useState<Set<string>>(new Set());
 
   const getVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
@@ -355,6 +356,36 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   };
 
   console.log(votedMembers);
+
+  // Add this function to check if a round is locked
+  const checkIfRoundLocked = (roundId: string) => {
+    return lockedRounds.has(roundId);
+  };
+
+  // Update the useEffect to also fetch locked status for all rounds
+  useEffect(() => {
+    const fetchLockedStatus = async () => {
+      const lockedIds = new Set<string>();
+      for (const round of rounds) {
+        try {
+          const res = await apiFetch(`/api/events/roundStatus/${round._id}`, {
+            method: 'GET'
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.isLocked) {
+              lockedIds.add(round._id.toString());
+            }
+          }
+        } catch (error) {
+          console.error('Error checking round status:', error);
+        }
+      }
+      setLockedRounds(lockedIds);
+    };
+
+    fetchLockedStatus();
+  }, [rounds]);
 
   return (
     <RoleAuthorizer
@@ -884,22 +915,22 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                       אנא בחרו סבב
                     </Typography>
                   </Box>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <AddRoundDialog
+                      availableMembers={members}
+                      onRoundCreated={handleRoundEdited}
+                      initialRound={roundToEdit || undefined}
+                      isEdit={!!roundToEdit}
+                    />
+                  </Box>
                 </Box>
 
                 <ControlRounds
                   rounds={rounds}
                   setSelectedRound={setSelectedRound}
                   handleShowResults={handleShowResults}
+                  isRoundLocked={checkIfRoundLocked}
                 />
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <AddRoundDialog
-                    availableMembers={members}
-                    onRoundCreated={handleRoundEdited}
-                    initialRound={roundToEdit || undefined}
-                    isEdit={!!roundToEdit}
-                  />
-                </Box>
               </Box>
             )}
           </Paper>

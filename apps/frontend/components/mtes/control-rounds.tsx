@@ -1,8 +1,12 @@
 import { Round } from '@mtes/types';
-import { Box, Typography, ListItem, Button, ListItemText, Divider, Chip } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Chip, IconButton, Stack } from '@mui/material';
 import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
+import DeleteIcon from '@mui/icons-material/Delete';
 import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import PollIcon from '@mui/icons-material/Poll';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { WithId } from 'mongodb';
 import { apiFetch } from 'apps/frontend/lib/utils/fetch';
 import router from 'next/router';
@@ -11,9 +15,14 @@ interface ControlRoundsProps {
   rounds: WithId<Round>[];
   setSelectedRound: (round: WithId<Round> | null) => void;
   handleShowResults: (round: WithId<Round>) => void;
+  isRoundLocked?: (roundId: string) => boolean;
 }
 
 const handleDeleteRound = (round: WithId<Round>) => {
+  if (!confirm(`האם אתה בטוח שברצונך למחוק את הסבב "${round.name}"?`)) {
+    return;
+  }
+
   console.log('Deleting round:', round);
   apiFetch(`/api/events/deleteRound`, {
     method: 'DELETE',
@@ -28,80 +37,121 @@ const handleDeleteRound = (round: WithId<Round>) => {
 export const ControlRounds = ({
   rounds,
   setSelectedRound,
-  handleShowResults
+  handleShowResults,
+  isRoundLocked
 }: ControlRoundsProps) => {
   return (
-    <Box sx={{ mt: 2, textAlign: 'center' }}>
-      <Typography variant="subtitle1" gutterBottom>
-        ניהול סבבים
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        סבבים זמינים
       </Typography>
-      {rounds.map(round => (
-        <Box key={round.name}>
-          <ListItem
-            sx={{
-              display: 'flex',
-              flexDirection: 'row-reverse',
-              bgcolor: round.isLocked ? 'rgba(0, 0, 0, 0.04)' : 'transparent'
-            }}
-          >
-            {!round.isLocked ? (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => {
-                  setSelectedRound(round);
-                  enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
+      <Grid container spacing={2}>
+        {rounds.map(round => {
+          const isLocked = isRoundLocked?.(round._id.toString());
+
+          return (
+            <Grid item xs={12} key={round._id.toString()}>
+              <Card
+                sx={{
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                  bgcolor: 'background.paper',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 3
+                  },
+                  borderLeft: isLocked ? 4 : 0,
+                  borderLeftColor: 'warning.main'
                 }}
-                startIcon={<SendIcon />}
-                sx={{ ml: 2, direction: 'ltr' }}
               >
-                טען
-              </Button>
-            ) : (
-              <Button
-                variant="outlined"
-                color="info"
-                onClick={() => handleShowResults(round)}
-                startIcon={<LockIcon />}
-                sx={{ ml: 2, direction: 'ltr' }}
-              >
-                הצג תוצאות
-              </Button>
-            )}
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                handleDeleteRound(round);
-              }}
-              sx={{ ml: 2, direction: 'ltr' }}
-            >
-              מחק
-            </Button>
-            <ListItemText
-              primary={
-                <Box
-                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}
+                <CardContent
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    py: '12px !important'
+                  }}
                 >
-                  <Typography>{round.name}</Typography>
-                  {round.isLocked && (
-                    <Chip
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      {isLocked ? (
+                        <LockIcon color="warning" fontSize="small" />
+                      ) : (
+                        <LockOpenIcon color="success" fontSize="small" />
+                      )}
+                      <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>
+                        {round.name}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {round.roles.map(role => (
+                        <Chip
+                          key={role.role}
+                          label={role.role}
+                          size="small"
+                          variant="outlined"
+                          sx={{ height: 24 }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+
+                  <Stack direction="row" spacing={1} sx={{ ml: 2 }}>
+                    <IconButton
                       size="small"
-                      icon={<LockIcon sx={{ fontSize: '0.8rem' }} />}
-                      label="נעול"
-                      color="default"
-                      variant="outlined"
-                    />
-                  )}
-                </Box>
-              }
-              secondary={`${round.roles.map(role => role.role).join(', ') || 'ללא תפקידים'}`}
-              sx={{ textAlign: 'right' }}
-            />
-          </ListItem>
-          <Divider />
-        </Box>
-      ))}
+                      onClick={() => handleShowResults(round)}
+                      sx={{
+                        color: 'info.main',
+                        bgcolor: 'info.50',
+                        '&:hover': {
+                          bgcolor: 'info.100'
+                        }
+                      }}
+                    >
+                      <PollIcon fontSize="small" />
+                    </IconButton>
+
+                    <IconButton
+                      size="small"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setSelectedRound(round);
+                        enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
+                      }}
+                      sx={{
+                        color: 'primary.main',
+                        bgcolor: 'primary.50',
+                        '&:hover': {
+                          bgcolor: 'primary.100'
+                        }
+                      }}
+                    >
+                      <PlayArrowIcon fontSize="small" />
+                    </IconButton>
+
+                    <IconButton
+                      size="small"
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDeleteRound(round);
+                      }}
+                      sx={{
+                        color: 'error.main',
+                        bgcolor: 'error.50',
+                        '&:hover': {
+                          bgcolor: 'error.100'
+                        }
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
     </Box>
   );
 };
