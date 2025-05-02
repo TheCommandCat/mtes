@@ -45,10 +45,15 @@ interface Props {
   event: ElectionEvent;
 }
 
-interface RoleResult {
-  contestant: WithId<Member>;
-  votes: number;
+interface VotingStandStatus {
+  status: VotingStates;
+  member: Member | null;
 }
+
+const initialRoundStatuses = (numofStands: number): Record<number, VotingStandStatus> =>
+  Object.fromEntries(
+    Array.from({ length: numofStands }, (_, i) => [i, { status: 'NotStarted', member: null }])
+  );
 
 const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
   const router = useRouter();
@@ -58,22 +63,14 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   );
   const [isRoundLocked, setIsRoundLocked] = useState(false);
   const [roundResults, setRoundResults] = useState<any>(null);
-  const [standStatuses, setStandStatuses] = useState<
-    Record<number, { status: VotingStates; member: Member | null }>
-  >(
-    Object.fromEntries(
-      event.votingStandsIds.map(id => [
-        id,
-        { status: electionState.activeRound ? 'Empty' : 'NotStarted', member: null }
-      ])
-    )
+  const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
+    initialRoundStatuses(event.votingStandsIds.length)
   );
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [standSelectDialogOpen, setStandSelectDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [roundToEdit, setRoundToEdit] = useState<WithId<Round> | null>(null);
-  const [lockedRounds, setLockedRounds] = useState<Set<string>>(new Set());
 
   const getVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
@@ -138,11 +135,11 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
 
   const handleOpenDialog = (member: Member) => {
     setSelectedMember(member);
-    setDialogOpen(true);
+    setStandSelectDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false);
+    setStandSelectDialogOpen(false);
     setSelectedMember(null);
   };
 
@@ -249,11 +246,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     router.replace(router.asPath);
   };
 
-  const handleRoundEdited = () => {
-    setRoundToEdit(null);
-    refreshData();
-  };
-
   const handleLockRound = async () => {
     if (!activeRound) return;
 
@@ -355,38 +347,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     setVotedMembers([]);
   };
 
-  console.log(votedMembers);
-
-  // Add this function to check if a round is locked
-  const checkIfRoundLocked = (roundId: string) => {
-    return lockedRounds.has(roundId);
-  };
-
-  // Update the useEffect to also fetch locked status for all rounds
-  useEffect(() => {
-    const fetchLockedStatus = async () => {
-      const lockedIds = new Set<string>();
-      for (const round of rounds) {
-        try {
-          const res = await apiFetch(`/api/events/roundStatus/${round._id}`, {
-            method: 'GET'
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.isLocked) {
-              lockedIds.add(round._id.toString());
-            }
-          }
-        } catch (error) {
-          console.error('Error checking round status:', error);
-        }
-      }
-      setLockedRounds(lockedIds);
-    };
-
-    fetchLockedStatus();
-  }, [rounds]);
-
   return (
     <RoleAuthorizer
       user={user}
@@ -473,19 +433,13 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                 <RoundHeader title="אנא בחרו סבב" subtitle="סבב נבחר" />
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
-                  <AddRoundDialog
-                    availableMembers={members}
-                    onRoundCreated={handleRoundEdited}
-                    initialRound={roundToEdit || undefined}
-                    isEdit={!!roundToEdit}
-                  />
+                  <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
                 </Box>
 
                 <ControlRounds
                   rounds={rounds}
                   setSelectedRound={setSelectedRound}
                   handleShowResults={handleShowResults}
-                  isRoundLocked={checkIfRoundLocked}
                 />
               </Box>
             )}
@@ -521,7 +475,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           {/* Voting Stand Selection Dialog */}
           {selectedMember && (
             <SelectVotingStandDialog
-              open={dialogOpen}
+              open={standSelectDialogOpen}
               onClose={handleCloseDialog}
               onSelect={handleSelectVotingStand}
               votingStands={event.votingStandsIds}

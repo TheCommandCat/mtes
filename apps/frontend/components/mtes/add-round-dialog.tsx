@@ -70,15 +70,6 @@ const FormSchema = z.object({
 type Role = z.infer<typeof RoleSchema>;
 type FormValues = z.infer<typeof FormSchema>;
 
-// Define the expected API payload structure
-interface AddRoundPayload {
-  name: string;
-  roles: Role[];
-  allowedMembers: WithId<Member>[];
-  startTime: null; // Or Date if applicable
-  endTime: null; // Or Date if applicable
-}
-
 interface AddRoundDialogProps {
   availableMembers: WithId<Member>[];
   onRoundCreated?: () => void;
@@ -168,12 +159,13 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         enqueueSnackbar('Round updated successfully!', { variant: 'success' });
       } else {
         // Creating new round
-        const payload: AddRoundPayload = {
+        const payload: Round = {
           name: values.roundName,
           roles: values.roles,
           allowedMembers: values.allowedMembers,
           startTime: null,
-          endTime: null
+          endTime: null,
+          isLocked: false
         };
 
         const res = await apiFetch('/api/events/addRound', {
