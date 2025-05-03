@@ -17,7 +17,7 @@ interface SelectVotingStandDialogProps {
   open: boolean;
   onClose: () => void;
   onSelect: (standId: number) => void;
-  votingStands: number[];
+  votingStands: number;
   memberName: string;
 }
 
@@ -64,7 +64,7 @@ const SelectVotingStandDialog: React.FC<SelectVotingStandDialogProps> = ({
             label="עמדת הצבעה"
             onChange={e => setSelectedStand(e.target.value as number)}
           >
-            {votingStands.map(standId => (
+            {Array.from({ length: votingStands }, (_, i) => i + 1).map(standId => (
               <MenuItem key={standId} value={standId}>
                 עמדה {standId}
               </MenuItem>

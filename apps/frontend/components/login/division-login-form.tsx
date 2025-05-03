@@ -11,7 +11,7 @@ import { apiFetch } from '../../lib/utils/fetch';
 import { localizedRoles } from '../../localization/roles';
 
 interface DivisionLoginFormProps {
-  votingStands?: number[];
+  votingStands: number;
 }
 
 const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) => {
@@ -93,7 +93,7 @@ const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) =
           label={'קלפי'}
           onChange={e => setAssociation(e.target.value)}
         >
-          {votingStands?.map(stand => (
+          {Array.from({ length: votingStands }, (_, i) => i + 1).map(stand => (
             <MenuItem value={stand} key={stand}>
               קלפי {stand}
             </MenuItem>

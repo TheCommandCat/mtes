@@ -21,7 +21,7 @@ router.post(
     const eventData = req.body;
 
     // Validate required fields
-    if (!eventData?.name || !eventData?.votingStandsIds) {
+    if (!eventData?.name || !eventData?.votingStands) {
       res.status(400).json({ error: 'שם האירוע ומספר עמדות הצבעה הם שדות חובה' });
       return;
     }
@@ -67,7 +67,7 @@ router.post(
     }
 
     console.log('👤 Generating division users');
-    const users = getDivisionUsers(eventData.votingStandsIds.length);
+    const users = getDivisionUsers(eventData.votingStands);
     console.log(users);
 
     if (!(await db.addUsers(users)).acknowledged) {
@@ -90,7 +90,7 @@ router.put('/', (req: Request, res: Response) => {
     name: body.name,
     eventUsers: body.eventUsers,
     hasState: body.hasState,
-    votingStandsIds: body.votingStandsIds,
+    votingStands: body.votingStands,
     startDate: body.startDate,
     endDate: body.endDate
   };
@@ -100,14 +100,14 @@ router.put('/', (req: Request, res: Response) => {
     if (task.acknowledged) {
       console.log('✅ Event updated!');
 
-      if (body.votingStandsIds) {
+      if (body.votingStands) {
         // remove old users
         console.log('🚮 Removing old users');
         db.deleteUsers({
           isAdmin: { $ne: true }
         });
 
-        const users = getDivisionUsers(body.votingStandsIds.length);
+        const users = getDivisionUsers(body.votingStands);
         db.addUsers(users);
       }
 

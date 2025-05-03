@@ -37,7 +37,7 @@ const Page: NextPage<Props> = ({ user, event }) => {
       name: values.name,
       eventUsers: { 'election-manager': true, 'voting-stand': true },
       hasState: true,
-      votingStandsIds: Array.from({ length: values.votingStands }, (_, i) => i + 1),
+      votingStands: values.votingStands,
       startDate: values.startDate.toDate(),
       endDate: values.endDate.toDate(),
       members: members.filter(m => m.name && m.city)
@@ -103,7 +103,7 @@ const Page: NextPage<Props> = ({ user, event }) => {
     name: event?.name || '',
     startDate: event ? dayjs(event.startDate) : dayjs(),
     endDate: event ? dayjs(event.endDate) : dayjs(),
-    votingStands: event?.votingStandsIds?.length || 1
+    votingStands: event?.votingStands || 1
   });
 
   const renderMemberFields = () => (

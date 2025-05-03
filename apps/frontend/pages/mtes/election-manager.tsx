@@ -62,7 +62,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     Record<number, { status: VotingStates; member: Member | null }>
   >(
     Object.fromEntries(
-      event.votingStandsIds.map(id => [
+      Array.from({ length: event.votingStands }, (_, i) => i + 1).map(id => [
         id,
         { status: electionState.activeRound ? 'Empty' : 'NotStarted', member: null }
       ])
@@ -524,7 +524,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
               open={dialogOpen}
               onClose={handleCloseDialog}
               onSelect={handleSelectVotingStand}
-              votingStands={event.votingStandsIds}
+              votingStands={event.votingStands}
               memberName={selectedMember.name}
             />
           )}
