@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import divisionUsersRouter from './users';
-import { ElectionEvent, ElectionState } from '@mtes/types';
+import { ElectionEvent, ElectionState, User } from '@mtes/types';
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 import { getDivisionUsers } from 'apps/backend/src/lib/schedule/division-users';
@@ -80,49 +80,87 @@ router.post(
   })
 );
 
-router.put('/', (req: Request, res: Response) => {
-  const body = req.body;
+router.put(
+  '/',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = req.body;
 
-  if (body.startDate) body.startDate = new Date(body.startDate);
-  if (body.endDate) body.endDate = new Date(body.endDate);
+    if (body.startDate) body.startDate = new Date(body.startDate);
+    if (body.endDate) body.endDate = new Date(body.endDate);
 
-  const validElectionEvent = {
-    name: body.name,
-    eventUsers: body.eventUsers,
-    hasState: body.hasState,
-    votingStands: body.votingStands,
-    startDate: body.startDate,
-    endDate: body.endDate
-  };
+    const validElectionEvent = {
+      name: body.name,
+      eventUsers: body.eventUsers,
+      hasState: body.hasState,
+      votingStands: body.votingStands,
+      startDate: body.startDate,
+      endDate: body.endDate
+    };
 
-  console.log(`⏬ Updating Event`);
-  db.updateElectionEvent(validElectionEvent, true).then(task => {
-    if (task.acknowledged) {
-      console.log('✅ Event updated!');
+    console.log(`⏬ Updating Event`);
+    const task = await db.updateElectionEvent(validElectionEvent, true);
 
-      if (body.votingStands) {
-        // remove old users
-        console.log('🚮 Removing old users');
-        db.deleteUsers({
-          isAdmin: { $ne: true }
-        });
-
-        const users = getDivisionUsers(body.votingStands);
-        db.addUsers(users);
-      }
-
-      if (body.members) {
-        db.deleteMembers();
-        db.addMembers(body.members);
-      }
-
-      return res.json({ ok: true, id: task.upsertedId });
-    } else {
+    if (!task.acknowledged) {
       console.log('❌ Could not update Event');
-      return res.status(500).json({ ok: false });
+      res.status(500).json({ ok: false });
+      return;
     }
-  });
-});
+
+    console.log('✅ Event updated!');
+
+    if (body.votingStands) {
+      console.log('🚮 Removing old users');
+      const deleteTask = await db.deleteUsers({ role: 'voting-stand' });
+
+      if (!deleteTask.acknowledged) {
+        console.log('❌ Could not remove old users');
+        res.status(500).json({ ok: false });
+        return;
+      }
+
+      const userCreationTasks = Array.from({ length: body.votingStands }, (_, i) =>
+        db.addUser({
+          isAdmin: false,
+          role: 'voting-stand',
+          password: 'admin',
+          lastPasswordSetDate: new Date(),
+          roleAssociation: {
+            type: 'stand',
+            value: i + 1
+          }
+        } as User)
+      );
+
+      const results = await Promise.all(userCreationTasks);
+
+      if (results.some(result => !result.acknowledged)) {
+        console.log('❌ Could not add new users');
+        res.status(500).json({ ok: false });
+        return;
+      }
+
+      console.log('✅ Users updated!');
+    }
+
+    if (body.members) {
+      const deleteMembersTask = await db.deleteMembers();
+      if (!deleteMembersTask.acknowledged) {
+        console.log('❌ Could not delete members');
+        res.status(500).json({ ok: false });
+        return;
+      }
+
+      const addMembersTask = await db.addMembers(body.members);
+      if (!addMembersTask.acknowledged) {
+        console.log('❌ Could not add members');
+        res.status(500).json({ ok: false });
+        return;
+      }
+    }
+
+    res.json({ ok: true, id: task.upsertedId });
+  })
+);
 
 router.delete(
   '/data',
