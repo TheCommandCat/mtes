@@ -15,7 +15,6 @@ interface ControlRoundsProps {
   rounds: WithId<Round>[];
   setSelectedRound: (round: WithId<Round> | null) => void;
   handleShowResults: (round: WithId<Round>) => void;
-  isRoundLocked?: (roundId: string) => boolean;
 }
 
 const handleDeleteRound = (round: WithId<Round>) => {
@@ -37,8 +36,7 @@ const handleDeleteRound = (round: WithId<Round>) => {
 export const ControlRounds = ({
   rounds,
   setSelectedRound,
-  handleShowResults,
-  isRoundLocked
+  handleShowResults
 }: ControlRoundsProps) => {
   return (
     <Box sx={{ mt: 2 }}>
@@ -47,7 +45,7 @@ export const ControlRounds = ({
       </Typography>
       <Grid container spacing={2}>
         {rounds.map(round => {
-          const isLocked = isRoundLocked?.(round._id.toString());
+          const isLocked = round.isLocked;
 
           return (
             <Grid item xs={12} key={round._id.toString()}>
@@ -97,37 +95,39 @@ export const ControlRounds = ({
                   </Box>
 
                   <Stack direction="row" spacing={1} sx={{ ml: 2 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleShowResults(round)}
-                      sx={{
-                        color: 'info.main',
-                        bgcolor: 'info.50',
-                        '&:hover': {
-                          bgcolor: 'info.100'
-                        }
-                      }}
-                    >
-                      <PollIcon fontSize="small" />
-                    </IconButton>
-
-                    <IconButton
-                      size="small"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setSelectedRound(round);
-                        enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
-                      }}
-                      sx={{
-                        color: 'primary.main',
-                        bgcolor: 'primary.50',
-                        '&:hover': {
-                          bgcolor: 'primary.100'
-                        }
-                      }}
-                    >
-                      <PlayArrowIcon fontSize="small" />
-                    </IconButton>
+                    {isLocked ? (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleShowResults(round)}
+                        sx={{
+                          color: 'info.main',
+                          bgcolor: 'info.50',
+                          '&:hover': {
+                            bgcolor: 'info.100'
+                          }
+                        }}
+                      >
+                        <PollIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        size="small"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedRound(round);
+                          enqueueSnackbar(`בחרת את הסבב ${round.name}`, { variant: 'info' });
+                        }}
+                        sx={{
+                          color: 'primary.main',
+                          bgcolor: 'primary.50',
+                          '&:hover': {
+                            bgcolor: 'primary.100'
+                          }
+                        }}
+                      >
+                        <PlayArrowIcon fontSize="small" />
+                      </IconButton>
+                    )}
 
                     <IconButton
                       size="small"
