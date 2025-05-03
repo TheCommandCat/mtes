@@ -179,11 +179,15 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
           color="primary"
           sx={{
             fontWeight: 'bold',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+            textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1
           }}
         >
           {votedMembers.length}
-          <Typography component="span" variant="h5" color="text.secondary" sx={{ ml: 2 }}>
+          <Typography component="span" variant="h5" color="text.secondary">
             מתוך {totalMembers}
           </Typography>
         </Typography>

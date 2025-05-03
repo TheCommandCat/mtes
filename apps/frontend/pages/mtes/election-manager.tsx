@@ -390,7 +390,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                   title={activeRound.name}
                   isActive
                   isLocked={isRoundLocked}
-                  onBack={handleGoBack}
+                  onBack={isRoundLocked ? handleGoBack : undefined}
                   onLock={!isRoundLocked ? handleLockRound : undefined}
                   onStop={!isRoundLocked ? handleStopRound : undefined}
                 />

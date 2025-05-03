@@ -28,7 +28,7 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
           }}
         >
           <Typography variant="h4" color="text.primary" gutterBottom>
-            עמדה {standId}
+            עמדה {standId + 1 }
           </Typography>
           <Typography variant="h5" color="text.secondary" gutterBottom>
             אין סבב פעיל

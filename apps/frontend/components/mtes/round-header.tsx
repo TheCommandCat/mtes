@@ -40,7 +40,7 @@ export const RoundHeader = ({
           {title}
         </Typography>
       </Box>
-      <Stack direction="row" spacing={2}>
+      <Stack direction="row" gap={2}>
         {onBack && (
           <Button variant="outlined" color="inherit" onClick={onBack} sx={{ px: 4, py: 1.5 }}>
             חזור
@@ -50,12 +50,12 @@ export const RoundHeader = ({
           <>
             {onLock && (
               <Button variant="outlined" color="warning" onClick={onLock} sx={{ px: 4, py: 1.5 }}>
-                נעל וסיים סבב
+                נעל סבב
               </Button>
             )}
             {onStop && (
               <Button variant="outlined" color="error" onClick={onStop} sx={{ px: 4, py: 1.5 }}>
-                סיים סבב ללא נעילה
+                בטל סבב
               </Button>
             )}
           </>
