@@ -8,7 +8,7 @@ export interface ElectionEvent {
   endDate: Date;
   color?: string;
   eventUsers: Array<EventUserAllowedRoles>;
-  votingStandsIds: number[];
+  votingStands: number;
   hasState: boolean;
 }
 

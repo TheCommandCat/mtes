@@ -20,7 +20,7 @@ const Page: NextPage<LoginProps> = ({ event }) => {
         {isAdminLogin ? (
           <AdminLoginForm />
         ) : (
-          <DivisionLoginForm votingStands={event?.votingStandsIds} />
+          <DivisionLoginForm votingStands={event?.votingStands ?? 0} />
         )}
       </Paper>
 

@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import divisionScheduleRouter from './schedule';
 import divisionUsersRouter from './users';
-import { ElectionEvent, ElectionState } from '@mtes/types';
+import { ElectionEvent, ElectionState, User } from '@mtes/types';
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
+import { getDivisionUsers } from 'apps/backend/src/lib/schedule/division-users';
 
 const router = express.Router({ mergeParams: true });
 
@@ -18,52 +18,149 @@ function getInitialDivisionState(): ElectionState {
 router.post(
   '/',
   asyncHandler(async (req: Request, res: Response) => {
-    const { divisions, ...body }: any = { ...req.body };
-    if (!body) {
-      res.status(400).json({ ok: false });
+    const eventData = req.body;
+
+    // Validate required fields
+    if (!eventData?.name || !eventData?.votingStands) {
+      res.status(400).json({ error: 'שם האירוע ומספר עמדות הצבעה הם שדות חובה' });
       return;
     }
 
-    console.log(divisions, body);
+    // Validate dates
+    if (!eventData.startDate || !eventData.endDate) {
+      res.status(400).json({ error: 'תאריכי התחלה וסיום הם שדות חובה' });
+      return;
+    }
 
-    body.startDate = new Date(body.startDate);
-    body.endDate = new Date(body.endDate);
+    // Validate members format if provided
+    if (eventData.members) {
+      const validMembers = eventData.members.every(m => m.name && m.city);
+      if (!validMembers) {
+        res.status(400).json({ error: 'כל החברים חייבים לכלול שם ועיר' });
+        return;
+      }
+    }
+
+    eventData.startDate = new Date(eventData.startDate);
+    eventData.endDate = new Date(eventData.endDate);
 
     console.log('⏬ Creating Event...');
-    const eventResult = await db.addElectionEvent(body);
+    const eventResult = await db.addElectionEvent(eventData as ElectionEvent);
     if (!eventResult.acknowledged) {
       console.log('❌ Could not create Event');
       res.status(500).json({ ok: false });
       return;
     }
     console.log('✅ Created Event!');
+
     console.log('🔐 Creating division state');
-    if (!(await db.addElectionState(getInitialDivisionState())).acknowledged)
+    if (!(await db.addElectionState(getInitialDivisionState())).acknowledged) {
       throw new Error('Could not create division state!');
+    }
     console.log('✅ Created division state');
+
+    console.log('👤 Creating division members');
+    const membersResult = await db.addMembers(eventData.members);
+    if (!membersResult.acknowledged) {
+      res.status(500).json({ error: 'Could not create members!' });
+      return;
+    }
+
+    console.log('👤 Generating division users');
+    const users = getDivisionUsers(eventData.votingStands);
+    console.log(users);
+
+    if (!(await db.addUsers(users)).acknowledged) {
+      res.status(500).json({ error: 'Could not create users!' });
+      return;
+    }
+    console.log('✅ Generated division users');
 
     res.json({ ok: true, id: eventResult.insertedId });
   })
 );
 
-router.put('/', (req: Request, res: Response) => {
-  const body: Partial<ElectionEvent> = { ...req.body };
-  if (!body) return res.status(400).json({ ok: false });
+router.put(
+  '/',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = req.body;
 
-  if (body.startDate) body.startDate = new Date(body.startDate);
-  if (body.endDate) body.endDate = new Date(body.endDate);
+    if (body.startDate) body.startDate = new Date(body.startDate);
+    if (body.endDate) body.endDate = new Date(body.endDate);
 
-  console.log(`⏬ Updating Event ${req.params.eventId}`);
-  db.updateElectionEvent(body, true).then(task => {
-    if (task.acknowledged) {
-      console.log('✅ Event updated!');
-      return res.json({ ok: true, id: task.upsertedId });
-    } else {
+    const validElectionEvent = {
+      name: body.name,
+      eventUsers: body.eventUsers,
+      hasState: body.hasState,
+      votingStands: body.votingStands,
+      startDate: body.startDate,
+      endDate: body.endDate
+    };
+
+    console.log(`⏬ Updating Event`);
+    const task = await db.updateElectionEvent(validElectionEvent, true);
+
+    if (!task.acknowledged) {
       console.log('❌ Could not update Event');
-      return res.status(500).json({ ok: false });
+      res.status(500).json({ ok: false });
+      return;
     }
-  });
-});
+
+    console.log('✅ Event updated!');
+
+    if (body.votingStands) {
+      console.log('🚮 Removing old users');
+      const deleteTask = await db.deleteUsers({ role: 'voting-stand' });
+
+      if (!deleteTask.acknowledged) {
+        console.log('❌ Could not remove old users');
+        res.status(500).json({ ok: false });
+        return;
+      }
+
+      const userCreationTasks = Array.from({ length: body.votingStands }, (_, i) =>
+        db.addUser({
+          isAdmin: false,
+          role: 'voting-stand',
+          password: 'admin',
+          lastPasswordSetDate: new Date(),
+          roleAssociation: {
+            type: 'stand',
+            value: i + 1
+          }
+        } as User)
+      );
+
+      const results = await Promise.all(userCreationTasks);
+
+      if (results.some(result => !result.acknowledged)) {
+        console.log('❌ Could not add new users');
+        res.status(500).json({ ok: false });
+        return;
+      }
+
+      console.log('✅ Users updated!');
+    }
+
+    if (body.members) {
+      const deleteMembersTask = await db.deleteMembers();
+      if (!deleteMembersTask.acknowledged) {
+        console.log('❌ Could not delete members');
+        res.status(500).json({ ok: false });
+        return;
+      }
+
+      const addMembersTask = await db.addMembers(body.members);
+      if (!addMembersTask.acknowledged) {
+        console.log('❌ Could not add members');
+        res.status(500).json({ ok: false });
+        return;
+      }
+    }
+
+    res.json({ ok: true, id: task.upsertedId });
+  })
+);
 
 router.delete(
   '/data',
@@ -71,7 +168,6 @@ router.delete(
     console.log(`🚮 Deleting data from event`);
     try {
       await cleanDivisionData();
-      // await db.updateDivision({ hasState: false });
     } catch (error) {
       res.status(500).json(error.message);
       return;
@@ -81,9 +177,6 @@ router.delete(
   })
 );
 
-router.use('/schedule', divisionScheduleRouter);
 router.use('/users', divisionUsersRouter);
-// router.use('/:divisionId/pit-map', divisionPitMapRouter);
-// router.use('/:divisionId/awards', divisionAwardsRouter);
 
 export default router;

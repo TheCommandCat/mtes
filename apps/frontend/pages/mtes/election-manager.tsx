@@ -64,7 +64,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [isRoundLocked, setIsRoundLocked] = useState(false);
   const [roundResults, setRoundResults] = useState<any>(null);
   const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
-    initialRoundStatuses(event.votingStandsIds.length)
+    initialRoundStatuses(event.votingStands)
   );
   const [standSelectDialogOpen, setStandSelectDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -478,7 +478,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
               open={standSelectDialogOpen}
               onClose={handleCloseDialog}
               onSelect={handleSelectVotingStand}
-              votingStands={event.votingStandsIds}
+              votingStands={event.votingStands}
               memberName={selectedMember.name}
             />
           )}
