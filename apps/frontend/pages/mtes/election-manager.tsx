@@ -274,7 +274,15 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
         }
 
         // Stop voting on stands but keep round active to show results
-        socket.emit('loadRound', null);
+        socket.emit('loadRound', null, (response: { ok: boolean }) => {
+          if (response.ok) {
+            console.log('Round locked successfully');
+            enqueueSnackbar(`הסבב ${activeRound.name} ננעל`, { variant: 'info' });
+          } else {
+            console.error('Error locking round');
+            enqueueSnackbar('שגיאה בנעילת הסבב', { variant: 'error' });
+          }
+        });
         setStandStatuses(prev => {
           const newStatuses = { ...prev };
           Object.keys(newStatuses).forEach(standId => {
