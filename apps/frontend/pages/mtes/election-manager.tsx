@@ -20,7 +20,6 @@ import {
   Member,
   Round,
   SafeUser,
-  VotingStandStatus,
   VotingStates,
   VotingStatus
 } from '@mtes/types';
@@ -28,7 +27,6 @@ import Layout from '../../components/layout';
 import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
-import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import { ControlRounds } from '../../components/mtes/control-rounds';
 import { MembersGrid } from '../../components/mtes/members-grid';
 import { RoundResults } from '../../components/mtes/round-results';
@@ -71,10 +69,8 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
     initialRoundStatuses(event.votingStands, event == null ? 'NotStarted' : 'Empty')
   );
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
-  const [roundToEdit, setRoundToEdit] = useState<WithId<Round> | null>(null);
 
   const getVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
