@@ -191,10 +191,10 @@ router.post('/vote', async (req: Request, res: Response) => {
     const votedMembers = await db.getVotedMembers(roundId);
     const totalAllowedMembers = round.allowedMembers.length;
 
-    if (votedMembers.length === totalAllowedMembers) {
-      console.log('✅ All members have voted, locking round');
-      await db.lockRound(roundId);
-    }
+    // if (votedMembers.length === totalAllowedMembers) {
+    //   console.log('✅ All members have voted, locking round');
+    //   await db.lockRound(roundId);
+    // }
 
     console.log('✅ Votes recorded successfully');
     return res.json({ ok: true });

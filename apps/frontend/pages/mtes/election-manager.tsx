@@ -47,10 +47,13 @@ interface Props {
   event: ElectionEvent;
 }
 
-const initialRoundStatuses = (numofStands: number): Record<number, VotingStandStatus> =>
+const initialRoundStatuses = (
+  numofStands: number,
+  status: VotingStates
+): Record<number, VotingStandStatus> =>
   Object.fromEntries(
-    Array.from({ length: numofStands }, (_, i) => [i, { status: 'NotStarted', member: null }])
-  );
+    Array.from({ length: numofStands }, (_, i) => [i, { status: status, member: null }])
+  ) as Record<number, VotingStandStatus>;
 
 interface VotingStandStatus {
   status: VotingStates;
@@ -66,7 +69,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [isRoundLocked, setIsRoundLocked] = useState(false);
   const [roundResults, setRoundResults] = useState<any>(null);
   const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
-    initialRoundStatuses(event.votingStands)
+    initialRoundStatuses(event.votingStands, event == null ? 'NotStarted' : 'Empty')
   );
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);

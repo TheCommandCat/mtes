@@ -6,17 +6,21 @@ export const handleLoadVotingMember = async (
   namespace: any,
   member: WithId<Member>,
   votingStand: number,
-  callback
+  callback: ((response: { ok: boolean; error?: string }) => void) | undefined
 ) => {
   console.log('🔌 WS: Load voting member');
   console.log('WS Status: ', namespace.connected);
 
   try {
     namespace.emit('votingMemberLoaded', member, votingStand);
-    callback({ ok: true });
+    if (typeof callback === 'function') {
+      callback({ ok: true });
+    }
   } catch (error) {
     console.error('Error loading voting member:', error);
-    callback({ ok: false, error: 'Failed to load voting member' });
+    if (typeof callback === 'function') {
+      callback({ ok: false, error: 'Failed to load voting member' });
+    }
   }
 };
 
@@ -53,18 +57,22 @@ export const handleVoteSubmitted = async (
   namespace: any,
   member: WithId<Member>,
   votingStand: number,
-  callback
+  callback: ((response: { ok: boolean }) => void) | undefined
 ) => {
   namespace.emit('voteSubmitted', member, votingStand);
-  callback({ ok: true });
+  if (typeof callback === 'function') {
+    callback({ ok: true });
+  }
 };
 
 export const handleVoteProcessed = async (
   namespace: any,
   member: WithId<Member>,
   votingStand: number,
-  callback
+  callback: ((response: { ok: boolean }) => void) | undefined
 ) => {
   namespace.emit('voteProcessed', member, votingStand);
-  callback({ ok: true });
+  if (typeof callback === 'function') {
+    callback({ ok: true });
+  }
 };
