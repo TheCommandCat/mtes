@@ -1,4 +1,4 @@
-import { Round } from '@mtes/types';
+import { Member, Round } from '@mtes/types';
 import { Box, Typography, Grid, Card, CardContent, Chip, IconButton, Stack } from '@mui/material';
 import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
@@ -10,11 +10,14 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { WithId } from 'mongodb';
 import { apiFetch } from 'apps/frontend/lib/utils/fetch';
 import router from 'next/router';
+import AddRoundDialog from './add-round-dialog';
 
 interface ControlRoundsProps {
   rounds: WithId<Round>[];
   setSelectedRound: (round: WithId<Round> | null) => void;
   handleShowResults: (round: WithId<Round>) => void;
+  members: WithId<Member>[];
+  refreshData: () => void;
 }
 
 const handleDeleteRound = (round: WithId<Round>) => {
@@ -36,13 +39,18 @@ const handleDeleteRound = (round: WithId<Round>) => {
 export const ControlRounds = ({
   rounds,
   setSelectedRound,
-  handleShowResults
+  handleShowResults,
+  members,
+  refreshData
 }: ControlRoundsProps) => {
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        סבבים זמינים
-      </Typography>
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          סבבים זמינים
+        </Typography>
+        <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
+      </Box>
       <Grid container spacing={2}>
         {rounds.map(round => {
           const isLocked = round.isLocked;

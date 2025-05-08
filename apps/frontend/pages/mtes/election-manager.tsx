@@ -380,78 +380,74 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
               ניהול הבחירות
             </Typography>
           </Paper>
-
-          <Paper elevation={2} sx={{ p: 4 }}>
-            <VotingStandsGrid standStatuses={standStatuses} onCancel={handleCancelMember} />
-
+            <Paper elevation={2} sx={{ p: 4 }}>
             {activeRound ? (
               <Box>
-                <RoundHeader
-                  title={activeRound.name}
-                  isActive
-                  isLocked={isRoundLocked}
-                  onBack={isRoundLocked ? handleGoBack : undefined}
-                  onLock={!isRoundLocked ? handleLockRound : undefined}
-                  onStop={!isRoundLocked ? handleStopRound : undefined}
+              {!roundResults && (
+                <VotingStandsGrid standStatuses={standStatuses} onCancel={handleCancelMember} />
+              )}
+              <RoundHeader
+                title={activeRound.name}
+                isActive
+                isLocked={isRoundLocked}
+                onBack={isRoundLocked ? handleGoBack : undefined}
+                onLock={!isRoundLocked ? handleLockRound : undefined}
+                onStop={!isRoundLocked ? handleStopRound : undefined}
+              />
+
+              {roundResults ? (
+                <RoundResults
+                round={activeRound}
+                results={roundResults}
+                votedMembers={votedMembers}
+                totalMembers={members.length}
+                />
+              ) : (
+                <>
+                <VotingStatusComponent
+                  votedCount={votedMembers.length}
+                  totalCount={members.length}
                 />
 
-                {roundResults ? (
-                  <RoundResults
-                    round={activeRound}
-                    results={roundResults}
-                    votedMembers={votedMembers}
-                    totalMembers={members.length}
-                  />
-                ) : (
-                  <>
-                    <VotingStatusComponent
-                      votedCount={votedMembers.length}
-                      totalCount={members.length}
-                    />
+                <MembersGrid
+                  members={members}
+                  votedMembers={votedMembers}
+                  standStatuses={standStatuses}
+                  showVoted={false}
+                  onMemberClick={handleOpenDialog}
+                />
 
-                    <MembersGrid
-                      members={members}
-                      votedMembers={votedMembers}
-                      standStatuses={standStatuses}
-                      showVoted={false}
-                      onMemberClick={handleOpenDialog}
-                    />
-
-                    <MembersGrid
-                      members={members}
-                      votedMembers={votedMembers}
-                      standStatuses={standStatuses}
-                      showVoted={true}
-                    />
-                  </>
-                )}
+                <MembersGrid
+                  members={members}
+                  votedMembers={votedMembers}
+                  standStatuses={standStatuses}
+                  showVoted={true}
+                />
+                </>
+              )}
               </Box>
             ) : selectedRound ? (
               <Box>
-                <RoundHeader
-                  title={selectedRound.name}
-                  onBack={() => setSelectedRound(null)}
-                  onStart={() => handleStartRound(selectedRound)}
-                />
+              <RoundHeader
+                title={selectedRound.name}
+                onBack={() => setSelectedRound(null)}
+                onStart={() => handleStartRound(selectedRound)}
+              />
 
-                <RoundPreview round={selectedRound} members={members} />
+              <RoundPreview round={selectedRound} members={members} />
               </Box>
             ) : (
               <Box>
-                <RoundHeader title="אנא בחרו סבב" subtitle="סבב נבחר" />
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
-                  <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
-                </Box>
-
-                <ControlRounds
-                  rounds={rounds}
-                  setSelectedRound={setSelectedRound}
-                  handleShowResults={handleShowResults}
-                />
+              <ControlRounds
+                rounds={rounds}
+                setSelectedRound={setSelectedRound}
+                handleShowResults={handleShowResults}
+                members={members}
+                refreshData={refreshData}
+              />
               </Box>
             )}
-          </Paper>
+            </Paper>
 
           {/* Delete Confirmation Dialog */}
           <Dialog
