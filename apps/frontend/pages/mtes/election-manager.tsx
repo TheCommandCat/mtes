@@ -20,6 +20,7 @@ import {
   Member,
   Round,
   SafeUser,
+  VotingStandStatus,
   VotingStates,
   VotingStatus
 } from '@mtes/types';
@@ -28,7 +29,6 @@ import { RoleAuthorizer } from '../../components/role-authorizer';
 import { useWebsocket } from '../../hooks/use-websocket';
 import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import AddRoundDialog from '../../components/mtes/add-round-dialog';
-import SelectVotingStandDialog from '../../components/mtes/select-voting-stand-dialog';
 import { ControlRounds } from '../../components/mtes/control-rounds';
 import { MembersGrid } from '../../components/mtes/members-grid';
 import { RoundResults } from '../../components/mtes/round-results';
@@ -36,6 +36,8 @@ import { VotingStatus as VotingStatusComponent } from '../../components/mtes/vot
 import { RoundHeader } from '../../components/mtes/round-header';
 import { RoundPreview } from '../../components/mtes/round-preview';
 import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -45,15 +47,15 @@ interface Props {
   event: ElectionEvent;
 }
 
-interface VotingStandStatus {
-  status: VotingStates;
-  member: Member | null;
-}
-
 const initialRoundStatuses = (numofStands: number): Record<number, VotingStandStatus> =>
   Object.fromEntries(
     Array.from({ length: numofStands }, (_, i) => [i, { status: 'NotStarted', member: null }])
   );
+
+interface VotingStandStatus {
+  status: VotingStates;
+  member: WithId<Member> | null; // Changed from Member to WithId<Member>
+}
 
 const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
   const router = useRouter();
@@ -66,7 +68,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
     initialRoundStatuses(event.votingStands)
   );
-  const [standSelectDialogOpen, setStandSelectDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
@@ -111,6 +112,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     {
       name: 'voteSubmitted',
       handler: (votingMember: WithId<Member>, standId: number) => {
+        // Ensure votingMember is WithId<Member>
         enqueueSnackbar(`${votingMember.name} הגיש הצבעה בעמדה ${standId}`, { variant: 'info' });
         setStandStatuses(prev => ({
           ...prev,
@@ -121,6 +123,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     {
       name: 'voteProcessed',
       handler: (votingMember: WithId<Member>, standId: number) => {
+        // Ensure votingMember is WithId<Member>
         enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה בעמדה ${standId}`, {
           variant: 'success'
         });
@@ -133,40 +136,122 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     }
   ]);
 
-  const handleOpenDialog = (member: Member) => {
-    setSelectedMember(member);
-    setStandSelectDialogOpen(true);
-  };
+  const handleSendMember = (
+    member: WithId<Member>,
+    targetStandId: number,
+    previousStandId?: number | null
+  ) => {
+    console.log(
+      'Sending member:',
+      member,
+      'to stand:',
+      targetStandId,
+      'from stand:',
+      previousStandId
+    );
 
-  const handleCloseDialog = () => {
-    setStandSelectDialogOpen(false);
-    setSelectedMember(null);
-  };
+    const operations: Promise<{
+      standId: number | null;
+      memberId: string | null;
+      ok: boolean;
+      action: string;
+      memberName: string;
+    }>[] = [];
 
-  const handleSendMember = (member: Member, votingStand: number) => {
-    console.log('Sending member:', member);
-    console.log('Voting stand:', votingStand);
-    console.log('Socket:', socket.connected);
+    // 1. If moving from a previous stand, create a promise to emit an event to clear it
+    if (
+      previousStandId !== undefined &&
+      previousStandId !== null &&
+      previousStandId !== targetStandId
+    ) {
+      operations.push(
+        new Promise(resolve => {
+          socket.emit('loadVotingMember', null, previousStandId, (response: { ok: boolean }) => {
+            resolve({
+              standId: previousStandId,
+              memberId: null,
+              ok: response.ok,
+              action: 'clear',
+              memberName: member.name
+            });
+          });
+        })
+      );
+    }
 
-    socket.emit('loadVotingMember', member, votingStand, (response: { ok: boolean }) => {
-      if (response.ok) {
-        console.log('Member sent successfully');
-        setStandStatuses(prev => ({
-          ...prev,
-          [votingStand]: { status: 'Voting', member }
-        }));
-        enqueueSnackbar(`${member.name} נשלח להצבעה בעמדה ${votingStand}`, { variant: 'success' });
+    // 2. Create a promise to emit an event to load the member into the target stand
+    operations.push(
+      new Promise(resolve => {
+        socket.emit('loadVotingMember', member, targetStandId, (response: { ok: boolean }) => {
+          resolve({
+            standId: targetStandId,
+            memberId: member._id.toString(),
+            ok: response.ok,
+            action: 'load',
+            memberName: member.name
+          });
+        });
+      })
+    );
+
+    Promise.all(operations).then(results => {
+      const allOk = results.every(r => r.ok);
+
+      if (allOk) {
+        setStandStatuses(prev => {
+          const newStatuses = { ...prev };
+          // Apply changes based on the operations that were part of this sequence
+
+          // Clear previous stand if that operation was performed and part of this sequence
+          if (
+            previousStandId !== undefined &&
+            previousStandId !== null &&
+            previousStandId !== targetStandId
+          ) {
+            newStatuses[previousStandId] = { status: 'Empty', member: null };
+          }
+          // Set new stand
+          newStatuses[targetStandId] = { status: 'Voting', member };
+
+          return newStatuses;
+        });
+        enqueueSnackbar(`${member.name} הועבר/נשלח לעמדה ${targetStandId}`, { variant: 'success' });
       } else {
-        console.error('Error sending member');
-        enqueueSnackbar('שגיאה בשליחת המצביע', { variant: 'error' });
+        enqueueSnackbar('שגיאה בהעברת המצביע', { variant: 'error' });
+        results.forEach(result => {
+          if (!result.ok) {
+            if (result.action === 'clear') {
+              enqueueSnackbar(`שגיאה בפינוי ${result.memberName} מעמדה ${result.standId}`, {
+                variant: 'warning'
+              });
+            } else if (result.action === 'load') {
+              enqueueSnackbar(`שגיאה בשיבוץ ${result.memberName} לעמדה ${result.standId}`, {
+                variant: 'warning'
+              });
+            }
+          }
+        });
+        // Consider a state refresh from server here if partial failures occur
+        console.error('Error in multi-step stand update, results:', results);
       }
     });
   };
 
-  const handleSelectVotingStand = (standId: number) => {
-    if (selectedMember) {
-      handleSendMember(selectedMember, standId);
-    }
+  const handleReturnMemberToBank = (member: WithId<Member>, previousStandId: number) => {
+    // Changed member type to WithId<Member>
+    console.log('Returning member to bank:', member, 'from stand:', previousStandId);
+    // Emit an event to clear the member from the stand on the server/other clients
+    socket.emit('loadVotingMember', null, previousStandId, (response: { ok: boolean }) => {
+      if (response.ok) {
+        setStandStatuses(prev => ({
+          ...prev,
+          [previousStandId]: { status: 'Empty', member: null }
+        }));
+        enqueueSnackbar(`${member.name} הוחזר מהעמדה לבנק`, { variant: 'info' });
+      } else {
+        enqueueSnackbar('שגיאה בהחזרת המצביע לבנק', { variant: 'error' });
+      }
+    });
   };
 
   const handleStartRound = (round: WithId<Round>) => {
@@ -364,130 +449,129 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
         enqueueSnackbar('לא נמצאו הרשאות מתאימות.', { variant: 'error' });
       }}
     >
-      <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
-        <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 3,
-              textAlign: 'center',
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-              color: 'white',
-              mb: 3
-            }}
-          >
-            <Typography variant="h4" fontWeight="bold">
-              ניהול הבחירות
-            </Typography>
-          </Paper>
+      <DndProvider backend={HTML5Backend}>
+        <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
+          <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                color: 'white',
+                mb: 3
+              }}
+            >
+              <Typography variant="h4" fontWeight="bold">
+                ניהול הבחירות
+              </Typography>
+            </Paper>
             <Paper elevation={2} sx={{ p: 4 }}>
-            {activeRound ? (
-              <Box>
-              {!roundResults && (
-                <VotingStandsGrid standStatuses={standStatuses} onCancel={handleCancelMember} />
-              )}
-              <RoundHeader
-                title={activeRound.name}
-                isActive
-                isLocked={isRoundLocked}
-                onBack={isRoundLocked ? handleGoBack : undefined}
-                onLock={!isRoundLocked ? handleLockRound : undefined}
-                onStop={!isRoundLocked ? handleStopRound : undefined}
-              />
+              {activeRound ? (
+                <Box>
+                  {!roundResults && (
+                    <VotingStandsGrid
+                      standStatuses={standStatuses}
+                      onCancel={handleCancelMember} // This can also be used to drag member back to bank
+                      onDropMember={handleSendMember}
+                    />
+                  )}
+                  <RoundHeader
+                    title={activeRound.name}
+                    isActive
+                    isLocked={isRoundLocked}
+                    onBack={isRoundLocked ? handleGoBack : undefined}
+                    onLock={!isRoundLocked ? handleLockRound : undefined}
+                    onStop={!isRoundLocked ? handleStopRound : undefined}
+                  />
 
-              {roundResults ? (
-                <RoundResults
-                round={activeRound}
-                results={roundResults}
-                votedMembers={votedMembers}
-                totalMembers={members.length}
-                />
+                  {roundResults ? (
+                    <RoundResults
+                      round={activeRound}
+                      results={roundResults}
+                      votedMembers={votedMembers}
+                      totalMembers={members.length}
+                    />
+                  ) : (
+                    <>
+                      <VotingStatusComponent
+                        votedCount={votedMembers.length}
+                        totalCount={members.length}
+                      />
+
+                      <MembersGrid
+                        members={members}
+                        votedMembers={votedMembers}
+                        standStatuses={standStatuses}
+                        showVoted={false}
+                        onDropMemberBackToBank={handleReturnMemberToBank}
+                      />
+
+                      <MembersGrid
+                        members={members}
+                        votedMembers={votedMembers}
+                        standStatuses={standStatuses}
+                        showVoted={true}
+                        // No drop functionality for the voted list
+                        onDropMemberBackToBank={() => {}} // Dummy function, not used
+                      />
+                    </>
+                  )}
+                </Box>
+              ) : selectedRound ? (
+                <Box>
+                  <RoundHeader
+                    title={selectedRound.name}
+                    onBack={() => setSelectedRound(null)}
+                    onStart={() => handleStartRound(selectedRound)}
+                  />
+
+                  <RoundPreview round={selectedRound} members={members} />
+                </Box>
               ) : (
-                <>
-                <VotingStatusComponent
-                  votedCount={votedMembers.length}
-                  totalCount={members.length}
-                />
-
-                <MembersGrid
-                  members={members}
-                  votedMembers={votedMembers}
-                  standStatuses={standStatuses}
-                  showVoted={false}
-                  onMemberClick={handleOpenDialog}
-                />
-
-                <MembersGrid
-                  members={members}
-                  votedMembers={votedMembers}
-                  standStatuses={standStatuses}
-                  showVoted={true}
-                />
-                </>
+                <Box>
+                  <ControlRounds
+                    rounds={rounds}
+                    setSelectedRound={setSelectedRound}
+                    handleShowResults={handleShowResults}
+                    members={members}
+                    refreshData={refreshData}
+                  />
+                </Box>
               )}
-              </Box>
-            ) : selectedRound ? (
-              <Box>
-              <RoundHeader
-                title={selectedRound.name}
-                onBack={() => setSelectedRound(null)}
-                onStart={() => handleStartRound(selectedRound)}
-              />
-
-              <RoundPreview round={selectedRound} members={members} />
-              </Box>
-            ) : (
-              <Box>
-              <ControlRounds
-                rounds={rounds}
-                setSelectedRound={setSelectedRound}
-                handleShowResults={handleShowResults}
-                members={members}
-                refreshData={refreshData}
-              />
-              </Box>
-            )}
             </Paper>
 
-          {/* Delete Confirmation Dialog */}
-          <Dialog
-            open={roundToDelete !== null}
-            onClose={() => setRoundToDelete(null)}
-            aria-labelledby="delete-round-dialog-title"
-            aria-describedby="delete-round-dialog-description"
-          >
-            <DialogTitle id="delete-round-dialog-title">Delete Round</DialogTitle>
-            <DialogContent>
-              <DialogContentText id="delete-round-dialog-description">
-                {roundToDelete &&
-                  `Are you sure you want to delete the round "${roundToDelete.name}"? This action cannot be undone.`}
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setRoundToDelete(null)}>Cancel</Button>
-              <Button
-                onClick={() => roundToDelete && handleDeleteRound(roundToDelete)}
-                color="error"
-                variant="contained"
-                autoFocus
-              >
-                Delete
-              </Button>
-            </DialogActions>
-          </Dialog>
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+              open={roundToDelete !== null}
+              onClose={() => setRoundToDelete(null)}
+              aria-labelledby="delete-round-dialog-title"
+              aria-describedby="delete-round-dialog-description"
+            >
+              <DialogTitle id="delete-round-dialog-title">Delete Round</DialogTitle>
+              <DialogContent>
+                <DialogContentText id="delete-round-dialog-description">
+                  {roundToDelete &&
+                    `Are you sure you want to delete the round "${roundToDelete.name}"? This action cannot be undone.`}
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setRoundToDelete(null)}>Cancel</Button>
+                <Button
+                  onClick={() => roundToDelete && handleDeleteRound(roundToDelete)}
+                  color="error"
+                  variant="contained"
+                  autoFocus
+                >
+                  Delete
+                </Button>
+              </DialogActions>
+            </Dialog>
 
-          {/* Voting Stand Selection Dialog */}
-          {selectedMember && (
-            <SelectVotingStandDialog
-              open={standSelectDialogOpen}
-              onClose={handleCloseDialog}
-              onSelect={handleSelectVotingStand}
-              votingStands={event.votingStands}
-              memberName={selectedMember.name}
-            />
-          )}
-        </Box>
-      </Layout>
+            {/* Drag-and-drop replaces voting stand selection dialog */}
+          </Box>
+        </Layout>
+      </DndProvider>
     </RoleAuthorizer>
   );
 };
