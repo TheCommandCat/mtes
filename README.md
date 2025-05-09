@@ -69,7 +69,7 @@ mtes/
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-This project is licensed under the GPL-3.0 License. It utilizes a similar tech stack and codebase inspired by @FirstIsrael/lems; 🙏 thank you for making this possible! 🚀
+This project is licensed under the GPL-3.0 License. It utilizes a similar tech stack and codebase inspired by [FIRSTIsrael/lems](https://github.com/FIRSTIsrael/lems); 🙏 thank you for making this possible! 🚀
 
 ## 🙏 Acknowledgments
 
