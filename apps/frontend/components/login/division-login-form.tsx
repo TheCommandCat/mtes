@@ -81,7 +81,7 @@ const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) =
         {RoleTypes.map((r: Role) => {
           return (
             <MenuItem value={r as Role} key={r as Role}>
-              {localizedRoles[r as Role].name}
+              {localizedRoles[r as Role]}
             </MenuItem>
           );
         })}

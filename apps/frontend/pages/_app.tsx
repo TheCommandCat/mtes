@@ -5,6 +5,15 @@ import Head from 'next/head';
 import { SnackbarProvider } from 'notistack';
 import SnackbarCloseButton from '../components/general/snackbar-close-button';
 import { RouteAuthorizer } from '../components/route-authorizer';
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import rtlPlugin from 'stylis-plugin-rtl';
+
+// Create rtl cache
+const cacheRtl = createCache({
+  key: 'mui-rtl',
+  stylisPlugins: [rtlPlugin]
+});
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (
@@ -15,20 +24,22 @@ function CustomApp({ Component, pageProps }: AppProps) {
         <meta name="description" content="מערכת הבחירות של מחוז תל אביב" />
         <title>מערכת בחירות מחוז תל אביב</title>
       </Head>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <SnackbarProvider
-          maxSnack={3}
-          TransitionComponent={Grow}
-          action={snackbarId => <SnackbarCloseButton snackbarId={snackbarId} />}
-        >
-          <main className="app">
-            <RouteAuthorizer>
-              <Component {...pageProps} />
-            </RouteAuthorizer>
-          </main>
-        </SnackbarProvider>
-      </ThemeProvider>
+      <CacheProvider value={cacheRtl}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <SnackbarProvider
+            maxSnack={3}
+            TransitionComponent={Grow}
+            action={snackbarId => <SnackbarCloseButton snackbarId={snackbarId} />}
+          >
+            <main className="app">
+              <RouteAuthorizer>
+                <Component {...pageProps} />
+              </RouteAuthorizer>
+            </main>
+          </SnackbarProvider>
+        </ThemeProvider>
+      </CacheProvider>
     </>
   );
 }

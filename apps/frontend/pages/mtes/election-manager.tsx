@@ -36,6 +36,7 @@ import { RoundPreview } from '../../components/mtes/round-preview';
 import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { localizedRoles } from 'apps/frontend/localization/roles';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -449,7 +450,10 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
       }}
     >
       <DndProvider backend={HTML5Backend}>
-        <Layout title={`ממשק ${user.role}`} connectionStatus={connectionStatus}>
+        <Layout
+          title={`ממשק ${user.role && localizedRoles[user.role]}`}
+          connectionStatus={connectionStatus}
+        >
           <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
             <Paper
               elevation={3}

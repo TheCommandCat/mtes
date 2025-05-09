@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useReducer, useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
@@ -13,6 +13,7 @@ import { MemberDisplay } from '../../components/mtes/member-display';
 import { VotingForm } from '../../components/mtes/voting-form';
 import { WaitingState } from '../../components/mtes/waiting-state';
 import { VotingRoundHeader } from '../../components/mtes/voting-round-header';
+import { localizedRoles } from 'apps/frontend/localization/roles';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -81,7 +82,9 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
       }}
     >
       <Layout
-        title={`ממשק ${user.role} - עמדה ${user.roleAssociation?.value}`}
+        title={`ממשק ${user.role && localizedRoles[user.role]} - עמדה ${
+          user.roleAssociation?.value
+        }`}
         connectionStatus={connectionStatus}
       >
         <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
