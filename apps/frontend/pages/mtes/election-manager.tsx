@@ -355,6 +355,23 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
         if (resultsRes.ok) {
           const data = await resultsRes.json();
           setRoundResults(data.results);
+          socket.emit('loadRound', null, (response: { ok: boolean }) => {
+            if (response.ok) {
+              console.log('Round stopped successfully');
+              enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
+              setStandStatuses(prev => {
+                const newStatuses = { ...prev };
+                Object.keys(newStatuses).forEach(standId => {
+                  newStatuses[parseInt(standId)] = { status: 'NotStarted', member: null };
+                });
+                return newStatuses;
+              });
+            } else {
+              console.error('Error stopping round');
+              enqueueSnackbar('שגיאה בהפסקת הסבב', { variant: 'error' });
+            }
+          });
+
           enqueueSnackbar(`הסבב ${activeRound.name} ננעל והתוצאות מוצגות`, { variant: 'success' });
         }
 
