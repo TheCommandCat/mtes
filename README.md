@@ -1,158 +1,80 @@
-# MTES - Election/Voting Management System
+# 🗳️ MTES - Moatza TLV Election System
 
-## Overview
+> Modern Real Time Election Management System built with Next.js, Express, and WebSocket technology! 🚀
 
-MTES (Election/Voting Management System) is a monorepo project built with Nx that provides a comprehensive platform for managing elections and voting processes. It includes real-time updates via WebSocket technology, ensuring a seamless and interactive user experience. The system is designed to handle various aspects of election management, from division scheduling to voting stand interfaces.
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 
-## Project Structure
+## ✨ Features
 
-The project is structured as a monorepo, utilizing Nx to manage multiple applications and libraries within a single repository. Here's a breakdown of the key directories:
+- 🔄 **Real-time Updates**: Live voting progress with WebSocket integration
+- 🎯 **Drag & Drop Interface**: Intuitive member assignment to voting stands
+- 🔐 **Role-Based Access**: Secure access control for different user types
+- 📊 **Live Results**: Instant visualization of voting outcomes
+- 🎛️ **Admin Dashboard**: Comprehensive election management tools
+- 📱 **Responsive Design**: Works seamlessly on all devices
 
-```
-├── apps/
-│   ├── frontend/    # Next.js application for the user interface
-│   └── backend/     # Express server with WebSocket support for real-time updates
-├── libs/
-│   ├── database/    # Database operations and models using MongoDB
-│   ├── types/       # Shared TypeScript types and schemas for data validation
-│   └── utils/       # Utility functions for arrays, objects, and random data generation
-```
+## 🛠️ Tech Stack
 
-## Key Features
+- **Frontend**: Next.js + Material-UI
+- **Backend**: Express.js + Socket.IO
+- **Database**: MongoDB
+- **Build Tool**: Nx
+- **Language**: TypeScript
 
-*   **Real-time Voting Updates**: Leverages WebSocket for instant updates during voting sessions.
-*   **Division Management and Scheduling**: Tools for managing and scheduling different voting divisions.
-*   **Event Management System**: System to create and manage election events.
-*   **Role-Based Access Control**: Secure access control based on user roles.
-*   **Admin Dashboard**: Comprehensive dashboard for administrators to manage the system.
-*   **Voting Stand Interface**: User-friendly interface for voters to cast their votes.
+## 🚀 Quick Start
 
-## Technologies Used
-
-*   **Frontend**: Next.js, Material-UI, WebSocket
-*   **Backend**: Express.js, WebSocket
-*   **Database**: MongoDB
-*   **Build Tool**: Nx
-*   **Language**: TypeScript
-
-## Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-*   [Node.js](https://nodejs.org/) (LTS version recommended)
-*   [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-*   [MongoDB](https://www.mongodb.com/)
-
-## Installation
-
-1.  Clone the repository:
-
-    ```bash
-    git clone <repository-url>
-    cd mtes
-    ```
-
-2.  Install dependencies:
-
-    ```bash
-    npm install
-    ```
-
-## Configuration
-
-1.  **Environment Variables**:
-
-    *   Create `.env` files for both the `frontend` and `backend` applications.
-    *   Configure the necessary environment variables such as database connection strings, API keys, and WebSocket URLs.
-
-## Running the Application
-
-To start the development servers, use the following commands:
-
-1.  **Start both Frontend and Backend**:
-
-    ```bash
-    npm run dev
-    ```
-
-2.  **Start Frontend only**:
-
-    ```bash
-    nx serve frontend
-    ```
-
-3.  **Start Backend only**:
-
-    ```bash
-    nx serve backend
-    ```
-
-## Detailed Project Structure
-
-### Frontend (`/apps/frontend`)
-
-*   **Pages**: Contains various routes for the application, including:
-    *   `admin`: Pages for administrative tasks.
-    *   `events`: Pages for managing election events.
-    *   `voting`: Pages for the voting interface.
-*   **Components**: Reusable UI components.
-*   **Hooks**: Custom React hooks for WebSocket communication and data fetching.
-*   **Theme**: Material-UI theme configuration.
-*   **Utils**: Utility functions for frontend operations.
-
-### Backend (`/apps/backend`)
-
-*   **WebSocket Server**: Handles real-time communication between the server and clients.
-*   **Authentication Middleware**: Ensures secure access to API endpoints.
-*   **CSV Data Processing**: Processes CSV data for election events and divisions.
-*   **API Routes**:
-    *   `admin`: Routes for administrative tasks.
-    *   `divisions`: Routes for managing voting divisions.
-    *   `events`: Routes for managing election events.
-*   **Schedule Management**: Manages the scheduling of election events and divisions.
-
-### Libraries (`/libs`)
-
-#### Database (`/libs/database`)
-
-*   **MongoDB Models and Schemas**: Defines the data structure for the application.
-*   **CRUD Operations**: Implements Create, Read, Update, and Delete operations for:
-    *   Contestants
-    *   Divisions
-    *   Election Events
-    *   Members
-    *   Users
-
-#### Types (`/libs/types`)
-
-*   **Shared TypeScript Interfaces**: Defines the data types used throughout the application.
-*   **Validation Schemas**: Uses schemas for data validation.
-*   **Constants and Enums**: Defines constants and enums used in the project.
-
-#### Utils (`/libs/utils`)
-
-*   **Array Utilities**: Utility functions for array manipulation.
-*   **Object Utilities**: Utility functions for object manipulation.
-*   **Random Data Generation**: Tools for generating random data for testing and development.
-
-## Development
-
-The project uses Nx for managing the monorepo. Here are some common commands:
+1. **Clone & Install**
 
 ```bash
-# Generate new library
-nx generate @nx/react:lib my-lib
-
-# Generate new component
-nx generate @nx/react:component my-component
-
-# Run tests
-nx test [project-name]
-
-# Build project
-nx build [project-name]
+git clone https://github.com/TheCommandCat/mtes.git
+cd mtes
+npm install
 ```
 
-## License
+2. **Configure Environment Variables**
 
-[Your License Here]
+   Create a `.env` file in the `apps/backend/` directory and set a `JWT_SECRET`:
+
+   ```bash
+   cp .env.example apps/backend/.env
+   # Then, edit apps/backend/.env and set JWT_SECRET
+   ```
+
+3. **Run Development Server**
+
+```bash
+npm run dev
+```
+
+## 🏗️ Project Structure
+
+```
+mtes/
+├── apps/
+│   ├── frontend/    # Next.js application
+│   └── backend/     # Express server
+├── libs/
+│   ├── database/    # MongoDB models
+│   ├── types/       # Shared types
+│   └── utils/       # Common utilities
+```
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+This project is licensed under the GPL-3.0 License. It utilizes a similar tech stack and codebase inspired by @FirstIsrael/lems; 🙏 thank you for making this possible! 🚀
+
+## 🙏 Acknowledgments
+
+- Built with [Nx](https://nx.dev)
+- UI components from [Material-UI](https://mui.com)
+- Real-time magic with [Socket.IO](https://socket.io)
+
+Made with ❤️ by @TheCommandCat
