@@ -45,6 +45,18 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
       console.log('🛑 Round stopped');
     }
 
+    if (round !== null) {
+      round.roles.forEach(role => {
+        if (role.whiteVote) {
+          role.contestants.push({
+            _id: new ObjectId('000000000000000000000000'),
+            name: 'פתק לבן',
+            city: 'אין אמון באף אחד'
+          } as WithId<Member>);
+        }
+      });
+    }
+
     namespace.emit('roundLoaded', round);
     callback({ ok: true });
   } catch (error) {
