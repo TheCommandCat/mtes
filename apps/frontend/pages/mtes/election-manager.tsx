@@ -51,7 +51,7 @@ const initialRoundStatuses = (
   status: VotingStates
 ): Record<number, VotingStandStatus> =>
   Object.fromEntries(
-    Array.from({ length: numofStands }, (_, i) => [i, { status: status, member: null }])
+    Array.from({ length: numofStands }, (_, i) => [i + 1, { status: status, member: null }])
   ) as Record<number, VotingStandStatus>;
 
 interface VotingStandStatus {
