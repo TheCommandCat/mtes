@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 import * as db from '@mtes/database';
-import { ElectionState, Positions, Round } from '@mtes/types';
+import { ElectionState, Member, Positions, Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
@@ -11,7 +11,10 @@ router.get('/rounds', async (req: Request, res: Response) => {
 });
 
 router.post('/addRound', async (req: Request, res: Response) => {
-  const { round } = req.body as { round: Round };
+  const { round } = req.body;
+
+  console.log('⏬ Adding Round...', JSON.stringify(round, null, 2));
+
   if (!round) {
     console.log('❌ Round object is null or undefined');
     res.status(400).json({ ok: false, message: 'Round object is missing' });
@@ -33,7 +36,45 @@ router.post('/addRound', async (req: Request, res: Response) => {
     return;
   }
 
-  console.log('⏬ Adding Round...');
+  // turn ids into the real objects
+  round.allowedMembers = await Promise.all(
+    round.allowedMembers.map(async member => {
+      const dbMember = await db.getMember({ _id: new ObjectId(member) });
+      if (!dbMember) {
+        console.log(`❌ Member with ID ${member._id} not found`);
+        return null;
+      }
+      return dbMember;
+    })
+  );
+
+  // turn contestend ids into objects
+
+  round.roles = await Promise.all(
+    round.roles.map(async role => {
+      const contestants = await Promise.all(
+        role.contestants.map(async contestant => {
+          const dbContestant = await db.getMember({ _id: new ObjectId(contestant) });
+          if (!dbContestant) {
+            console.log(`❌ Contestant with ID ${contestant} in role ${role.role} not found`);
+            return null;
+          }
+          return dbContestant;
+        })
+      );
+      // check if there is white vote
+      if (role.whiteVote) {
+        contestants.push({
+          _id: new ObjectId('000000000000000000000000'),
+          name: 'פתק לבן',
+          city: 'אין אמון באף אחד'
+        } as WithId<Member>);
+      }
+      return { ...role, contestants };
+    })
+  );
+
+  console.log('⏬ Adding Round to db...', JSON.stringify(round, null, 2));
   const roundResult = await db.addRound(round);
   if (!roundResult.acknowledged) {
     console.log(`❌ Could not add Round`);
@@ -163,8 +204,10 @@ router.post('/vote', async (req: Request, res: Response) => {
       if (Array.isArray(contestantIds)) {
         return Promise.all(
           contestantIds.map(async contestantId => {
+            console.log(`⏬ Processing vote for role ${role} and contestant ID ${contestantId}`);
+
             const contestant = await db.getMember({ _id: new ObjectId(contestantId) });
-            if (!contestant) {
+            if (!contestant && contestantId !== '000000000000000000000000') {
               console.log(`❌ Contestant with ID ${contestantId} not found`);
               return null;
             }

@@ -17,7 +17,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Chip,
   FormHelperText
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -28,38 +27,31 @@ import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { apiFetch } from '../../lib/utils/fetch';
 import { WithId } from 'mongodb';
-import { Member, Position, Positions, Round } from '@mtes/types'; // Add Round import
+import { Member, Position, Positions, Round } from '@mtes/types';
 import EditIcon from '@mui/icons-material/Edit';
 
 // --- Zod Schemas ---
-// Assuming Position is defined elsewhere, e.g.:
-// export const Position = ['יו"ר', 'סיו"ר', 'מזכ"ל'] as const;
-// type PositionType = typeof Position[number];
-
-// Update the Role schema to use WithId<Member>
 const RoleSchema = z.object({
-  // Use the imported Position type directly if it's a const array
   role: z.enum(Position, {
     required_error: 'Position is required',
     invalid_type_error: 'Invalid position selected'
   }),
-  // Use z.custom<Member>() for better type checking if Member is a known interface/type
   contestants: z
-    .array(z.custom<WithId<Member>>(), { required_error: 'Contestants are required' })
+    .array(z.string(), { required_error: 'Contestants are required' }) // Store as array of IDs
     .min(2, 'At least 2 contestants is required'),
   maxVotes: z
     .number({
       required_error: 'Max votes is required',
-      invalid_type_error: 'Max votes must be a number' // Added for clarity
+      invalid_type_error: 'Max votes must be a number'
     })
-    .int() // Ensure it's an integer
+    .int()
     .min(1, 'Must be at least 1')
 });
 
 const FormSchema = z.object({
   roundName: z.string().min(1, 'Round name is required'),
   allowedMembers: z
-    .array(z.custom<WithId<Member>>())
+    .array(z.string()) // Store as array of IDs
     .min(1, 'At least one member must be allowed to vote'),
   roles: z
     .array(RoleSchema, { required_error: 'At least one role is required' })
@@ -67,13 +59,27 @@ const FormSchema = z.object({
 });
 
 // --- Types ---
-type Role = z.infer<typeof RoleSchema>;
-type FormValues = z.infer<typeof FormSchema>;
+type RoleFormValues = z.infer<typeof RoleSchema>; // Contestants will be string[]
+type FormValues = z.infer<typeof FormSchema>; // allowedMembers will be string[], roles will use RoleFormValues
+
+// Interface for the payload sent to/received from API if it expects IDs
+interface ApiRound {
+  name: string;
+  allowedMembers: string[];
+  roles: {
+    role: Positions;
+    contestants: string[];
+    maxVotes: number;
+  }[];
+  startTime: Date | null;
+  endTime: Date | null;
+  isLocked: boolean;
+}
 
 interface AddRoundDialogProps {
   availableMembers: WithId<Member>[];
   onRoundCreated?: () => void;
-  initialRound?: WithId<Round>;
+  initialRound?: WithId<Round>; // Assumes initialRound still provides full Member objects
   isEdit?: boolean;
 }
 
@@ -91,24 +97,33 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
     if (isEdit && initialRound) {
       return {
         roundName: initialRound.name,
-        allowedMembers: initialRound.allowedMembers as WithId<Member>[],
+        allowedMembers: initialRound.allowedMembers.map(member => member._id.toString()),
         roles: initialRound.roles.map(role => ({
-          ...role,
-          contestants: role.contestants as WithId<Member>[]
+          role: role.role,
+          // Ensure contestants are mapped to string IDs
+          contestants: role.contestants.map(c =>
+            typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()
+          ),
+          maxVotes: role.maxVotes
         }))
       };
     }
     return {
       roundName: '',
-      allowedMembers: availableMembers,
-      roles: [{ role: '' as Positions, contestants: [] as WithId<Member>[], maxVotes: 1 }]
+      allowedMembers: availableMembers.map(member => member._id.toString()), // Default to all available member IDs as strings
+      roles: [
+        {
+          role: Position[0], // Default to the first position or handle as empty
+          contestants: [],
+          maxVotes: 1
+        }
+      ]
     };
   }, [isEdit, initialRound, availableMembers]);
 
   const handleClose = (isSubmitting: boolean) => {
     if (!isSubmitting) {
       setOpen(false);
-      // Consider resetting form state on close if desired, though Formik resets on success
     }
   };
 
@@ -117,52 +132,65 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
     { setSubmitting, resetForm }: FormikHelpers<FormValues>
   ) => {
     try {
-      const endpoint = '/api/events/updateRound';
-
       if (isEdit && initialRound) {
-        // Create partial update by only including changed fields
-        const changes: Partial<Round> = {};
+        const changes: Partial<ApiRound> = {};
 
         if (values.roundName !== initialRound.name) {
           changes.name = values.roundName;
         }
 
-        // Deep compare arrays using JSON stringify
-        if (JSON.stringify(values.roles) !== JSON.stringify(initialRound.roles)) {
-          changes.roles = values.roles;
-        }
-
-        if (JSON.stringify(values.allowedMembers) !== JSON.stringify(initialRound.allowedMembers)) {
+        const initialAllowedMemberIds = initialRound.allowedMembers
+          .map(m => m._id.toString())
+          .sort();
+        const currentAllowedMemberIds = [...values.allowedMembers].sort();
+        if (JSON.stringify(currentAllowedMemberIds) !== JSON.stringify(initialAllowedMemberIds)) {
           changes.allowedMembers = values.allowedMembers;
         }
 
-        const res = await apiFetch(endpoint, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            roundId: initialRound._id,
-            round: changes
-          })
-        });
+        const initialComparableRoles = initialRound.roles
+          .map(r => ({
+            role: r.role,
+            contestants: r.contestants
+              .map(c => (typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()))
+              .sort(),
+            maxVotes: r.maxVotes
+          }))
+          .sort((a, b) => a.role.localeCompare(b.role)); // Sort for consistent comparison
 
-        if (!res.ok) {
-          let errorMsg = 'Failed to update round';
-          try {
-            const errorData = await res.json();
-            errorMsg = errorData.message || errorMsg;
-          } catch (e) {
-            // Ignore if response is not JSON or doesn't have message
-          }
-          throw new Error(errorMsg);
+        const currentComparableRoles = values.roles
+          .map(r => ({
+            ...r,
+            contestants: [...r.contestants].sort()
+          }))
+          .sort((a, b) => a.role.localeCompare(b.role)); // Sort for consistent comparison
+
+        if (JSON.stringify(currentComparableRoles) !== JSON.stringify(initialComparableRoles)) {
+          changes.roles = values.roles;
         }
 
-        enqueueSnackbar('Round updated successfully!', { variant: 'success' });
+        if (Object.keys(changes).length > 0) {
+          const res = await apiFetch('/api/events/updateRound', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roundId: initialRound._id,
+              round: changes // Send only changed fields, now with IDs
+            })
+          });
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to update round');
+          }
+          enqueueSnackbar('Round updated successfully!', { variant: 'success' });
+        } else {
+          enqueueSnackbar('No changes detected.', { variant: 'info' });
+        }
       } else {
-        // Creating new round
-        const payload: Round = {
+        // Creating new round, payload expects IDs
+        const payload: ApiRound = {
           name: values.roundName,
-          roles: values.roles,
-          allowedMembers: values.allowedMembers,
+          roles: values.roles, // roles.contestants are already string[]
+          allowedMembers: values.allowedMembers, // already string[]
           startTime: null,
           endTime: null,
           isLocked: false
@@ -175,16 +203,9 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         });
 
         if (!res.ok) {
-          let errorMsg = 'Failed to create round';
-          try {
-            const errorData = await res.json();
-            errorMsg = errorData.message || errorMsg;
-          } catch (e) {
-            // Ignore if response is not JSON or doesn't have message
-          }
-          throw new Error(errorMsg);
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to create round');
         }
-
         enqueueSnackbar('Round created successfully!', { variant: 'success' });
         resetForm();
       }
@@ -203,20 +224,13 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
   return (
     <>
       {isEdit ? (
-        <IconButton
-          size="small"
-          onClick={() => {
-            setOpen(true);
-          }}
-        >
+        <IconButton size="small" onClick={() => setOpen(true)}>
           <EditIcon fontSize="small" />
         </IconButton>
       ) : (
         <IconButton
           size="small"
-          onClick={() => {
-            setOpen(true);
-          }}
+          onClick={() => setOpen(true)}
           sx={{
             backgroundColor: 'primary.main',
             color: 'white',
@@ -225,9 +239,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
               backgroundColor: 'primary.dark',
               transform: 'scale(1.1)'
             },
-            '&:active': {
-              transform: 'scale(0.95)'
-            }
+            '&:active': { transform: 'scale(0.95)' }
           }}
         >
           <AddIcon fontSize="small" />
@@ -236,16 +248,19 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
 
       <Dialog
         open={open}
-        onClose={() => handleClose(false)} // Pass isSubmitting status later if needed
+        onClose={(_, reason) => {
+          if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+            handleClose(false);
+          }
+        }}
         fullWidth
         maxWidth="md"
-        // disableEscapeKeyDown is handled by Formik's isSubmitting check in onClose/buttons
       >
         <Formik
           initialValues={initialValues}
-          // Use the adapter for validation
           validationSchema={toFormikValidationSchema(FormSchema)}
           onSubmit={handleSubmit}
+          enableReinitialize // Important if initialValues can change due to props
         >
           {({
             values,
@@ -256,12 +271,10 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
             isSubmitting,
             submitCount
           }) => (
-            // Form tag needs to be inside Formik context consumer
             <Form>
               <DialogTitle>{isEdit ? 'עריכת סבב בחירות' : 'יצירת סבב בחירות חדש'}</DialogTitle>
               <DialogContent>
                 <Box sx={{ mt: 1 }}>
-                  {/* Round Name */}
                   <TextField
                     fullWidth
                     label="שם הסבב"
@@ -278,7 +291,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                     sx={{ mb: 2 }}
                   />
 
-                  {/* Allowed Members */}
                   <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
                     חברי הצבעה מורשים
                   </Typography>
@@ -286,9 +298,20 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                     multiple
                     options={memberOptions}
                     getOptionLabel={m => `${m.name} (${m.city})`}
-                    isOptionEqualToValue={(option, value) => option._id === value._id} // Important for object comparison
-                    value={values.allowedMembers}
-                    onChange={(_, v) => setFieldValue('allowedMembers', v)}
+                    isOptionEqualToValue={(option, value) =>
+                      option._id.toString() === value._id.toString()
+                    }
+                    value={
+                      memberOptions.filter(opt =>
+                        values.allowedMembers.includes(opt._id.toString())
+                      ) // Map IDs back to member objects for Autocomplete value
+                    }
+                    onChange={(_, selectedOptions) =>
+                      setFieldValue(
+                        'allowedMembers',
+                        selectedOptions.map(opt => opt._id.toString()) // Store string IDs in Formik
+                      )
+                    }
                     renderInput={params => (
                       <TextField
                         {...params}
@@ -299,7 +322,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                         )}
                         helperText={
                           (getIn(touched, 'allowedMembers') || submitCount > 0) &&
-                          getIn(errors, 'allowedMembers') // Zod adapter might return string error here
+                          getIn(errors, 'allowedMembers')
                         }
                         disabled={isSubmitting}
                       />
@@ -308,7 +331,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                     sx={{ mb: 3 }}
                   />
 
-                  {/* Roles Section */}
                   <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
                     תפקידים ומתמודדים
                   </Typography>
@@ -316,11 +338,12 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                     {arrayHelpers => (
                       <>
                         <List dense>
-                          {values.roles.map((role: Role, idx: number) => {
+                          {values.roles.map((role: RoleFormValues, idx: number) => {
                             const prefix = `roles.${idx}`;
                             const roleTouched = getIn(touched, prefix);
                             const roleErrors = getIn(errors, prefix);
-                            const showRoleErrors = roleTouched || submitCount > 0;
+                            const showRoleErrors =
+                              Object.keys(roleTouched || {}).length > 0 || submitCount > 0;
 
                             return (
                               <ListItem
@@ -353,7 +376,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                   )}
                                 </Box>
                                 <Grid container spacing={2}>
-                                  {/* Position Select */}
                                   <Grid item xs={12} sm={4}>
                                     <FormControl
                                       fullWidth
@@ -380,17 +402,25 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                     </FormControl>
                                   </Grid>
 
-                                  {/* Contestants Autocomplete */}
                                   <Grid item xs={12} sm={8}>
                                     <Autocomplete
                                       multiple
                                       options={memberOptions}
                                       getOptionLabel={m => `${m.name} (${m.city})`}
                                       isOptionEqualToValue={(option, value) =>
-                                        option._id === value._id
-                                      } // Important
-                                      value={role.contestants}
-                                      onChange={(_, v) => setFieldValue(`${prefix}.contestants`, v)}
+                                        option._id.toString() === value._id.toString()
+                                      }
+                                      value={
+                                        memberOptions.filter(opt =>
+                                          role.contestants.includes(opt._id.toString())
+                                        ) // Map IDs to objects
+                                      }
+                                      onChange={(_, selectedOptions) =>
+                                        setFieldValue(
+                                          `${prefix}.contestants`,
+                                          selectedOptions.map(opt => opt._id.toString()) // Store string IDs
+                                        )
+                                      }
                                       renderInput={params => (
                                         <TextField
                                           {...params}
@@ -404,7 +434,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                     />
                                   </Grid>
 
-                                  {/* Max Votes Input */}
                                   <Grid item xs={12} sm={4}>
                                     <TextField
                                       fullWidth
@@ -412,12 +441,11 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                       type="number"
                                       name={`${prefix}.maxVotes`}
                                       value={role.maxVotes}
-                                      // Ensure value is treated as number for validation
                                       onChange={e => {
-                                        const value = e.target.value;
+                                        const val = e.target.value;
                                         setFieldValue(
                                           `${prefix}.maxVotes`,
-                                          value === '' ? '' : Number(value)
+                                          val === '' ? '' : Number(val) // Keep as '' if empty for Zod to catch type, or Number
                                         );
                                       }}
                                       error={Boolean(showRoleErrors && roleErrors?.maxVotes)}
@@ -435,7 +463,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                         <Button
                           onClick={() =>
                             arrayHelpers.push({
-                              role: '' as Positions,
+                              role: Position[0], // Default to first position
                               contestants: [],
                               maxVotes: 1
                             })
@@ -445,7 +473,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                         >
                           הוסף תפקיד
                         </Button>
-                        {/* Display top-level roles array error (e.g., "At least one role required") */}
                         {(getIn(touched, 'roles') || submitCount > 0) &&
                           typeof errors.roles === 'string' && (
                             <FormHelperText error>{errors.roles}</FormHelperText>
