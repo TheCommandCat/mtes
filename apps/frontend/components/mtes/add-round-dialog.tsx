@@ -17,7 +17,9 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  FormHelperText
+  FormHelperText,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -45,7 +47,8 @@ const RoleSchema = z.object({
       invalid_type_error: 'Max votes must be a number'
     })
     .int()
-    .min(1, 'Must be at least 1')
+    .min(1, 'Must be at least 1'),
+  whiteVote: z.boolean().default(false)
 });
 
 const FormSchema = z.object({
@@ -70,6 +73,7 @@ interface ApiRound {
     role: Positions;
     contestants: string[];
     maxVotes: number;
+    whiteVote: boolean;
   }[];
   startTime: Date | null;
   endTime: Date | null;
@@ -104,7 +108,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           contestants: role.contestants.map(c =>
             typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()
           ),
-          maxVotes: role.maxVotes
+          maxVotes: role.maxVotes,
+          whiteVote: role.whiteVote
         }))
       };
     }
@@ -115,7 +120,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         {
           role: Position[0], // Default to the first position or handle as empty
           contestants: [],
-          maxVotes: 1
+          maxVotes: 1,
+          whiteVote: false
         }
       ]
     };
@@ -153,7 +159,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
             contestants: r.contestants
               .map(c => (typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()))
               .sort(),
-            maxVotes: r.maxVotes
+            maxVotes: r.maxVotes,
+            whiteVote: r.whiteVote
           }))
           .sort((a, b) => a.role.localeCompare(b.role)); // Sort for consistent comparison
 
@@ -454,6 +461,20 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                       inputProps={{ min: 1 }}
                                     />
                                   </Grid>
+                                  <Grid item xs={12} sm={8}>
+                                    <FormControlLabel
+                                      control={
+                                        <Checkbox
+                                          name={`${prefix}.whiteVote`}
+                                          checked={role.whiteVote}
+                                          onChange={handleChange}
+                                          disabled={isSubmitting}
+                                        />
+                                      }
+                                      label="הוסף פתק לבן"
+                                      disabled={isSubmitting}
+                                    />
+                                  </Grid>
                                 </Grid>
                               </ListItem>
                             );
@@ -465,7 +486,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                             arrayHelpers.push({
                               role: Position[0], // Default to first position
                               contestants: [],
-                              maxVotes: 1
+                              maxVotes: 1,
+                              whiteVote: false
                             })
                           }
                           startIcon={<AddIcon />}

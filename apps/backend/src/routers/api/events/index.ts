@@ -5,6 +5,13 @@ import { ElectionState, Member, Positions, Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
+const WHITE_VOTE_ID = '000000000000000000000000';
+const WHITE_VOTE_MEMBER: WithId<Member> = {
+  _id: new ObjectId(WHITE_VOTE_ID),
+  name: 'פתק לבן',
+  city: 'אין אמון באף אחד'
+};
+
 router.get('/rounds', async (req: Request, res: Response) => {
   console.log('⏬ Getting rounds...');
   return res.json(await db.getRounds({}));
@@ -64,11 +71,7 @@ router.post('/addRound', async (req: Request, res: Response) => {
       );
       // check if there is white vote
       if (role.whiteVote) {
-        contestants.push({
-          _id: new ObjectId('000000000000000000000000'),
-          name: 'פתק לבן',
-          city: 'אין אמון באף אחד'
-        } as WithId<Member>);
+        contestants.push(WHITE_VOTE_MEMBER);
       }
       return { ...role, contestants };
     })
@@ -206,10 +209,14 @@ router.post('/vote', async (req: Request, res: Response) => {
           contestantIds.map(async contestantId => {
             console.log(`⏬ Processing vote for role ${role} and contestant ID ${contestantId}`);
 
-            const contestant = await db.getMember({ _id: new ObjectId(contestantId) });
-            if (!contestant && contestantId !== '000000000000000000000000') {
+            const contestant =
+              contestantId === WHITE_VOTE_ID
+                ? WHITE_VOTE_MEMBER
+                : await db.getMember({ _id: new ObjectId(contestantId) });
+
+            if (!contestant) {
               console.log(`❌ Contestant with ID ${contestantId} not found`);
-              return null;
+              return null; // Or handle error appropriately
             }
 
             const vote = {
