@@ -64,7 +64,10 @@ router.post('/addRound', async (req: Request, res: Response) => {
           const dbContestant = await db.getMember({ _id: new ObjectId(contestant) });
           if (!dbContestant) {
             console.log(`❌ Contestant with ID ${contestant} in role ${role.role} not found`);
-            return null;
+            return res.status(400).json({
+              ok: false,
+              message: `Contestant with ID ${contestant} in role ${role.role} not found`
+            });
           }
           return dbContestant;
         })
