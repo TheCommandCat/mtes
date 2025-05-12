@@ -28,6 +28,14 @@
 
 ## 🚀 Quick Start
 
+> **Prerequisite:**  
+> You need [Docker](https://www.docker.com/get-started/) installed.  
+> Start a MongoDB database instance (in the background) with:
+>
+> ```bash
+> docker run --name mtes-mongo -p 27017:27017 -d mongo:7.0.5
+> ```
+
 1. **Clone & Install**
 
 ```bash
