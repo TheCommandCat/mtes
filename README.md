@@ -80,12 +80,9 @@ mtes/
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-This project is licensed under the GPL-3.0 License. It utilizes a similar tech stack and codebase inspired by [FIRSTIsrael/lems](https://github.com/FIRSTIsrael/lems); 🙏 thank you for making this possible! 🚀
-
 ## 🙏 Acknowledgments
 
-- Built with [Nx](https://nx.dev)
-- UI components from [Material-UI](https://mui.com)
-- Real-time magic with [Socket.IO](https://socket.io)
+This project is licensed under the GPL-3.0 License. It utilizes a similar tech stack and codebase inspired by [FIRSTIsrael/lems](https://github.com/FIRSTIsrael/lems); 🙏 thank you for making this possible! 🚀
 
-Made with ❤️ by @TheCommandCat
+
+***Made with ❤️ by [@TheCommandCat](https://github.com/TheCommandCat)***
