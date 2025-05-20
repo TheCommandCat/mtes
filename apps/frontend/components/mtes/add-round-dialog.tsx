@@ -339,7 +339,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }}
         fullWidth
         maxWidth="lg"
-        PaperProps={{ sx: { borderRadius: 4, height: '90vh' } }}
+        PaperProps={{ sx: { borderRadius: 4, height: '85%' } }}
         sx={{ '& .MuiDialog-container': { alignItems: 'center' } }}
       >
         <Formik
@@ -399,13 +399,16 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
 
                 <Box
                   sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                     height: 'calc(100% - 100px)', // Adjust based on Stepper height + DialogContent padding
                     overflowY: 'auto',
                     pr: 1 // Space for scrollbar
                   }}
                 >
                   {activeStep === 0 && (
-                    <Stack spacing={5} sx={{ pt: 1, pb: 2 }}>
+                    <Stack spacing={5} sx={{ pt: 1, pb: 2, minWidth: '60%' }}>
                       <TextField
                         fullWidth
                         label="שם הסבב"
@@ -457,7 +460,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                             disabled={isSubmitting}
                             InputProps={{
                               ...params.InputProps,
-                              sx: { borderRadius: 2, fontSize: '1.1rem' }
+                              sx: { borderRadius: 2, fontSize: '1.1rem', height: '6rem' }
                             }}
                             InputLabelProps={{ sx: { fontSize: '1.1rem' } }}
                           />
