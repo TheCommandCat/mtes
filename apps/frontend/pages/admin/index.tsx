@@ -1,6 +1,6 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { useRouter } from 'next/router';
-import { Paper, Typography, Stack, Button, Box, TextField, IconButton } from '@mui/material';
+import { Paper, Typography, Stack, Button, Box, TextField, IconButton, Tabs, Tab } from '@mui/material';
 import { WithId } from 'mongodb';
 import { ElectionEvent, User } from '@mtes/types';
 import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
@@ -31,6 +31,11 @@ interface Member {
 const Page: NextPage<Props> = ({ user, event }) => {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>(event?.members || [{ name: '', city: '' }]);
+  const [currentTab, setCurrentTab] = useState(0);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
 
   const handleSubmit = (values: any) => {
     const payload = {
@@ -147,69 +152,75 @@ const Page: NextPage<Props> = ({ user, event }) => {
   return (
     <Layout maxWidth="sm" title="ממשק ניהול">
       <Paper sx={{ p: 4, mt: 4 }}>
-        <Formik initialValues={getInitialValues()} onSubmit={handleSubmit}>
-          {({ values, setFieldValue }) => (
-            <Form>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Grid container rowGap={3} columnSpacing={3} p={2}>
-                  <Grid size={12}>
-                    <Typography variant="h5" gutterBottom>
-                      {event ? 'עריכת אירוע' : 'יצירת אירוע חדש'}
-                    </Typography>
+        <Tabs value={currentTab} onChange={handleTabChange} centered>
+          <Tab label="פרטי אירוע" />
+          <Tab label="ניהול חברים" />
+        </Tabs>
+        {currentTab === 0 && (
+          <Formik initialValues={getInitialValues()} onSubmit={handleSubmit}>
+            {({ values, setFieldValue }) => (
+              <Form>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <Grid container rowGap={3} columnSpacing={3} p={2} sx={{ mt: 2 }}>
+                    <Grid size={12}>
+                      <Typography variant="h5" gutterBottom>
+                        {event ? 'עריכת אירוע' : 'יצירת אירוע חדש'}
+                      </Typography>
+                    </Grid>
+                    <Grid size={12}>
+                      <FormikTextField
+                        variant="outlined"
+                        type="text"
+                        name="name"
+                        label="שם אירוע"
+                        fullWidth
+                        required
+                      />
+                    </Grid>
+                    <Grid size={6}>
+                      <DatePicker
+                        label="תאריך התחלה"
+                        value={values.startDate}
+                        onChange={newDate => {
+                          setFieldValue('startDate', newDate, true);
+                          setFieldValue('endDate', newDate, true);
+                        }}
+                        format="DD/MM/YYYY"
+                        sx={{ width: '100%' }}
+                      />
+                    </Grid>
+                    <Grid size={6}>
+                      <DatePicker
+                        label="תאריך סיום"
+                        value={values.endDate}
+                        onChange={newDate => setFieldValue('endDate', newDate, true)}
+                        format="DD/MM/YYYY"
+                        sx={{ width: '100%' }}
+                      />
+                    </Grid>
+                    <Grid size={12}>
+                      <FormikTextField
+                        variant="outlined"
+                        type="number"
+                        name="votingStands"
+                        label="מספר עמדות הצבעה"
+                        fullWidth
+                        required
+                        inputProps={{ min: 1 }}
+                      />
+                    </Grid>
+                    <Grid size={12}>
+                      <Button type="submit" variant="contained" fullWidth>
+                        {event ? 'עדכן אירוע' : 'צור אירוע'}
+                      </Button>
+                    </Grid>
                   </Grid>
-                  <Grid size={12}>
-                    <FormikTextField
-                      variant="outlined"
-                      type="text"
-                      name="name"
-                      label="שם אירוע"
-                      fullWidth
-                      required
-                    />
-                  </Grid>
-                  <Grid size={6}>
-                    <DatePicker
-                      label="תאריך התחלה"
-                      value={values.startDate}
-                      onChange={newDate => {
-                        setFieldValue('startDate', newDate, true);
-                        setFieldValue('endDate', newDate, true);
-                      }}
-                      format="DD/MM/YYYY"
-                      sx={{ width: '100%' }}
-                    />
-                  </Grid>
-                  <Grid size={6}>
-                    <DatePicker
-                      label="תאריך סיום"
-                      value={values.endDate}
-                      onChange={newDate => setFieldValue('endDate', newDate, true)}
-                      format="DD/MM/YYYY"
-                      sx={{ width: '100%' }}
-                    />
-                  </Grid>
-                  <Grid size={12}>
-                    <FormikTextField
-                      variant="outlined"
-                      type="number"
-                      name="votingStands"
-                      label="מספר עמדות הצבעה"
-                      fullWidth
-                      required
-                      inputProps={{ min: 1 }}
-                    />
-                  </Grid>
-                  {renderMemberFields()}
-                  <Grid size={12}>
-                    <Button type="submit" variant="contained" fullWidth>
-                      {event ? 'עדכן אירוע' : 'צור אירוע'}
-                    </Button>
-                  </Grid>
-                </Grid>
-              </LocalizationProvider>
-            </Form>
-          )}
-        </Formik>
+                </LocalizationProvider>
+              </Form>
+            )}
+          </Formik>
+        )}
+        {currentTab === 1 && renderMemberFields()}
         {event && (
           <Box sx={{ mt: 4 }}>
             <Stack spacing={2}>
