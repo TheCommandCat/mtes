@@ -15,7 +15,10 @@ router.get('/', (req: Request, res: Response) => {
 router.get(
   '/export',
   asyncHandler(async (req: Request, res: Response) => {
-    const users = await db.getEventUsersWithCredentials();
+    const usersWithAdmin = await db.getEventUsersWithCredentials();
+
+    // remove admin user
+    const users = usersWithAdmin.filter(user => !user.isAdmin);
 
     const credentials = await Promise.all(
       users.map(async user => {
@@ -23,7 +26,7 @@ router.get(
 
         return {
           role,
-          value: roleAssociation ? roleAssociation.value : 'undefined',
+          value: roleAssociation ? roleAssociation.value : '',
           password
         };
       })
@@ -46,7 +49,7 @@ router.get(
           value: 'value'
         },
         {
-          label: 'סיסמא',
+          label: 'סיסמה',
           value: 'password'
         }
       ]

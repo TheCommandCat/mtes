@@ -30,12 +30,6 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
 
   const round = await db.getRound({ _id: new ObjectId(roundId) });
 
-  // if (!round) {
-  //   console.error('Round not found:', roundId);
-  //   callback({ ok: false, error: 'Round not found' });
-  //   return;
-  // }
-
   try {
     await db.updateElectionState({ activeRound: round });
 

@@ -198,7 +198,6 @@ router.post('/vote', async (req: Request, res: Response) => {
   }
 
   try {
-    // Get the round and member objects
     const round = await db.getRound({ _id: new ObjectId(roundId) });
     const member = await db.getMember({ _id: new ObjectId(memberId) });
 
@@ -226,10 +225,7 @@ router.post('/vote', async (req: Request, res: Response) => {
 
     console.log(`⏬ Processing vote for ${member.name} in round - ${round.name}`);
 
-    // Here you would process the votes and save them to the database
-    // For each role and its selected contestants in the votes object
     const votePromises = Object.entries(votes).map(async ([role, contestantIds]) => {
-      // If contestantIds is an array, process each contestant
       if (Array.isArray(contestantIds)) {
         return Promise.all(
           contestantIds.map(async contestantId => {
@@ -242,7 +238,7 @@ router.post('/vote', async (req: Request, res: Response) => {
 
             if (!contestant) {
               console.log(`❌ Contestant with ID ${contestantId} not found`);
-              return null; // Or handle error appropriately
+              return null;
             }
 
             const vote = {
@@ -262,15 +258,6 @@ router.post('/vote', async (req: Request, res: Response) => {
 
     await Promise.all(votePromises);
     await db.markMemberVoted(round._id.toString(), member._id.toString());
-
-    // Check if all members have voted
-    const votedMembers = await db.getVotedMembers(roundId);
-    const totalAllowedMembers = round.allowedMembers.length;
-
-    // if (votedMembers.length === totalAllowedMembers) {
-    //   console.log('✅ All members have voted, locking round');
-    //   await db.lockRound(roundId);
-    // }
 
     console.log('✅ Votes recorded successfully');
     return res.json({ ok: true });
@@ -307,47 +294,17 @@ router.post('/lockRound/:roundId', async (req: Request, res: Response) => {
   }
 
   try {
-    // Get current round status
     const isLocked = await db.isRoundLocked(roundId);
     if (isLocked) {
       console.log(`❌ Round ${roundId} is already locked`);
       return res.status(400).json({ ok: false, message: 'Round is already locked' });
     }
 
-    // Lock the round
     await db.lockRound(roundId);
     console.log(`✅ Round ${roundId} locked successfully`);
     return res.json({ ok: true });
   } catch (error) {
     console.error('❌ Error locking round:', error);
-    return res.status(500).json({ ok: false, message: 'Internal server error' });
-  }
-});
-
-router.post('/unlockRound/:roundId', async (req: Request, res: Response) => {
-  const { roundId } = req.params;
-
-  if (!roundId) {
-    console.log('❌ Round ID is null or undefined');
-    res.status(400).json({ ok: false, message: 'Round ID is missing' });
-    return;
-  }
-
-  try {
-    // Get current round status
-    const isLocked = await db.isRoundLocked(roundId);
-    if (!isLocked) {
-      console.log(`❌ Round ${roundId} is not locked`);
-      return res.status(400).json({ ok: false, message: 'Round is not locked' });
-    }
-
-    // Delete all votes and unlock the round
-    await db.deleteRoundVotes(roundId);
-    await db.unlockRound(roundId);
-    console.log(`✅ Round ${roundId} unlocked successfully`);
-    return res.json({ ok: true });
-  } catch (error) {
-    console.error('❌ Error unlocking round:', error);
     return res.status(500).json({ ok: false, message: 'Internal server error' });
   }
 });
@@ -381,14 +338,12 @@ router.get('/roundResults/:roundId', async (req: Request, res: Response) => {
   }
 
   try {
-    // Check if round is locked
     const isLocked = await db.isRoundLocked(roundId);
     if (!isLocked) {
       console.log(`❌ Cannot view results for unlocked round ${roundId}`);
       return res.status(400).json({ ok: false, message: 'Round must be locked to view results' });
     }
 
-    // Get results
     const results = await db.getRoundResults(roundId);
     if (!results) {
       console.log(`❌ Round ${roundId} not found`);

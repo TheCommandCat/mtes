@@ -18,5 +18,5 @@ export const updateElectionState = (newElectionState: Partial<ElectionState>, up
 };
 
 export const deleteElectionState = () => {
-  return db.collection<ElectionState>('election-state').deleteOne();
+  return db.collection<ElectionState>('election-state').deleteOne({});
 };

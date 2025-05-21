@@ -45,19 +45,33 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
   };
 
   const handleSubmit = (values: any) => {
-    const payload = {
+    const basePayload = {
       name: values.name,
       eventUsers: { 'election-manager': true, 'voting-stand': true },
-      hasState: true,
       votingStands: values.votingStands,
       startDate: values.startDate.toDate(),
       endDate: values.endDate.toDate()
     };
 
+    let finalPayload;
+    if (event) {
+      finalPayload = {
+        ...basePayload,
+        hasState: event.hasState // Preserve existing hasState for updates
+      };
+      // For existing events, member updates are handled separately by handleUpdateMembers
+    } else {
+      finalPayload = {
+        ...basePayload,
+        hasState: true, // Default hasState for new events
+        members: members // Include members from the state
+      };
+    }
+
     apiFetch('/api/admin/events', {
       method: event ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event ? { ...payload, hasState: event.hasState } : payload)
+      body: JSON.stringify(finalPayload)
     })
       .then(res => {
         if (res.ok) {
@@ -70,7 +84,6 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
         enqueueSnackbar(event ? 'האירוע עודכן בהצלחה' : 'האירוע נוצר בהצלחה', {
           variant: 'success'
         });
-        router.reload();
       })
       .catch(() =>
         enqueueSnackbar(
@@ -177,102 +190,120 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
   return (
     <Layout maxWidth="sm" title="ממשק ניהול">
       <Paper sx={{ p: 4, mt: 4 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} centered>
-          <Tab label="פרטי אירוע" />
-          <Tab label="ניהול חברים" />
-        </Tabs>
-        {currentTab === 0 && (
-          <Formik initialValues={getInitialValues()} onSubmit={handleSubmit}>
-            {({ values, setFieldValue }) => (
-              <Form>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <Grid container rowGap={3} columnSpacing={3} p={2} sx={{ mt: 2 }}>
-                    <Grid size={12}>
-                      <Typography variant="h5" gutterBottom>
-                        {event ? 'עריכת אירוע' : 'יצירת אירוע חדש'}
-                      </Typography>
+        <Formik initialValues={getInitialValues()} onSubmit={handleSubmit}>
+          {({ values, setFieldValue }) => (
+            <Form>
+              <Tabs value={currentTab} onChange={handleTabChange} centered>
+                <Tab label="פרטי אירוע" />
+                <Tab label="ניהול חברים" />
+              </Tabs>
+              {currentTab === 0 && (
+                <>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <Grid container rowGap={3} columnSpacing={3} p={2} sx={{ mt: 2 }}>
+                      <Grid size={12}>
+                        <Typography variant="h5" gutterBottom>
+                          {event ? 'עריכת אירוע' : 'יצירת אירוע חדש'}
+                        </Typography>
+                      </Grid>
+                      <Grid size={12}>
+                        <FormikTextField
+                          variant="outlined"
+                          type="text"
+                          name="name"
+                          label="שם אירוע"
+                          fullWidth
+                          required
+                        />
+                      </Grid>
+                      <Grid size={6}>
+                        <DatePicker
+                          label="תאריך התחלה"
+                          value={values.startDate}
+                          onChange={newDate => {
+                            setFieldValue('startDate', newDate, true);
+                            setFieldValue('endDate', newDate, true);
+                          }}
+                          format="DD/MM/YYYY"
+                          sx={{ width: '100%' }}
+                        />
+                      </Grid>
+                      <Grid size={6}>
+                        <DatePicker
+                          label="תאריך סיום"
+                          value={values.endDate}
+                          onChange={newDate => setFieldValue('endDate', newDate, true)}
+                          format="DD/MM/YYYY"
+                          sx={{ width: '100%' }}
+                        />
+                      </Grid>
+                      <Grid size={12}>
+                        <FormikTextField
+                          variant="outlined"
+                          type="number"
+                          name="votingStands"
+                          label="מספר עמדות הצבעה"
+                          fullWidth
+                          required
+                          inputProps={{ min: 1 }}
+                        />
+                      </Grid>
+                      <Grid size={12}>
+                        {event && (
+                          <Button type="submit" variant="contained" fullWidth>
+                            עדכן אירוע
+                          </Button>
+                        )}
+                      </Grid>
                     </Grid>
-                    <Grid size={12}>
-                      <FormikTextField
-                        variant="outlined"
-                        type="text"
-                        name="name"
-                        label="שם אירוע"
-                        fullWidth
-                        required
-                      />
-                    </Grid>
-                    <Grid size={6}>
-                      <DatePicker
-                        label="תאריך התחלה"
-                        value={values.startDate}
-                        onChange={newDate => {
-                          setFieldValue('startDate', newDate, true);
-                          setFieldValue('endDate', newDate, true);
-                        }}
-                        format="DD/MM/YYYY"
-                        sx={{ width: '100%' }}
-                      />
-                    </Grid>
-                    <Grid size={6}>
-                      <DatePicker
-                        label="תאריך סיום"
-                        value={values.endDate}
-                        onChange={newDate => setFieldValue('endDate', newDate, true)}
-                        format="DD/MM/YYYY"
-                        sx={{ width: '100%' }}
-                      />
-                    </Grid>
-                    <Grid size={12}>
-                      <FormikTextField
-                        variant="outlined"
-                        type="number"
-                        name="votingStands"
-                        label="מספר עמדות הצבעה"
-                        fullWidth
-                        required
-                        inputProps={{ min: 1 }}
-                      />
-                    </Grid>
-                    <Grid size={12}>
-                      <Button type="submit" variant="contained" fullWidth>
-                        {event ? 'עדכן אירוע' : 'צור אירוע'}
+                  </LocalizationProvider>
+                  {event && (
+                    <>
+                      <Paper sx={{ p: 4 }}>
+                        <Stack justifyContent="center" direction="row" gap={2}>
+                          <DownloadUsersButton event={event} disabled={!event?.hasState} />
+                        </Stack>
+                      </Paper>
+                      <Box sx={{ mt: 4 }}>
+                        <Stack spacing={2}>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={handleDelete}
+                            sx={{ mt: 2 }}
+                          >
+                            מחק אירוע
+                          </Button>
+                        </Stack>
+                      </Box>
+                    </>
+                  )}
+                </>
+              )}
+              {currentTab === 1 && (
+                <Box sx={{ mt: 3 }}>
+                  <Stack spacing={2}>
+                    {renderMemberFields()}
+                    {event && (
+                      <Button
+                        variant="contained"
+                        onClick={() => handleUpdateMembers(members)}
+                        sx={{ mt: 2 }}
+                      >
+                        שמור שינויים
                       </Button>
-                    </Grid>
-                  </Grid>
-                </LocalizationProvider>
-              </Form>
-            )}
-          </Formik>
-        )}
-        {currentTab === 1 && (
-          <Box sx={{ mt: 3 }}>
-            <Stack spacing={2}>
-              {renderMemberFields()}
-              <Button
-                variant="contained"
-                onClick={() => handleUpdateMembers(members)}
-                sx={{ mt: 2 }}
-              >
-                שמור שינויים
-              </Button>
-            </Stack>
-          </Box>
-        )}
-        {event && (
-          <Box sx={{ mt: 4 }}>
-            <Stack spacing={2}>
-              <Paper sx={{ p: 4 }}>
-                <Stack justifyContent="center" direction="row" gap={2}>
-                  <DownloadUsersButton event={event} disabled={!event?.hasState} />
-                </Stack>
-              </Paper>
-              <Button variant="outlined" color="error" onClick={handleDelete} sx={{ mt: 2 }}>
-                מחק אירוע
-              </Button>
-            </Stack>
-          </Box>
-        )}
+                    )}
+                  </Stack>
+                </Box>
+              )}
+              {!event && (
+                <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
+                  צור אירוע
+                </Button>
+              )}
+            </Form>
+          )}
+        </Formik>
       </Paper>
     </Layout>
   );
