@@ -23,7 +23,7 @@ router.get(
 
         return {
           role,
-          value: roleAssociation ? roleAssociation.value : 'undefined',
+          value: roleAssociation ? roleAssociation.value : '',
           password
         };
       })
@@ -46,7 +46,7 @@ router.get(
           value: 'value'
         },
         {
-          label: 'סיסמא',
+          label: 'סיסמה',
           value: 'password'
         }
       ]

@@ -4,7 +4,7 @@ import divisionUsersRouter from './users';
 import { ElectionEvent, ElectionState, User } from '@mtes/types';
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
-import { getDivisionUsers } from 'apps/backend/src/lib/schedule/division-users';
+import { CreateVotingStandUsers } from 'apps/backend/src/lib/schedule/voting-stands-users';
 
 const router = express.Router({ mergeParams: true });
 
@@ -67,7 +67,7 @@ router.post(
     }
 
     console.log('👤 Generating division users');
-    const users = getDivisionUsers(eventData.votingStands);
+    const users = CreateVotingStandUsers(eventData.votingStands);
     console.log(users);
 
     if (!(await db.addUsers(users)).acknowledged) {
