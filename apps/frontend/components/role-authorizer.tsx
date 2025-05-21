@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Role, SafeUser } from '@mtes/types';
-import { ensureArray } from '@mtes/utils/arrays';
-import { partialMatch } from '@mtes/utils/objects';
+
+const ensureArray = (value: any | Array<any>, allowNull = false) => {
+  if ((!allowNull && value === null) || value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+};
+
+const partialMatch = <T,>(partial: Partial<T>, full: T): boolean => {
+  return Object.keys(partial).every(
+    key => JSON.stringify(partial[key as keyof T]) === JSON.stringify(full[key as keyof T])
+  );
+};
 
 interface RoleAuthorizerProps {
   user: SafeUser;
@@ -43,7 +52,6 @@ export const RoleAuthorizer: React.FC<RoleAuthorizerProps> = ({
     } else {
       if (onFail != undefined) onFail();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return roleMatch && children;

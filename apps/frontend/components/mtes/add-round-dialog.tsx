@@ -44,11 +44,10 @@ import { useSnackbar } from 'notistack';
 import { Formik, Form, FieldArray, getIn, FormikHelpers, FieldArrayRenderProps } from 'formik';
 import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import { apiFetch } from '../../lib/utils/fetch'; // Ensure this path is correct
+import { apiFetch } from '../../lib/utils/fetch';
 import { WithId } from 'mongodb';
-import { Member, Position, Positions, Round } from '@mtes/types'; // Ensure this path is correct
+import { Member, Position, Positions, Round } from '@mtes/types';
 
-// --- Zod Schemas ---
 const RoleSchema = z.object({
   role: z.enum(Position, {
     required_error: 'Position is required',
@@ -75,7 +74,6 @@ const FormSchema = z.object({
     .min(1, 'At least one role is required')
 });
 
-// --- Types ---
 type RoleFormValues = z.infer<typeof RoleSchema> & { _tempClientId: string };
 type FormValues = Omit<z.infer<typeof FormSchema>, 'roles'> & {
   roles: RoleFormValues[];
@@ -271,7 +269,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }
         enqueueSnackbar('Round created successfully!', { variant: 'success' });
         const newInitialValues = {
-          // Recompute initialValues for reset
           roundName: '',
           allowedMembers: availableMembers.map(member => member._id.toString()),
           roles: [createNewRole()]
@@ -367,7 +364,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                   py: 2.5,
                   px: 3.5,
                   fontSize: '1.6rem',
-                  mb: 0 // No margin-bottom, DialogContent's pt will handle space
+                  mb: 0
                 }}
               >
                 {isEdit ? 'עריכת סבב בחירות' : 'יצירת סבב בחירות חדש'}
@@ -375,17 +372,13 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
 
               <DialogContent
                 sx={{
-                  mt: 2, // Padding top for space below DialogTitle,
+                  mt: 2,
                   px: { xs: 3, sm: 4, md: 5 },
                   flexGrow: 1,
                   overflowY: 'hidden'
                 }}
               >
-                <Stepper
-                  activeStep={activeStep}
-                  alternativeLabel
-                  sx={{ mt: 1 }} // Margin bottom for space above step content
-                >
+                <Stepper activeStep={activeStep} alternativeLabel sx={{ mt: 1 }}>
                   {steps.map(label => (
                     <Step key={label}>
                       <StepLabel StepIconComponent={CustomStepIcon}>
@@ -402,9 +395,9 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    height: 'calc(100% - 100px)', // Adjust based on Stepper height + DialogContent padding
+                    height: 'calc(100% - 100px)',
                     overflowY: 'auto',
-                    pr: 1 // Space for scrollbar
+                    pr: 1
                   }}
                 >
                   {activeStep === 0 && (
@@ -510,7 +503,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                         transition: 'all 0.3s ease-in-out',
                                         '&:hover': {
                                           transform: 'translateY(-5px) scale(1.01)'
-                                          // boxShadow: theme.shadows[8]
                                         },
                                         overflow: 'hidden'
                                       }}

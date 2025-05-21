@@ -4,9 +4,7 @@ import { ElectionEvent } from '@mtes/types';
 import { WithId, ObjectId } from 'mongodb';
 import { Avatar, ListItemAvatar, ListItemButton, ListItemText, List } from '@mui/material';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
-import HomeIcon from '@mui/icons-material/HomeRounded';
 import EventIcon from '@mui/icons-material/EventOutlined';
-import { stringifyTwoDates } from '../../lib/utils/dayjs';
 import { getBackgroundColor } from '../../lib/utils/theme';
 
 interface EventSelectorProps {
