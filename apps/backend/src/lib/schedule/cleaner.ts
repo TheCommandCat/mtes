@@ -17,6 +17,6 @@ export const cleanDivisionData = async () => {
     throw new Error('Could not delete Election state!');
   }
 
-  if (!(await db.deleteMembers()).acknowledged) throw new Error('Could not delete members!');
+  if (!(await db.deleteMembers({})).acknowledged) throw new Error('Could not delete members!');
   if (!(await db.deleteContestants()).acknowledged) throw new Error('Could not delete contestant!');
 };

@@ -142,22 +142,6 @@ router.put(
       console.log('✅ Users updated!');
     }
 
-    if (body.members) {
-      const deleteMembersTask = await db.deleteMembers();
-      if (!deleteMembersTask.acknowledged) {
-        console.log('❌ Could not delete members');
-        res.status(500).json({ ok: false });
-        return;
-      }
-
-      const addMembersTask = await db.addMembers(body.members);
-      if (!addMembersTask.acknowledged) {
-        console.log('❌ Could not add members');
-        res.status(500).json({ ok: false });
-        return;
-      }
-    }
-
     res.json({ ok: true, id: task.upsertedId });
   })
 );

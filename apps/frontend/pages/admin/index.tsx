@@ -80,6 +80,25 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
       );
   };
 
+  const handleUpdateMembers = (members: Member[]) => {
+    apiFetch('/api/events/members', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ members: members })
+    })
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          throw 'http-error';
+        }
+      })
+      .then(() => {
+        enqueueSnackbar('החברים עודכנו בהצלחה', { variant: 'success' });
+      })
+      .catch(() => enqueueSnackbar('אופס, לא הצלחנו לעדכן את החברים.', { variant: 'error' }));
+  };
+
   const handleDelete = () => {
     apiFetch('/api/admin/events/data', { method: 'DELETE' })
       .then(res => {
@@ -226,7 +245,20 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
             )}
           </Formik>
         )}
-        {currentTab === 1 && renderMemberFields()}
+        {currentTab === 1 && (
+          <Box sx={{ mt: 3 }}>
+            <Stack spacing={2}>
+              {renderMemberFields()}
+              <Button
+                variant="contained"
+                onClick={() => handleUpdateMembers(members)}
+                sx={{ mt: 2 }}
+              >
+                שמור שינויים
+              </Button>
+            </Stack>
+          </Box>
+        )}
         {event && (
           <Box sx={{ mt: 4 }}>
             <Stack spacing={2}>

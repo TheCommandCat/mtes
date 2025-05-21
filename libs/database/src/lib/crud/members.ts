@@ -30,6 +30,6 @@ export const deleteMember = (filter: Filter<Member>) => {
   return db.collection<Member>('members').deleteOne(filter);
 };
 
-export const deleteMembers = () => {
-  return db.collection<Member>('members').deleteMany();
+export const deleteMembers = (filter: Filter<Member>) => {
+  return db.collection<Member>('members').deleteMany(filter);
 };

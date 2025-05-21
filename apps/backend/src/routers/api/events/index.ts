@@ -145,6 +145,36 @@ router.get('/members', async (req: Request, res: Response) => {
   return res.json(await db.getMembers({}));
 });
 
+router.put('/members', async (req: Request, res: Response) => {
+  const { members } = req.body as { members: Member[] };
+
+  if (!members || members.length === 0) {
+    console.log('❌ Members array is empty');
+    res.status(400).json({ ok: false, message: 'No members provided' });
+    return;
+  }
+
+  console.log('⏬ Updating Members...');
+
+  const deleteRes = await db.deleteMembers({});
+  if (!deleteRes.acknowledged) {
+    console.log('❌ Could not delete members');
+    res.status(500).json({ ok: false, message: 'Could not delete members' });
+    return;
+  }
+
+  const addRes = await db.addMembers(members);
+  if (!addRes.acknowledged) {
+    console.log('❌ Could not add members');
+    res.status(500).json({ ok: false, message: 'Could not add members' });
+    return;
+  }
+
+  console.log('⏬ Members updated!');
+
+  res.json({ ok: true });
+});
+
 router.get('/state', (req: Request, res: Response) => {
   console.log(`⏬ Getting Election state`);
   db.getElectionState().then(divisionState => res.json(divisionState));
