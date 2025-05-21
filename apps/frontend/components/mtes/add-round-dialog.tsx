@@ -453,7 +453,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                             disabled={isSubmitting}
                             InputProps={{
                               ...params.InputProps,
-                              sx: { borderRadius: 2, fontSize: '1.1rem', height: '6rem' }
+                              sx: { borderRadius: 2, fontSize: '1.1rem', height: 'auto' } // Changed height to 'auto'
                             }}
                             InputLabelProps={{ sx: { fontSize: '1.1rem' } }}
                           />
