@@ -1,9 +1,12 @@
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 import { NextFunction, Request, Response } from 'express';
 import * as db from '@mtes/database';
-import { JwtTokenData } from '../types/auth';
 import { extractToken } from '../lib/auth';
+
+export interface JwtTokenData extends JwtPayload {
+  userId: ObjectId;
+}
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -15,7 +18,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     if (user) {
       delete user.password;
       req.user = user;
-      return next();
+      return next();  
     }
   } catch (err) {
     //Invalid token
