@@ -24,71 +24,64 @@ router.post('/addRound', async (req: Request, res: Response) => {
 
   if (!round) {
     console.log('❌ Round object is null or undefined');
-    res.status(400).json({ ok: false, message: 'Round object is missing' });
-    return;
+    return res.status(400).json({ ok: false, message: 'Round object is missing' });
   }
   if (!round.name) {
     console.log('❌ Round name is missing or empty');
-    res.status(400).json({ ok: false, message: 'Round name is required' });
-    return;
+    return res.status(400).json({ ok: false, message: 'Round name is required' });
   }
   if (!round.roles) {
     console.log('❌ Round roles are missing');
-    res.status(400).json({ ok: false, message: 'Round roles must be specified' });
-    return;
+    return res.status(400).json({ ok: false, message: 'Round roles must be specified' });
   }
   if (!round.allowedMembers) {
     console.log('❌ Round allowedMembers is missing');
-    res.status(400).json({ ok: false, message: 'Round allowed members must be specified' });
-    return;
+    return res.status(400).json({ ok: false, message: 'Round allowed members must be specified' });
   }
 
-  // turn ids into the real objects
-  round.allowedMembers = await Promise.all(
-    round.allowedMembers.map(async member => {
-      const dbMember = await db.getMember({ _id: new ObjectId(member) });
-      if (!dbMember) {
-        console.log(`❌ Member with ID ${member._id} not found`);
-        return null;
-      }
-      return dbMember;
-    })
-  );
+  try {
+    round.allowedMembers = await Promise.all(
+      round.allowedMembers.map(async member => {
+        const dbMember = await db.getMember({ _id: new ObjectId(member) });
+        if (!dbMember) {
+          console.log(`❌ Member with ID ${member._id} not found`);
+          return null;
+        }
+        return dbMember;
+      })
+    );
 
-  // turn contestend ids into objects
+    round.roles = await Promise.all(
+      round.roles.map(async role => {
+        const contestants = await Promise.all(
+          role.contestants.map(async contestant => {
+            const dbContestant = await db.getMember({ _id: new ObjectId(contestant) });
+            if (!dbContestant) {
+              console.log(`❌ Contestant with ID ${contestant} in role ${role.role} not found`);
+              return res.status(400).json({
+                ok: false,
+                message: `Contestant with ID ${contestant} in role ${role.role} not found`
+              });
+            }
+            return dbContestant;
+          })
+        );
+        // check if there is white vote
+        if (role.whiteVote) {
+          contestants.push(WHITE_VOTE_MEMBER);
+        }
+        return { ...role, contestants };
+      })
+    );
 
-  round.roles = await Promise.all(
-    round.roles.map(async role => {
-      const contestants = await Promise.all(
-        role.contestants.map(async contestant => {
-          const dbContestant = await db.getMember({ _id: new ObjectId(contestant) });
-          if (!dbContestant) {
-            console.log(`❌ Contestant with ID ${contestant} in role ${role.role} not found`);
-            return res.status(400).json({
-              ok: false,
-              message: `Contestant with ID ${contestant} in role ${role.role} not found`
-            });
-          }
-          return dbContestant;
-        })
-      );
-      // check if there is white vote
-      if (role.whiteVote) {
-        contestants.push(WHITE_VOTE_MEMBER);
-      }
-      return { ...role, contestants };
-    })
-  );
+    console.log('⏬ Adding Round to db...', JSON.stringify(round, null, 2));
+    const roundResult = await db.addRound(round);
 
-  console.log('⏬ Adding Round to db...', JSON.stringify(round, null, 2));
-  const roundResult = await db.addRound(round);
-  if (!roundResult.acknowledged) {
-    console.log(`❌ Could not add Round`);
-    res.status(500).json({ ok: false, message: 'Could not add round' });
-    return;
+    res.json({ ok: true, id: roundResult.insertedId });
+  } catch (error) {
+    console.error('❌ Error adding round:', error);
+    return res.status(500).json({ ok: false, message: 'Internal server error' });
   }
-
-  res.json({ ok: true, id: roundResult.insertedId });
 });
 
 router.put('/updateRound', async (req: Request, res: Response) => {
