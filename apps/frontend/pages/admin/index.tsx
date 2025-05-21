@@ -1,8 +1,18 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { useRouter } from 'next/router';
-import { Paper, Typography, Stack, Button, Box, TextField, IconButton, Tabs, Tab } from '@mui/material';
+import {
+  Paper,
+  Typography,
+  Stack,
+  Button,
+  Box,
+  TextField,
+  IconButton,
+  Tabs,
+  Tab
+} from '@mui/material';
 import { WithId } from 'mongodb';
-import { ElectionEvent, User } from '@mtes/types';
+import { ElectionEvent, Member, User } from '@mtes/types';
 import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
 import Layout from '../../components/layout';
 import DownloadUsersButton from '../../components/admin/download-users';
@@ -17,20 +27,17 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import Grid from '@mui/material/Grid2';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import { GetServerSidePropsContext } from 'next';
 
 interface Props {
   user: WithId<User>;
   event?: WithId<ElectionEvent & { members?: Array<{ name: string; city: string }> }>;
+  initMembers?: Member[];
 }
 
-interface Member {
-  name: string;
-  city: string;
-}
-
-const Page: NextPage<Props> = ({ user, event }) => {
+const Page: NextPage<Props> = ({ user, event, initMembers }) => {
   const router = useRouter();
-  const [members, setMembers] = useState<Member[]>(event?.members || [{ name: '', city: '' }]);
+  const [members, setMembers] = useState<Member[]>(initMembers || []);
   const [currentTab, setCurrentTab] = useState(0);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -44,8 +51,7 @@ const Page: NextPage<Props> = ({ user, event }) => {
       hasState: true,
       votingStands: values.votingStands,
       startDate: values.startDate.toDate(),
-      endDate: values.endDate.toDate(),
-      members: members.filter(m => m.name && m.city)
+      endDate: values.endDate.toDate()
     };
 
     apiFetch('/api/admin/events', {
@@ -91,7 +97,7 @@ const Page: NextPage<Props> = ({ user, event }) => {
   };
 
   const addMember = () => {
-    setMembers([...members, { name: '', city: '' }]);
+    setMembers([...members, { name: '', city: 'תל אביב יפו' }]);
   };
 
   const removeMember = (index: number) => {
@@ -240,8 +246,11 @@ const Page: NextPage<Props> = ({ user, event }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async ctx => {
-  const data = await serverSideGetRequests({ user: '/api/me', event: '/public/event' }, ctx);
+export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  const data = await serverSideGetRequests(
+    { user: '/api/me', event: '/public/event', initMembers: '/api//events/members' },
+    ctx
+  );
   return { props: data };
 };
 
