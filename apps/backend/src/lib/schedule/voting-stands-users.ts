@@ -30,7 +30,6 @@ export const CreateVotingStandUsers = (numOfStands: number): User[] => {
         value: i
       }
     });
-
-    return users;
   }
+  return users;
 };
