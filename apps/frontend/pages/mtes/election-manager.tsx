@@ -506,12 +506,21 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                   />
 
                   {roundResults ? (
-                    <RoundResults
-                      round={activeRound}
-                      results={roundResults}
-                      votedMembers={votedMembers}
-                      totalMembers={members.length}
-                    />
+                    <>
+                      <RoundResults
+                        round={activeRound}
+                        results={roundResults}
+                        votedMembers={votedMembers}
+                        totalMembers={members.length}
+                      />
+                      <MembersGrid
+                        members={members}
+                        votedMembers={votedMembers}
+                        standStatuses={standStatuses}
+                        showVoted={true}
+                        onDropMemberBackToBank={handleReturnMemberToBank}
+                      />
+                    </>
                   ) : (
                     <>
                       <VotingStatusComponent
