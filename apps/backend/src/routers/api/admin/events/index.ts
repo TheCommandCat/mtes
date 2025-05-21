@@ -68,7 +68,6 @@ router.post(
 
     console.log('👤 Generating division users');
     const users = CreateVotingStandUsers(eventData.votingStands);
-    console.log(users);
 
     if (!(await db.addUsers(users)).acknowledged) {
       res.status(500).json({ error: 'Could not create users!' });

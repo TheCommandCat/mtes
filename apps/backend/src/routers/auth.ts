@@ -1,7 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
 import dayjs from 'dayjs';
 import jwt from 'jsonwebtoken';
-import { ObjectId } from 'mongodb';
 import * as db from '@mtes/database';
 import { User } from '@mtes/types';
 
