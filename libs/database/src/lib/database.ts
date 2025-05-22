@@ -1,7 +1,7 @@
 import { Db, MongoClient } from 'mongodb';
 import { User } from '@mtes/types';
 
-const connectionString = 'mongodb://127.0.0.1:27017';
+const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 
 const initDbClient = async () => {
   const client = new MongoClient(connectionString);
@@ -31,7 +31,7 @@ admins.findOne({}).then(user => {
         username: adminUsername,
         isAdmin: true,
         password: adminPassword,
-        lastPasswordSetDate: new Date(),
+        lastPasswordSetDate: new Date()
       })
       .then(() => {
         console.log(`⚙️ Setup initial admin user with details - ${adminUsername}:${adminPassword}`);
