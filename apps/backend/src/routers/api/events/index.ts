@@ -156,7 +156,7 @@ router.put('/members', async (req: Request, res: Response) => {
     return;
   }
 
-  const addRes = await db.addMembers(members);
+  const addRes = await db.addMembers(members.map(member => ({ ...member, _id: undefined })));
   if (!addRes.acknowledged) {
     console.log('❌ Could not add members');
     res.status(500).json({ ok: false, message: 'Could not add members' });
