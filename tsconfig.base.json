@@ -9,20 +9,13 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@mtes/database": [
-        "libs/database/src/index.ts"
-      ],
-      "@mtes/types": [
-        "libs/types/src/index.ts"
-      ],
+      "@mtes/database": ["libs/database/src/index.ts"],
+      "@mtes/types": ["libs/types/src/index.ts"],
       "@mtes/utils": ["libs/utils/src/index.ts"],
       "@mtes/utils/arrays": ["libs/utils/arrays/src/index.ts"],
       "@mtes/utils/objects": ["libs/utils/objects/src/index.ts"],
