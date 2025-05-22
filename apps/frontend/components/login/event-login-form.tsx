@@ -89,7 +89,7 @@ const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
           .map((r: Role) => {
             return (
               <MenuItem value={r} key={r}>
-                {localizedRoles[r].name}
+                {localizedRoles[r]}
               </MenuItem>
             );
           })}
