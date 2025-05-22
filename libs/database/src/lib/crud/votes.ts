@@ -13,11 +13,12 @@ export const addVote = (vote: Vote) => {
 };
 
 // Mark member as voted
-export function markMemberVoted(roundId: string, memberId: string) {
+export function markMemberVoted(roundId: string, memberId: string, signature: object) {
   return db.collection<VotingStatus>('votingStatus').insertOne({
     memberId: new ObjectId(memberId),
     roundId: new ObjectId(roundId),
-    votedAt: new Date()
+    votedAt: new Date(),
+    signature: signature
   });
 }
 
