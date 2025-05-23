@@ -8,51 +8,61 @@ import { ItemTypes } from '../../lib/dnd-types';
 interface MembersGridProps {
   members: WithId<Member>[];
   votedMembers: WithId<VotingStatus>[];
-  standStatuses: Record<number, { status: string; member: WithId<Member> | null }>; // Ensure member is WithId<Member>
-  showVoted?: boolean;
-  onDropMemberBackToBank: (member: WithId<Member>, previousStandId: number) => void; // Ensure member is WithId<Member>
-  // Remove onMemberClick as it's not used with react-dnd for this component
+  standStatuses: Record<number, { status: string; member: WithId<Member> | null }>;
+
+  filterType: 'waitingToVote' | 'voted' | 'notPresent';
+  onDropMemberBackToBank: (member: WithId<Member>, previousStandId: number) => void;
 }
 
 export const MembersGrid = ({
   members,
   votedMembers,
   standStatuses,
-  showVoted = false,
+  filterType,
   onDropMemberBackToBank
 }: MembersGridProps) => {
-  const [{ isOver, canDrop }, drop] = useDrop(
+  const [{ isOver, canDrop }, drop] = useDrop<
+    WithId<Member> & { currentStandId?: number | null },
+    void,
+    { isOver: boolean; canDrop: boolean }
+  >(
     () => ({
       accept: ItemTypes.MEMBER,
       drop: (item: WithId<Member> & { currentStandId?: number | null }) => {
-        // Ensure item is WithId<Member>
         if (item.currentStandId !== undefined && item.currentStandId !== null) {
           onDropMemberBackToBank(item, item.currentStandId);
         }
       },
       canDrop: (item: WithId<Member> & { currentStandId?: number | null }) => {
-        // Ensure item is WithId<Member>
-        return !showVoted && item.currentStandId !== undefined && item.currentStandId !== null;
+        return (
+          filterType === 'waitingToVote' &&
+          item.currentStandId !== undefined &&
+          item.currentStandId !== null
+        );
       },
       collect: monitor => ({
         isOver: !!monitor.isOver(),
         canDrop: !!monitor.canDrop()
       })
     }),
-    [showVoted, onDropMemberBackToBank]
+    [filterType, onDropMemberBackToBank]
   );
 
   const filteredMembers = members.filter(member => {
     const hasVoted = votedMembers.some(vm => vm.memberId.toString() === member._id.toString());
-    // Ensure standStatuses member comparison uses _id
     const isAssignedToStand = Object.values(standStatuses).some(
       s => s.member?._id.toString() === member._id.toString()
     );
 
-    if (showVoted) {
-      return hasVoted;
-    } else {
-      return !hasVoted && !isAssignedToStand;
+    switch (filterType) {
+      case 'voted':
+        return hasVoted;
+      case 'notPresent':
+        return !member.isPresent && !hasVoted;
+      case 'waitingToVote':
+        return member.isPresent && !hasVoted && !isAssignedToStand;
+      default:
+        return false;
     }
   });
 
@@ -68,7 +78,7 @@ export const MembersGrid = ({
     minHeight: '100px'
   };
 
-  if (!showVoted) {
+  if (filterType === 'waitingToVote') {
     if (isActive) {
       gridStyles.border = '2px dashed #4caf50';
       gridStyles.bgcolor = '#e8f5e9';
@@ -77,10 +87,36 @@ export const MembersGrid = ({
     }
   }
 
+  let title = '';
+  let titleColor: string = 'primary'; // Explicitly type titleColor
+  switch (filterType) {
+    case 'voted':
+      title = 'הצביעו';
+      titleColor = 'success.main';
+      break;
+    case 'notPresent':
+      title = 'לא נוכחים';
+      titleColor = 'text.secondary';
+      break;
+    case 'waitingToVote':
+      title = 'ממתינים להצבעה';
+      // titleColor is already 'primary' by default
+      break;
+  }
+
   return (
-    <Box sx={{ mb: 4 }} ref={!showVoted ? (drop as any) : null}>
-      <Typography variant="h6" color={showVoted ? 'success.main' : 'primary'} gutterBottom>
-        {showVoted ? 'הצביעו' : 'ממתינים להצבעה'} ({filteredMembers.length})
+    <Box
+      sx={{ mb: 4 }}
+      ref={
+        filterType === 'waitingToVote'
+          ? (node: HTMLElement | null) => {
+              drop(node);
+            }
+          : null
+      }
+    >
+      <Typography variant="h6" color={titleColor} gutterBottom>
+        {title} ({filteredMembers.length})
       </Typography>
       <Box sx={gridStyles}>
         {filteredMembers.map(member => {
@@ -115,7 +151,7 @@ export const MembersGrid = ({
             />
           );
         })}
-        {!showVoted && filteredMembers.length === 0 && canDrop && (
+        {filterType === 'waitingToVote' && filteredMembers.length === 0 && canDrop && (
           <Box sx={{ p: 2, textAlign: 'center', gridColumn: '1 / -1' }}>
             <Typography color="text.secondary">גרור לכאן להחזרה לבנק</Typography>
           </Box>

@@ -584,7 +584,14 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                             members={members}
                             votedMembers={votedMembers}
                             standStatuses={standStatuses}
-                            showVoted={true}
+                            filterType="voted"
+                            onDropMemberBackToBank={handleReturnMemberToBank}
+                          />
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="notPresent"
                             onDropMemberBackToBank={handleReturnMemberToBank}
                           />
                         </>
@@ -599,7 +606,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                             members={members}
                             votedMembers={votedMembers}
                             standStatuses={standStatuses}
-                            showVoted={false}
+                            filterType="waitingToVote"
                             onDropMemberBackToBank={handleReturnMemberToBank}
                           />
 
@@ -607,7 +614,14 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                             members={members}
                             votedMembers={votedMembers}
                             standStatuses={standStatuses}
-                            showVoted={true}
+                            filterType="voted"
+                            onDropMemberBackToBank={() => {}}
+                          />
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="notPresent"
                             onDropMemberBackToBank={() => {}}
                           />
                         </>
