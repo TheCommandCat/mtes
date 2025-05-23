@@ -23,7 +23,7 @@ interface MemberCardProps {
   isCurrentlyVoting?: boolean;
   currentStandId?: number | null;
   isDisplayedInStand?: boolean;
-  signatureData?: { points: Record<string, number[][]> };
+  signatureData?: Record<number, number[][]>;
 }
 
 export const MemberCard = ({
@@ -134,7 +134,7 @@ export const MemberCard = ({
                   <Typography variant="body2" color="success.dark">
                     הצביע
                   </Typography>
-                  {signatureData && signatureData.points && (
+                  {signatureData && signatureData && (
                     <Button
                       variant="outlined"
                       size="small"
@@ -158,7 +158,7 @@ export const MemberCard = ({
           </Box>
         </CardContent>
       </Card>
-      {signatureData && signatureData.points && (
+      {signatureData && signatureData && (
         <Dialog
           open={openSignatureDialog}
           onClose={handleCloseSignatureDialog}
@@ -182,7 +182,7 @@ export const MemberCard = ({
               <Signature
                 width="100%"
                 height="100%"
-                defaultPoints={signatureData.points}
+                defaultPoints={signatureData}
                 readonly
                 style={{ '--w-signature-background': 'transparent' } as React.CSSProperties}
               />

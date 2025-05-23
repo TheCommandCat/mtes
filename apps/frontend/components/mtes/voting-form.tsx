@@ -28,7 +28,7 @@ export const VotingForm = ({
   onVoteComplete
 }: VotingFormProps) => {
   const signatureRef = useRef<SignatureRef>(null);
-  const [signaturePoints, setSignaturePoints] = useState<object | null>(null);
+  const [signaturePoints, setSignaturePoints] = useState<Record<number, number[][]>>([]);
 
   const initialValues = Object.fromEntries(
     round.roles.flatMap(role =>
@@ -95,13 +95,22 @@ export const VotingForm = ({
       onVoteComplete();
       resetForm();
       signatureRef.current?.clear();
-      setSignaturePoints(null);
+      setSignaturePoints([]);
     } catch (error) {
       console.error('Vote submission failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       enqueueSnackbar(`שגיאה בשליחת ההצבעה: ${errorMessage}`, { variant: 'error' });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePoints = (data: number[][]) => {
+    if (data.length > 0) {
+      setSignaturePoints(prev => ({
+        ...prev,
+        [Object.keys(signaturePoints).length]: data
+      }));
     }
   };
 
@@ -188,10 +197,6 @@ export const VotingForm = ({
             );
           })}
 
-          {/* Signature Pad Section */}
-          <Typography variant="body2" color="text.secondary">
-            {typeof signaturePoints}
-          </Typography>
           <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
               חתימה
@@ -207,23 +212,14 @@ export const VotingForm = ({
                 mb: 1
               }}
             >
-              <Signature
-                ref={signatureRef}
-                width="100%"
-                height="100%"
-                onPointer={strokePoints => {
-                  if (strokePoints && strokePoints.length > 0) {
-                    setSignaturePoints(strokePoints);
-                  }
-                }}
-              />
+              <Signature ref={signatureRef} width="100%" height="100%" onPointer={handlePoints} />
             </Box>
 
             <Button
               variant="outlined"
               onClick={() => {
                 signatureRef.current?.clear();
-                setSignaturePoints(null);
+                setSignaturePoints([]);
               }}
               sx={{ mb: 2 }}
             >
@@ -236,7 +232,9 @@ export const VotingForm = ({
               type="submit"
               variant="contained"
               size="large"
-              disabled={!isValid || !dirty || isSubmitting || !signaturePoints}
+              disabled={
+                !isValid || !dirty || isSubmitting || JSON.stringify(signaturePoints) === '[]'
+              }
               sx={{
                 minWidth: 200,
                 px: 3,

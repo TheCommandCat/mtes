@@ -110,7 +110,7 @@ export const MembersGrid = ({
               member={member}
               hasVoted={hasVoted}
               isCurrentlyVoting={isCurrentlyVoting}
-              signatureData={hasVoted && signaturePoints ? { points: signaturePoints } : undefined}
+              signatureData={hasVoted && signaturePoints ? signaturePoints : undefined}
               currentStandId={currentStandId ? parseInt(currentStandId) : undefined}
             />
           );
