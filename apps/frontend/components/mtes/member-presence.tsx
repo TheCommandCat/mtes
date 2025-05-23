@@ -1,5 +1,6 @@
 import { Member } from '@mtes/types';
 import { WithId } from 'mongodb';
+import React, { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -10,7 +11,8 @@ import {
   Paper,
   Button,
   Typography,
-  Box
+  Box,
+  TableSortLabel
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import LoginIcon from '@mui/icons-material/Login';
@@ -20,6 +22,12 @@ import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 interface MemberPresenceProps {
   allMembers: WithId<Member>[];
   onMemberUpdate: (memberId: string, isPresent: boolean) => void;
+}
+
+type SortDirection = 'asc' | 'desc';
+interface SortConfig {
+  key: keyof Member | 'status';
+  direction: SortDirection;
 }
 
 const commonCellSx = {
@@ -36,7 +44,66 @@ const headerCellSx = {
   borderBottom: '2px solid rgba(224, 224, 224, 1)'
 };
 
+const SortPlaceholderIcon = () => (
+  <Box
+    component="span"
+    sx={{
+      transform: 'none !important',
+      width: '1em',
+      height: '1em',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}
+  >
+    -
+  </Box>
+);
+
 const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpdate }) => {
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+
+  const sortedMembers = useMemo(() => {
+    if (!allMembers) return [];
+    let sortableItems = [...allMembers];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        if (sortConfig.key === 'status') {
+          aValue = a.isPresent || false;
+          bValue = b.isPresent || false;
+        } else {
+          aValue = a[sortConfig.key];
+          bValue = b[sortConfig.key];
+        }
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [allMembers, sortConfig]);
+
+  const requestSort = (key: keyof Member | 'status') => {
+    let direction: SortDirection = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   if (!allMembers || allMembers.length === 0) {
     return (
       <Paper
@@ -79,20 +146,71 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
         >
           <TableHead>
             <TableRow>
-              <TableCell align="center" sx={headerCellSx}>
-                שם
+              <TableCell
+                align="center"
+                sx={headerCellSx}
+                sortDirection={sortConfig?.key === 'name' ? sortConfig.direction : false}
+              >
+                <TableSortLabel
+                  active={sortConfig?.key === 'name'}
+                  direction={sortConfig?.key === 'name' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('name')}
+                  IconComponent={sortConfig?.key === 'name' ? undefined : SortPlaceholderIcon}
+                  sx={{
+                    '& .MuiTableSortLabel-icon': {
+                      color: 'rgba(0, 0, 0, 0.87) !important',
+                      opacity: 1
+                    }
+                  }}
+                >
+                  שם
+                </TableSortLabel>
               </TableCell>
-              <TableCell align="center" sx={headerCellSx}>
-                עיר
+              <TableCell
+                align="center"
+                sx={headerCellSx}
+                sortDirection={sortConfig?.key === 'city' ? sortConfig.direction : false}
+              >
+                <TableSortLabel
+                  active={sortConfig?.key === 'city'}
+                  direction={sortConfig?.key === 'city' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('city')}
+                  IconComponent={sortConfig?.key === 'city' ? undefined : SortPlaceholderIcon}
+                  sx={{
+                    '& .MuiTableSortLabel-icon': {
+                      color: 'rgba(0, 0, 0, 0.87) !important',
+                      opacity: 1
+                    }
+                  }}
+                >
+                  עיר
+                </TableSortLabel>
               </TableCell>
-              {/* Status Header Cell Removed */}
-              <TableCell align="center" sx={headerCellSx}>
-                פעולות
+
+              <TableCell
+                align="center"
+                sx={headerCellSx}
+                sortDirection={sortConfig?.key === 'status' ? sortConfig.direction : false}
+              >
+                <TableSortLabel
+                  active={sortConfig?.key === 'status'}
+                  direction={sortConfig?.key === 'status' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('status')}
+                  IconComponent={sortConfig?.key === 'status' ? undefined : SortPlaceholderIcon}
+                  sx={{
+                    '& .MuiTableSortLabel-icon': {
+                      color: 'rgba(0, 0, 0, 0.87) !important',
+                      opacity: 1
+                    }
+                  }}
+                >
+                  פעולות
+                </TableSortLabel>
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {allMembers.map(member => {
+            {sortedMembers.map(member => {
               const isPresent = member.isPresent || false;
               return (
                 <TableRow
@@ -119,7 +237,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                   <TableCell align="center" sx={commonCellSx}>
                     {member.city || '-'}
                   </TableCell>
-                  {/* Status Data Cell Removed */}
+
                   <TableCell align="center" sx={commonCellSx}>
                     <Button
                       variant={isPresent ? 'outlined' : 'contained'}
