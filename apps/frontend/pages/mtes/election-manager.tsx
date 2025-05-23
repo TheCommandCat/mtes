@@ -39,8 +39,8 @@ import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { localizedRoles } from 'apps/frontend/localization/roles';
-import MemberPresence from '../../components/mtes/member-presence'; // Updated import
-import { MemberPresenceStatus } from '../../components/mtes/member-presence-status'; // Added import
+import MemberPresence from '../../components/mtes/member-presence';
+import { MemberPresenceStatus } from '../../components/mtes/member-presence-status';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -60,7 +60,7 @@ const initialRoundStatuses = (
 
 interface VotingStandStatus {
   status: VotingStates;
-  member: WithId<Member> | null; // Changed from Member to WithId<Member>
+  member: WithId<Member> | null;
 }
 
 const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, electionState, event }) => {
@@ -79,7 +79,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
 
-  const presentMembersCount = members.filter(member => member.isPresent).length; // Calculate present members
+  const presentMembersCount = members.filter(member => member.isPresent).length;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -103,7 +103,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     );
     setMembers(updatedMembers);
 
-    // Update presence in the database
     apiFetch(`/api/events/members/${memberId}/presence`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -149,7 +148,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     {
       name: 'voteSubmitted',
       handler: (votingMember: WithId<Member>, standId: number) => {
-        // Ensure votingMember is WithId<Member>
         enqueueSnackbar(`${votingMember.name} הגיש הצבעה בעמדה ${standId}`, { variant: 'info' });
         setStandStatuses(prev => ({
           ...prev,
@@ -160,7 +158,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     {
       name: 'voteProcessed',
       handler: (votingMember: WithId<Member>, standId: number) => {
-        // Ensure votingMember is WithId<Member>
         enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה בעמדה ${standId}`, {
           variant: 'success'
         });
@@ -195,7 +192,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       memberName: string;
     }>[] = [];
 
-    // 1. If moving from a previous stand, create a promise to emit an event to clear it
     if (
       previousStandId !== undefined &&
       previousStandId !== null &&
@@ -216,7 +212,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       );
     }
 
-    // 2. Create a promise to emit an event to load the member into the target stand
     operations.push(
       new Promise(resolve => {
         socket.emit('loadVotingMember', member, targetStandId, (response: { ok: boolean }) => {
@@ -237,9 +232,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       if (allOk) {
         setStandStatuses(prev => {
           const newStatuses = { ...prev };
-          // Apply changes based on the operations that were part of this sequence
 
-          // Clear previous stand if that operation was performed and part of this sequence
           if (
             previousStandId !== undefined &&
             previousStandId !== null &&
@@ -247,7 +240,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
           ) {
             newStatuses[previousStandId] = { status: 'Empty', member: null };
           }
-          // Set new stand
           newStatuses[targetStandId] = { status: 'Voting', member };
 
           return newStatuses;
@@ -268,16 +260,13 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
             }
           }
         });
-        // Consider a state refresh from server here if partial failures occur
         console.error('Error in multi-step stand update, results:', results);
       }
     });
   };
 
   const handleReturnMemberToBank = (member: WithId<Member>, previousStandId: number) => {
-    // Changed member type to WithId<Member>
     console.log('Returning member to bank:', member, 'from stand:', previousStandId);
-    // Emit an event to clear the member from the stand on the server/other clients
     socket.emit('loadVotingMember', null, previousStandId, (response: { ok: boolean }) => {
       if (response.ok) {
         setStandStatuses(prev => ({
@@ -385,7 +374,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       if (res.ok) {
         setIsRoundLocked(true);
 
-        // Load the results
         const resultsRes = await apiFetch(`/api/events/roundResults/${activeRound._id}`, {
           method: 'GET'
         });
@@ -412,7 +400,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
           enqueueSnackbar(`הסבב ${activeRound.name} ננעל והתוצאות מוצגות`, { variant: 'success' });
         }
 
-        // Stop voting on stands but keep round active to show results
         socket.emit('loadRound', null, (response: { ok: boolean }) => {
           if (response.ok) {
             console.log('Round locked successfully');
@@ -438,7 +425,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     }
   };
 
-  // Add new function to handle showing results for locked rounds
   const handleShowResults = async (round: WithId<Round>) => {
     try {
       const res = await apiFetch(`/api/events/roundResults/${round._id}`, {
@@ -532,19 +518,18 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               )}
               <Box
                 sx={{
-                  position: 'relative', // Context for absolute positioning of the chip
+                  position: 'relative',
                   display: 'flex',
-                  justifyContent: 'center', // Center the Tabs
-                  alignItems: 'center', // Vertically align items in this Box
+                  justifyContent: 'center',
+                  alignItems: 'center',
                   mb: 3
                 }}
               >
-                {/* Sufficient Presence Chip: Positioned absolutely to the left */}
                 {presentMembersCount / members.length >= 0.66 && (
                   <Box
                     sx={{
                       position: 'absolute',
-                      left: 0, // Aligns to the left of this parent Box
+                      left: 0,
                       top: '50%',
                       transform: 'translateY(-50%)'
                     }}
@@ -556,12 +541,11 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                   </Box>
                 )}
 
-                {/* Tabs Component - will be centered by the parent Box's flex properties */}
                 <Tabs
                   value={currentTab}
                   onChange={handleTabChange}
                   aria-label="election manager tabs"
-                  centered // Centers the tab indicators within the Tabs component
+                  centered
                   textColor="inherit"
                 >
                   <Tab label="ניהול סבב" />
@@ -575,7 +559,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                       {!roundResults && (
                         <VotingStandsGrid
                           standStatuses={standStatuses}
-                          onCancel={handleCancelMember} // This can also be used to drag member back to bank
+                          onCancel={handleCancelMember}
                           onDropMember={handleSendMember}
                         />
                       )}
@@ -624,8 +608,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                             votedMembers={votedMembers}
                             standStatuses={standStatuses}
                             showVoted={true}
-                            // No drop functionality for the voted list
-                            onDropMemberBackToBank={() => {}} // Dummy function, not used
+                            onDropMemberBackToBank={() => {}}
                           />
                         </>
                       )}
@@ -655,15 +638,11 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               )}
               {currentTab === 1 && (
                 <Box sx={{ p: 3 }}>
-                  <MemberPresence
-                    allMembers={members}
-                    onMemberUpdate={handleMemberPresence} // Use the new refresh function
-                  />
+                  <MemberPresence allMembers={members} onMemberUpdate={handleMemberPresence} />
                 </Box>
               )}
             </Paper>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog
               open={roundToDelete !== null}
               onClose={() => setRoundToDelete(null)}
@@ -689,8 +668,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                 </Button>
               </DialogActions>
             </Dialog>
-
-            {/* Drag-and-drop replaces voting stand selection dialog */}
           </Box>
         </Layout>
       </DndProvider>
@@ -702,7 +679,6 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
     const { user } = await getUserAndDivision(ctx);
 
-    // Fetch members along with other data
     const data = await serverSideGetRequests(
       {
         rounds: '/api/events/rounds',
