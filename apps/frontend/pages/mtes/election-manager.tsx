@@ -619,10 +619,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               )}
               {currentTab === 1 && (
                 <Box sx={{ p: 3 }}>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    ניהול משתתפים
-                  </Typography>
-
                   <MemberPresence
                     allMembers={members}
                     onMemberUpdate={handleMemberPresence} // Use the new refresh function
