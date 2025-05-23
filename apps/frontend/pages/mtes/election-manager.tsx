@@ -40,6 +40,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { localizedRoles } from 'apps/frontend/localization/roles';
 import MemberPresence from '../../components/mtes/member-presence'; // Updated import
+import { MemberPresenceStatus } from '../../components/mtes/member-presence-status'; // Added import
 
 interface Props {
   user: WithId<SafeUser>;
@@ -77,6 +78,8 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
+
+  const presentMembersCount = members.filter(member => member.isPresent).length; // Calculate present members
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -521,17 +524,50 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               </Typography>
             </Paper>
             <Paper elevation={2} sx={{ p: 4 }}>
-              <Tabs
-                value={currentTab}
-                onChange={handleTabChange}
-                aria-label="election manager tabs"
-                centered
-                textColor="inherit"
-                sx={{ mb: 3 }}
+              {presentMembersCount / members.length >= 0.66 ? null : (
+                <MemberPresenceStatus
+                  presentCount={presentMembersCount}
+                  totalCount={members.length}
+                />
+              )}
+              <Box
+                sx={{
+                  position: 'relative', // Context for absolute positioning of the chip
+                  display: 'flex',
+                  justifyContent: 'center', // Center the Tabs
+                  alignItems: 'center', // Vertically align items in this Box
+                  mb: 3
+                }}
               >
-                <Tab label="ניהול סבב" />
-                <Tab label="ניהול משתתפים" />
-              </Tabs>
+                {/* Sufficient Presence Chip: Positioned absolutely to the left */}
+                {presentMembersCount / members.length >= 0.66 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: 0, // Aligns to the left of this parent Box
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}
+                  >
+                    <MemberPresenceStatus
+                      presentCount={presentMembersCount}
+                      totalCount={members.length}
+                    />
+                  </Box>
+                )}
+
+                {/* Tabs Component - will be centered by the parent Box's flex properties */}
+                <Tabs
+                  value={currentTab}
+                  onChange={handleTabChange}
+                  aria-label="election manager tabs"
+                  centered // Centers the tab indicators within the Tabs component
+                  textColor="inherit"
+                >
+                  <Tab label="ניהול סבב" />
+                  <Tab label="ניהול משתתפים" />
+                </Tabs>
+              </Box>
               {currentTab === 0 && (
                 <>
                   {activeRound ? (
