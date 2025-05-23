@@ -12,7 +12,9 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button
+  Button,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   ElectionEvent,
@@ -37,6 +39,8 @@ import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { localizedRoles } from 'apps/frontend/localization/roles';
+import MemberPresence from '../../components/mtes/member-presence';
+import { MemberPresenceStatus } from '../../components/mtes/member-presence-status';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -56,11 +60,12 @@ const initialRoundStatuses = (
 
 interface VotingStandStatus {
   status: VotingStates;
-  member: WithId<Member> | null; // Changed from Member to WithId<Member>
+  member: WithId<Member> | null;
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
+const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, electionState, event }) => {
   const router = useRouter();
+  const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
@@ -72,8 +77,15 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   );
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
+  const [currentTab, setCurrentTab] = useState(0);
 
-  const getVotedMembers = async (roundId: string) => {
+  const presentMembersCount = members.filter(member => member.isPresent).length;
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
+  const refreshVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
       method: 'GET'
     });
@@ -85,9 +97,33 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     }
   };
 
+  const handleMemberPresence = (memberId: string, isPresent: boolean) => {
+    const updatedMembers = members.map(member =>
+      member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
+    );
+    setMembers(updatedMembers);
+
+    apiFetch(`/api/events/members/${memberId}/presence`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPresent: isPresent })
+    })
+      .then(response => {
+        if (response.ok) {
+          enqueueSnackbar(`נוכחות חבר עודכנה בהצלחה`, { variant: 'success' });
+        } else {
+          enqueueSnackbar(`נכשל עדכון נוכחות חבר`, { variant: 'error' });
+        }
+      })
+      .catch(error => {
+        console.error('Error updating member presence:', error);
+        enqueueSnackbar(`שגיאה בעדכון נוכחות חבר`, { variant: 'error' });
+      });
+  };
+
   useEffect(() => {
     if (activeRound) {
-      getVotedMembers(activeRound._id.toString());
+      refreshVotedMembers(activeRound._id.toString());
       const checkRoundLocked = async () => {
         try {
           const res = await apiFetch(`/api/events/roundStatus/${activeRound._id}`, {
@@ -112,7 +148,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     {
       name: 'voteSubmitted',
       handler: (votingMember: WithId<Member>, standId: number) => {
-        // Ensure votingMember is WithId<Member>
         enqueueSnackbar(`${votingMember.name} הגיש הצבעה בעמדה ${standId}`, { variant: 'info' });
         setStandStatuses(prev => ({
           ...prev,
@@ -123,7 +158,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     {
       name: 'voteProcessed',
       handler: (votingMember: WithId<Member>, standId: number) => {
-        // Ensure votingMember is WithId<Member>
         enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה בעמדה ${standId}`, {
           variant: 'success'
         });
@@ -131,7 +165,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           ...prev,
           [standId]: { status: 'Empty', member: null }
         }));
-        getVotedMembers(activeRound?._id.toString() || '');
+        refreshVotedMembers(activeRound?._id.toString() || '');
       }
     }
   ]);
@@ -158,7 +192,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
       memberName: string;
     }>[] = [];
 
-    // 1. If moving from a previous stand, create a promise to emit an event to clear it
     if (
       previousStandId !== undefined &&
       previousStandId !== null &&
@@ -179,7 +212,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
       );
     }
 
-    // 2. Create a promise to emit an event to load the member into the target stand
     operations.push(
       new Promise(resolve => {
         socket.emit('loadVotingMember', member, targetStandId, (response: { ok: boolean }) => {
@@ -200,9 +232,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
       if (allOk) {
         setStandStatuses(prev => {
           const newStatuses = { ...prev };
-          // Apply changes based on the operations that were part of this sequence
 
-          // Clear previous stand if that operation was performed and part of this sequence
           if (
             previousStandId !== undefined &&
             previousStandId !== null &&
@@ -210,7 +240,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           ) {
             newStatuses[previousStandId] = { status: 'Empty', member: null };
           }
-          // Set new stand
           newStatuses[targetStandId] = { status: 'Voting', member };
 
           return newStatuses;
@@ -231,16 +260,13 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
             }
           }
         });
-        // Consider a state refresh from server here if partial failures occur
         console.error('Error in multi-step stand update, results:', results);
       }
     });
   };
 
   const handleReturnMemberToBank = (member: WithId<Member>, previousStandId: number) => {
-    // Changed member type to WithId<Member>
     console.log('Returning member to bank:', member, 'from stand:', previousStandId);
-    // Emit an event to clear the member from the stand on the server/other clients
     socket.emit('loadVotingMember', null, previousStandId, (response: { ok: boolean }) => {
       if (response.ok) {
         setStandStatuses(prev => ({
@@ -348,7 +374,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
       if (res.ok) {
         setIsRoundLocked(true);
 
-        // Load the results
         const resultsRes = await apiFetch(`/api/events/roundResults/${activeRound._id}`, {
           method: 'GET'
         });
@@ -375,7 +400,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           enqueueSnackbar(`הסבב ${activeRound.name} ננעל והתוצאות מוצגות`, { variant: 'success' });
         }
 
-        // Stop voting on stands but keep round active to show results
         socket.emit('loadRound', null, (response: { ok: boolean }) => {
           if (response.ok) {
             console.log('Round locked successfully');
@@ -401,7 +425,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     }
   };
 
-  // Add new function to handle showing results for locked rounds
   const handleShowResults = async (round: WithId<Round>) => {
     try {
       const res = await apiFetch(`/api/events/roundResults/${round._id}`, {
@@ -487,90 +510,153 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
               </Typography>
             </Paper>
             <Paper elevation={2} sx={{ p: 4 }}>
-              {activeRound ? (
-                <Box>
-                  {!roundResults && (
-                    <VotingStandsGrid
-                      standStatuses={standStatuses}
-                      onCancel={handleCancelMember} // This can also be used to drag member back to bank
-                      onDropMember={handleSendMember}
+              {presentMembersCount / members.length >= 0.66 ? null : (
+                <MemberPresenceStatus
+                  presentCount={presentMembersCount}
+                  totalCount={members.length}
+                />
+              )}
+              <Box
+                sx={{
+                  position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  mb: 3
+                }}
+              >
+                {presentMembersCount / members.length >= 0.66 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: 0,
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}
+                  >
+                    <MemberPresenceStatus
+                      presentCount={presentMembersCount}
+                      totalCount={members.length}
                     />
-                  )}
-                  <RoundHeader
-                    title={activeRound.name}
-                    isActive
-                    isLocked={isRoundLocked}
-                    onBack={isRoundLocked ? handleGoBack : undefined}
-                    onLock={!isRoundLocked ? handleLockRound : undefined}
-                    onStop={!isRoundLocked ? handleStopRound : undefined}
-                  />
+                  </Box>
+                )}
 
-                  {roundResults ? (
-                    <>
-                      <RoundResults
-                        round={activeRound}
-                        results={roundResults}
-                        votedMembers={votedMembers}
-                        totalMembers={members.length}
+                <Tabs
+                  value={currentTab}
+                  onChange={handleTabChange}
+                  aria-label="election manager tabs"
+                  centered
+                  textColor="inherit"
+                >
+                  <Tab label="ניהול סבב" />
+                  <Tab label="ניהול משתתפים" />
+                </Tabs>
+              </Box>
+              {currentTab === 0 && (
+                <>
+                  {activeRound ? (
+                    <Box>
+                      {!roundResults && (
+                        <VotingStandsGrid
+                          standStatuses={standStatuses}
+                          onCancel={handleCancelMember}
+                          onDropMember={handleSendMember}
+                        />
+                      )}
+                      <RoundHeader
+                        title={activeRound.name}
+                        isActive
+                        isLocked={isRoundLocked}
+                        onBack={isRoundLocked ? handleGoBack : undefined}
+                        onLock={!isRoundLocked ? handleLockRound : undefined}
+                        onStop={!isRoundLocked ? handleStopRound : undefined}
                       />
-                      <MembersGrid
-                        members={members}
-                        votedMembers={votedMembers}
-                        standStatuses={standStatuses}
-                        showVoted={true}
-                        onDropMemberBackToBank={handleReturnMemberToBank}
+
+                      {roundResults ? (
+                        <>
+                          <RoundResults
+                            round={activeRound}
+                            results={roundResults}
+                            votedMembers={votedMembers}
+                            totalMembers={members.length}
+                          />
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="voted"
+                            onDropMemberBackToBank={handleReturnMemberToBank}
+                          />
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="notPresent"
+                            onDropMemberBackToBank={handleReturnMemberToBank}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <VotingStatusComponent
+                            votedCount={votedMembers.length}
+                            totalCount={members.length}
+                          />
+
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="waitingToVote"
+                            onDropMemberBackToBank={handleReturnMemberToBank}
+                          />
+
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="voted"
+                            onDropMemberBackToBank={() => {}}
+                          />
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            filterType="notPresent"
+                            onDropMemberBackToBank={() => {}}
+                          />
+                        </>
+                      )}
+                    </Box>
+                  ) : selectedRound ? (
+                    <Box>
+                      <RoundHeader
+                        title={selectedRound.name}
+                        onBack={() => setSelectedRound(null)}
+                        onStart={() => handleStartRound(selectedRound)}
                       />
-                    </>
+
+                      <RoundPreview round={selectedRound} members={members} />
+                    </Box>
                   ) : (
-                    <>
-                      <VotingStatusComponent
-                        votedCount={votedMembers.length}
-                        totalCount={members.length}
-                      />
-
-                      <MembersGrid
+                    <Box>
+                      <ControlRounds
+                        rounds={rounds}
+                        setSelectedRound={setSelectedRound}
+                        handleShowResults={handleShowResults}
                         members={members}
-                        votedMembers={votedMembers}
-                        standStatuses={standStatuses}
-                        showVoted={false}
-                        onDropMemberBackToBank={handleReturnMemberToBank}
+                        refreshData={refreshData}
                       />
-
-                      <MembersGrid
-                        members={members}
-                        votedMembers={votedMembers}
-                        standStatuses={standStatuses}
-                        showVoted={true}
-                        // No drop functionality for the voted list
-                        onDropMemberBackToBank={() => {}} // Dummy function, not used
-                      />
-                    </>
+                    </Box>
                   )}
-                </Box>
-              ) : selectedRound ? (
-                <Box>
-                  <RoundHeader
-                    title={selectedRound.name}
-                    onBack={() => setSelectedRound(null)}
-                    onStart={() => handleStartRound(selectedRound)}
-                  />
-
-                  <RoundPreview round={selectedRound} members={members} />
-                </Box>
-              ) : (
-                <Box>
-                  <ControlRounds
-                    rounds={rounds}
-                    setSelectedRound={setSelectedRound}
-                    handleShowResults={handleShowResults}
-                    members={members}
-                    refreshData={refreshData}
-                  />
+                </>
+              )}
+              {currentTab === 1 && (
+                <Box sx={{ p: 3 }}>
+                  <MemberPresence allMembers={members} onMemberUpdate={handleMemberPresence} />
                 </Box>
               )}
             </Paper>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog
               open={roundToDelete !== null}
               onClose={() => setRoundToDelete(null)}
@@ -596,8 +682,6 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
                 </Button>
               </DialogActions>
             </Dialog>
-
-            {/* Drag-and-drop replaces voting stand selection dialog */}
           </Box>
         </Layout>
       </DndProvider>
@@ -609,7 +693,6 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
     const { user } = await getUserAndDivision(ctx);
 
-    // Fetch members along with other data
     const data = await serverSideGetRequests(
       {
         rounds: '/api/events/rounds',

@@ -168,6 +168,45 @@ router.put('/members', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+router.put('/members/:memberId/presence', async (req: Request, res: Response) => {
+  const { memberId } = req.params;
+  const { isPresent } = req.body as { isPresent: boolean };
+
+  if (!memberId) {
+    console.log('❌ Member ID is null or undefined');
+    return res.status(400).json({ ok: false, message: 'Member ID is missing' });
+  }
+
+  if (typeof isPresent !== 'boolean') {
+    console.log('❌ isPresent is missing or not a boolean');
+    return res.status(400).json({ ok: false, message: 'isPresent field (boolean) is required' });
+  }
+
+  console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
+
+  try {
+    const memberResult = await db.updateMember({ _id: new ObjectId(memberId) }, { isPresent });
+
+    if (!memberResult.acknowledged || memberResult.matchedCount === 0) {
+      console.log(
+        `❌ Could not update presence for member ${memberId}. Member not found or update failed.`
+      );
+      return res.status(404).json({
+        ok: false,
+        message: 'Could not update member presence. Member not found or update failed.'
+      });
+    }
+
+    console.log(`✅ Presence updated for member ${memberId}`);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('❌ Error updating member presence:', error);
+    return res
+      .status(500)
+      .json({ ok: false, message: 'Internal server error while updating member presence' });
+  }
+});
+
 router.get('/state', (req: Request, res: Response) => {
   console.log(`⏬ Getting Election state`);
   db.getElectionState().then(divisionState => res.json(divisionState));

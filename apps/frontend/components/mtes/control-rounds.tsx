@@ -89,14 +89,19 @@ export const ControlRounds = ({
                         {round.name}
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
                       {round.roles.map(role => (
                         <Chip
                           key={role.role}
                           label={role.role}
-                          size="small"
-                          variant="outlined"
-                          sx={{ height: 24 }}
+                          variant="filled"
+                          sx={{
+                            fontSize: '0.9rem', // Increased font size
+                            padding: '8px 12px', // Increased padding
+                            height: 'auto', // Allow height to adjust to content
+                            borderRadius: '16px', // More rounded corners
+                            fontWeight: 'bold',
+                           }}
                         />
                       ))}
                     </Box>
