@@ -12,7 +12,9 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button
+  Button,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   ElectionEvent,
@@ -72,6 +74,11 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
   );
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
+  const [currentTab, setCurrentTab] = useState(0);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
 
   const getVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
@@ -487,85 +494,105 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
               </Typography>
             </Paper>
             <Paper elevation={2} sx={{ p: 4 }}>
-              {activeRound ? (
-                <Box>
-                  {!roundResults && (
-                    <VotingStandsGrid
-                      standStatuses={standStatuses}
-                      onCancel={handleCancelMember} // This can also be used to drag member back to bank
-                      onDropMember={handleSendMember}
-                    />
-                  )}
-                  <RoundHeader
-                    title={activeRound.name}
-                    isActive
-                    isLocked={isRoundLocked}
-                    onBack={isRoundLocked ? handleGoBack : undefined}
-                    onLock={!isRoundLocked ? handleLockRound : undefined}
-                    onStop={!isRoundLocked ? handleStopRound : undefined}
-                  />
+              <Tabs
+                value={currentTab}
+                onChange={handleTabChange}
+                aria-label="election manager tabs"
+                centered
+                textColor="inherit"
+                sx={{ mb: 3 }}
+              >
+                <Tab label="ניהול סבב" />
+                <Tab label="ניהול משתתפים" />
+              </Tabs>
+              {currentTab === 0 && (
+                <>
+                  {activeRound ? (
+                    <Box>
+                      {!roundResults && (
+                        <VotingStandsGrid
+                          standStatuses={standStatuses}
+                          onCancel={handleCancelMember} // This can also be used to drag member back to bank
+                          onDropMember={handleSendMember}
+                        />
+                      )}
+                      <RoundHeader
+                        title={activeRound.name}
+                        isActive
+                        isLocked={isRoundLocked}
+                        onBack={isRoundLocked ? handleGoBack : undefined}
+                        onLock={!isRoundLocked ? handleLockRound : undefined}
+                        onStop={!isRoundLocked ? handleStopRound : undefined}
+                      />
 
-                  {roundResults ? (
-                    <>
-                      <RoundResults
-                        round={activeRound}
-                        results={roundResults}
-                        votedMembers={votedMembers}
-                        totalMembers={members.length}
+                      {roundResults ? (
+                        <>
+                          <RoundResults
+                            round={activeRound}
+                            results={roundResults}
+                            votedMembers={votedMembers}
+                            totalMembers={members.length}
+                          />
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            showVoted={true}
+                            onDropMemberBackToBank={handleReturnMemberToBank}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <VotingStatusComponent
+                            votedCount={votedMembers.length}
+                            totalCount={members.length}
+                          />
+
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            showVoted={false}
+                            onDropMemberBackToBank={handleReturnMemberToBank}
+                          />
+
+                          <MembersGrid
+                            members={members}
+                            votedMembers={votedMembers}
+                            standStatuses={standStatuses}
+                            showVoted={true}
+                            // No drop functionality for the voted list
+                            onDropMemberBackToBank={() => {}} // Dummy function, not used
+                          />
+                        </>
+                      )}
+                    </Box>
+                  ) : selectedRound ? (
+                    <Box>
+                      <RoundHeader
+                        title={selectedRound.name}
+                        onBack={() => setSelectedRound(null)}
+                        onStart={() => handleStartRound(selectedRound)}
                       />
-                      <MembersGrid
-                        members={members}
-                        votedMembers={votedMembers}
-                        standStatuses={standStatuses}
-                        showVoted={true}
-                        onDropMemberBackToBank={handleReturnMemberToBank}
-                      />
-                    </>
+
+                      <RoundPreview round={selectedRound} members={members} />
+                    </Box>
                   ) : (
-                    <>
-                      <VotingStatusComponent
-                        votedCount={votedMembers.length}
-                        totalCount={members.length}
-                      />
-
-                      <MembersGrid
+                    <Box>
+                      <ControlRounds
+                        rounds={rounds}
+                        setSelectedRound={setSelectedRound}
+                        handleShowResults={handleShowResults}
                         members={members}
-                        votedMembers={votedMembers}
-                        standStatuses={standStatuses}
-                        showVoted={false}
-                        onDropMemberBackToBank={handleReturnMemberToBank}
+                        refreshData={refreshData}
                       />
-
-                      <MembersGrid
-                        members={members}
-                        votedMembers={votedMembers}
-                        standStatuses={standStatuses}
-                        showVoted={true}
-                        // No drop functionality for the voted list
-                        onDropMemberBackToBank={() => {}} // Dummy function, not used
-                      />
-                    </>
+                    </Box>
                   )}
-                </Box>
-              ) : selectedRound ? (
-                <Box>
-                  <RoundHeader
-                    title={selectedRound.name}
-                    onBack={() => setSelectedRound(null)}
-                    onStart={() => handleStartRound(selectedRound)}
-                  />
-
-                  <RoundPreview round={selectedRound} members={members} />
-                </Box>
-              ) : (
-                <Box>
-                  <ControlRounds
-                    rounds={rounds}
-                    setSelectedRound={setSelectedRound}
-                    handleShowResults={handleShowResults}
-                    members={members}
-                    refreshData={refreshData}
-                  />
+                </>
+              )}
+              {currentTab === 1 && (
+                <Box sx={{ p: 3 }}>
+                  <Typography>Second Tab Content</Typography>
                 </Box>
               )}
             </Paper>
