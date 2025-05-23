@@ -39,6 +39,7 @@ import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { localizedRoles } from 'apps/frontend/localization/roles';
+import MemberPresence from '../../components/mtes/member-presence'; // Updated import
 
 interface Props {
   user: WithId<SafeUser>;
@@ -61,8 +62,9 @@ interface VotingStandStatus {
   member: WithId<Member> | null; // Changed from Member to WithId<Member>
 }
 
-const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) => {
+const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, electionState, event }) => {
   const router = useRouter();
+  const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
@@ -80,7 +82,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     setCurrentTab(newValue);
   };
 
-  const getVotedMembers = async (roundId: string) => {
+  const refreshVotedMembers = async (roundId: string) => {
     const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
       method: 'GET'
     });
@@ -92,9 +94,34 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
     }
   };
 
+  const handleMemberPresence = (memberId: string, isPresent: boolean) => {
+    const updatedMembers = members.map(member =>
+      member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
+    );
+    setMembers(updatedMembers);
+
+    // Update presence in the database
+    apiFetch(`/api/events/members/${memberId}/presence`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPresent: isPresent })
+    })
+      .then(response => {
+        if (response.ok) {
+          enqueueSnackbar(`נוכחות חבר עודכנה בהצלחה`, { variant: 'success' });
+        } else {
+          enqueueSnackbar(`נכשל עדכון נוכחות חבר`, { variant: 'error' });
+        }
+      })
+      .catch(error => {
+        console.error('Error updating member presence:', error);
+        enqueueSnackbar(`שגיאה בעדכון נוכחות חבר`, { variant: 'error' });
+      });
+  };
+
   useEffect(() => {
     if (activeRound) {
-      getVotedMembers(activeRound._id.toString());
+      refreshVotedMembers(activeRound._id.toString());
       const checkRoundLocked = async () => {
         try {
           const res = await apiFetch(`/api/events/roundStatus/${activeRound._id}`, {
@@ -138,7 +165,7 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
           ...prev,
           [standId]: { status: 'Empty', member: null }
         }));
-        getVotedMembers(activeRound?._id.toString() || '');
+        refreshVotedMembers(activeRound?._id.toString() || '');
       }
     }
   ]);
@@ -592,7 +619,14 @@ const Page: NextPage<Props> = ({ user, members, rounds, electionState, event }) 
               )}
               {currentTab === 1 && (
                 <Box sx={{ p: 3 }}>
-                  <Typography>Second Tab Content</Typography>
+                  <Typography variant="h5" fontWeight="bold" gutterBottom>
+                    ניהול משתתפים
+                  </Typography>
+
+                  <MemberPresence
+                    allMembers={members}
+                    onMemberUpdate={handleMemberPresence} // Use the new refresh function
+                  />
                 </Box>
               )}
             </Paper>
