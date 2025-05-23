@@ -156,7 +156,7 @@ router.put('/members', async (req: Request, res: Response) => {
     return;
   }
 
-  const addRes = await db.addMembers(members);
+  const addRes = await db.addMembers(members.map(member => ({ ...member, _id: undefined })));
   if (!addRes.acknowledged) {
     console.log('❌ Could not add members');
     res.status(500).json({ ok: false, message: 'Could not add members' });
@@ -190,9 +190,9 @@ router.put('/state', (req: Request, res: Response) => {
 });
 
 router.post('/vote', async (req: Request, res: Response) => {
-  const { roundId, memberId, votes, votingStandId } = req.body;
+  const { roundId, memberId, votes, votingStandId, signature } = req.body;
 
-  if (!roundId || !memberId || !votes || votingStandId === undefined) {
+  if (!roundId || !memberId || !votes || votingStandId === undefined || signature === undefined) {
     console.log('❌ Missing required vote data');
     return res.status(400).json({ ok: false, message: 'Missing required vote data' });
   }
@@ -257,7 +257,7 @@ router.post('/vote', async (req: Request, res: Response) => {
     });
 
     await Promise.all(votePromises);
-    await db.markMemberVoted(round._id.toString(), member._id.toString());
+    await db.markMemberVoted(round._id.toString(), member._id.toString(), signature);
 
     console.log('✅ Votes recorded successfully');
     return res.json({ ok: true });

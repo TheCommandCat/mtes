@@ -79,8 +79,6 @@ export const MembersGrid = ({
 
   return (
     <Box sx={{ mb: 4 }} ref={!showVoted ? (drop as any) : null}>
-      {' '}
-      {/* Cast drop ref to any */}
       <Typography variant="h6" color={showVoted ? 'success.main' : 'primary'} gutterBottom>
         {showVoted ? 'הצביעו' : 'ממתינים להצבעה'} ({filteredMembers.length})
       </Typography>
@@ -89,7 +87,6 @@ export const MembersGrid = ({
           const hasVoted = votedMembers.some(
             vm => vm.memberId.toString() === member._id.toString()
           );
-          // Determine if the member is currently voting by checking standStatuses
           const currentStandStatus = Object.values(standStatuses).find(
             s => s.member?._id.toString() === member._id.toString()
           );
@@ -100,13 +97,20 @@ export const MembersGrid = ({
               )
             : null;
 
+          const votingStatusEntry = votedMembers.find(
+            vm => vm.memberId.toString() === member._id.toString()
+          );
+          const signaturePoints = votingStatusEntry?.signature as
+            | Record<string, number[][]>
+            | undefined;
+
           return (
             <MemberCard
               key={member._id.toString()}
               member={member}
               hasVoted={hasVoted}
               isCurrentlyVoting={isCurrentlyVoting}
-              // Pass currentStandId if the member is in a stand (though typically members in grid are not in stands)
+              signatureData={hasVoted && signaturePoints ? { points: signaturePoints } : undefined}
               currentStandId={currentStandId ? parseInt(currentStandId) : undefined}
             />
           );

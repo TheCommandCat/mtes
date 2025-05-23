@@ -11,4 +11,5 @@ export interface VotingStatus {
   memberId: ObjectId;
   roundId: ObjectId;
   votedAt: Date;
+  signature: object;
 }

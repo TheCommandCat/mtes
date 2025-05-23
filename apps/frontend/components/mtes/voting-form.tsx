@@ -5,6 +5,8 @@ import { Formik, Form } from 'formik';
 import { enqueueSnackbar } from 'notistack';
 import { Socket } from 'socket.io-client';
 import { apiFetch } from '../../lib/utils/fetch';
+import { useRef, useState } from 'react';
+import Signature, { type SignatureRef } from '@uiw/react-signature';
 
 interface VotingFormProps {
   round: WithId<Round>;
@@ -25,6 +27,9 @@ export const VotingForm = ({
   socket,
   onVoteComplete
 }: VotingFormProps) => {
+  const signatureRef = useRef<SignatureRef>(null);
+  const [signaturePoints, setSignaturePoints] = useState<object | null>(null);
+
   const initialValues = Object.fromEntries(
     round.roles.flatMap(role =>
       role.contestants.map(c => [
@@ -68,7 +73,8 @@ export const VotingForm = ({
       roundId: round._id,
       memberId: member._id,
       votes: formattedVotes,
-      votingStandId
+      votingStandId,
+      signature: signaturePoints
     };
 
     try {
@@ -88,6 +94,8 @@ export const VotingForm = ({
       socket.emit('voteProcessed', member, votingStandId);
       onVoteComplete();
       resetForm();
+      signatureRef.current?.clear();
+      setSignaturePoints(null);
     } catch (error) {
       console.error('Vote submission failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -176,28 +184,71 @@ export const VotingForm = ({
                     );
                   })}
                 </Box>
-
-                {errors[roleConfig.role] &&
-                  touched[`${roleConfig.role}-${roleConfig.contestants[0]?._id}`] && (
-                    <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
-                      {errors[roleConfig.role]}
-                    </Typography>
-                  )}
               </Box>
             );
           })}
+
+          {/* Signature Pad Section */}
+          <Typography variant="body2" color="text.secondary">
+            {typeof signaturePoints}
+          </Typography>
+          <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              חתימה
+            </Typography>
+            <Box
+              sx={{
+                border: '1px solid rgba(0,0,0,0.23)',
+                borderRadius: 1,
+                width: '100%',
+                maxWidth: '500px',
+                height: '200px',
+                mx: 'auto',
+                mb: 1
+              }}
+            >
+              <Signature
+                ref={signatureRef}
+                width="100%"
+                height="100%"
+                onPointer={strokePoints => {
+                  if (strokePoints && strokePoints.length > 0) {
+                    setSignaturePoints(strokePoints);
+                  }
+                }}
+              />
+            </Box>
+
+            <Button
+              variant="outlined"
+              onClick={() => {
+                signatureRef.current?.clear();
+                setSignaturePoints(null);
+              }}
+              sx={{ mb: 2 }}
+            >
+              נקה חתימה
+            </Button>
+          </Box>
 
           <Box sx={{ textAlign: 'center', mt: 4 }}>
             <Button
               type="submit"
               variant="contained"
               size="large"
-              disabled={!isValid || !dirty || isSubmitting}
+              disabled={!isValid || !dirty || isSubmitting || !signaturePoints}
               sx={{
-                px: 6,
-                py: 2,
+                minWidth: 200,
+                px: 3,
+                py: 1.5,
                 borderRadius: 2,
-                fontSize: '1.1rem'
+                fontSize: '1rem',
+                fontWeight: 'medium',
+                textTransform: 'none',
+                ...(isSubmitting && {
+                  bgcolor: 'action.disabled',
+                  pointerEvents: 'none'
+                })
               }}
             >
               {isSubmitting ? 'שולח...' : 'אישור הצבעה'}
