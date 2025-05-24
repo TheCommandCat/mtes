@@ -1,22 +1,23 @@
+import { ObjectId } from 'mongodb';
 import { ElectionState } from '@mtes/types';
 import db from '../database';
 
-export const getElectionState = () => {
-  return db.collection<ElectionState>('election-state').findOne();
+export const getEventState = (eventId: ObjectId) => {
+  return db.collection<ElectionState>('election-state').findOne({ eventId: eventId });
 };
 
-export const addElectionState = (state: ElectionState) => {
+export const addEventState = (state: ElectionState) => {
   return db.collection<ElectionState>('election-state').insertOne(state);
 };
 
-export const updateElectionState = (newElectionState: Partial<ElectionState>, upsert = false) => {
-  console.log('Updating election state', newElectionState);
+export const updateEventState = (eventId: ObjectId, newEventState: Partial<ElectionState>, upsert = false) => {
+  console.log('Updating event state for event ID:', eventId, newEventState);
 
   return db
     .collection<ElectionState>('election-state')
-    .updateOne({}, { $set: newElectionState }, { upsert });
+    .updateOne({ eventId: eventId }, { $set: newEventState }, { upsert });
 };
 
-export const deleteElectionState = () => {
-  return db.collection<ElectionState>('election-state').deleteOne({});
+export const deleteEventState = (eventId: ObjectId) => {
+  return db.collection<ElectionState>('election-state').deleteOne({ eventId: eventId });
 };

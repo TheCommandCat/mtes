@@ -1,4 +1,4 @@
-import { WithId } from 'mongodb';
+import { WithId, ObjectId } from 'mongodb';
 import { Positions } from '../positions';
 import { Member } from './member';
 
@@ -10,6 +10,7 @@ interface RoleConfig {
 }
 
 export interface Round {
+  eventId: ObjectId;
   name: string;
   roles: RoleConfig[];
   allowedMembers: WithId<Member>[];

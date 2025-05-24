@@ -1,9 +1,9 @@
-import { WithId, AggregationCursor, Filter } from 'mongodb';
+import { WithId, AggregationCursor, Filter, ObjectId } from 'mongodb';
 import { ElectionEvent } from '@mtes/types';
 import db from '../database';
 
-export const getElectionEvent = () => {
-  return findElectionEvents({}).next();
+export const getElectionEventById = (eventId: ObjectId) => {
+  return findElectionEvents({ _id: eventId }).next();
 };
 
 export const findElectionEvents = (filter: Filter<ElectionEvent>) => {
@@ -28,20 +28,20 @@ export const getAllElectionEvents = () => {
   return findElectionEvents({}).toArray();
 };
 
-export const getElectionEventState = () => {
-  return db.collection<ElectionEvent>('election-events').findOne();
+export const getAllActiveElectionEvents = (currentDate: Date = new Date()) => {
+  return findElectionEvents({ endDate: { $gte: currentDate } }).toArray();
 };
 
-export const updateElectionEvent = (newElectionEvent: Partial<ElectionEvent>, upsert = false) => {
+export const updateElectionEvent = (eventId: ObjectId, newElectionEvent: Partial<ElectionEvent>, upsert = false) => {
   return db
     .collection<ElectionEvent>('election-events')
-    .updateOne({}, { $set: newElectionEvent }, { upsert });
+    .updateOne({ _id: eventId }, { $set: newElectionEvent }, { upsert });
 };
 
-export const addElectionEvent = (ElectionEvent: ElectionEvent) => {
-  return db.collection<ElectionEvent>('election-events').insertOne(ElectionEvent);
+export const addElectionEvent = (electionEvent: ElectionEvent) => {
+  return db.collection<ElectionEvent>('election-events').insertOne(electionEvent);
 };
 
-export const deleteElectionEvent = () => {
-  return db.collection<ElectionEvent>('election-events').drop();
+export const deleteElectionEvent = (eventId: ObjectId) => {
+  return db.collection<ElectionEvent>('election-events').deleteOne({ _id: eventId });
 };

@@ -1,18 +1,28 @@
-import { ObjectId, Filter, WithId } from 'mongodb';
-import { User, SafeUser } from '@mtes/types';
+import { ObjectId, Filter, WithId, Collection } from 'mongodb';
+import { User, SafeUser, ElectionEvent } from '@mtes/types';
 import db from '../database';
 
-export const getEventUsersWithCredentials = () => {
-  return db.collection<User>('users').find().toArray();
+const getElectionEventsCollection = (): Collection<ElectionEvent> => {
+  return db.collection<ElectionEvent>('election-events');
 };
 
-export const getEventUsers = (): Promise<Array<WithId<SafeUser>>> => {
-  return getEventUsersWithCredentials().then(users => {
-    return users.map(user => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, lastPasswordSetDate, ...safeUser } = user;
-      return safeUser as WithId<SafeUser>;
-    });
+export const getEventUsersWithCredentials = async (eventId: ObjectId): Promise<Array<WithId<User>>> => {
+  const electionEventsCollection = getElectionEventsCollection();
+  const event = await electionEventsCollection.findOne({ _id: eventId });
+
+  if (!event) {
+    return [];
+  }
+
+  return db.collection<User>('users').find({ role: { $in: event.eventUsers } }).toArray();
+};
+
+export const getEventUsers = async (eventId: ObjectId): Promise<Array<WithId<SafeUser>>> => {
+  const users = await getEventUsersWithCredentials(eventId);
+  return users.map(user => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, lastPasswordSetDate, ...safeUser } = user;
+    return safeUser as WithId<SafeUser>;
   });
 };
 

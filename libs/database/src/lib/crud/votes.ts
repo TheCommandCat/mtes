@@ -3,8 +3,9 @@ import { Vote, VotingStatus, Round } from '@mtes/types';
 import db from '../database';
 
 // Get multiple vote documents based on a filter (e.g., results for a round/role)
-export const getVotes = (filter: Filter<Vote>) => {
-  return db.collection<Vote>('votes').find(filter).toArray();
+export const getVotes = (filter: Filter<Vote>, eventId?: ObjectId) => {
+  const query = eventId ? { ...filter, eventId } : filter;
+  return db.collection<Vote>('votes').find(query).toArray();
 };
 
 // Add a single vote document
@@ -13,8 +14,9 @@ export const addVote = (vote: Vote) => {
 };
 
 // Mark member as voted
-export function markMemberVoted(roundId: string, memberId: string, signature: object) {
+export function markMemberVoted(roundId: string, memberId: string, signature: object, eventId: ObjectId) {
   return db.collection<VotingStatus>('votingStatus').insertOne({
+    eventId: eventId,
     memberId: new ObjectId(memberId),
     roundId: new ObjectId(roundId),
     votedAt: new Date(),
@@ -23,16 +25,18 @@ export function markMemberVoted(roundId: string, memberId: string, signature: ob
 }
 
 // Remove voting status
-export function removeVotingStatus(roundId: string, memberId: string) {
+export function removeVotingStatus(roundId: string, memberId: string, eventId: ObjectId) {
   return db.collection<VotingStatus>('votingStatus').deleteOne({
+    eventId: eventId,
     memberId: new ObjectId(memberId),
     roundId: new ObjectId(roundId)
   });
 }
 
 // Check if member has voted
-export async function hasMemberVoted(roundId: string, memberId: string) {
+export async function hasMemberVoted(roundId: string, memberId: string, eventId: ObjectId) {
   const status = await db.collection<VotingStatus>('votingStatus').findOne({
+    eventId: eventId,
     memberId: new ObjectId(memberId),
     roundId: new ObjectId(roundId)
   });
@@ -41,10 +45,10 @@ export async function hasMemberVoted(roundId: string, memberId: string) {
 }
 
 // Get voted members for a round
-export function getVotedMembers(roundId: string) {
+export function getVotedMembers(roundId: string, eventId: ObjectId) {
   return db
     .collection<VotingStatus>('votingStatus')
-    .find({ roundId: new ObjectId(roundId) })
+    .find({ eventId: eventId, roundId: new ObjectId(roundId) })
     .toArray();
 }
 
@@ -63,9 +67,9 @@ export async function unlockRound(roundId: string) {
 }
 
 // Delete all votes for a round
-export async function deleteRoundVotes(roundId: string) {
-  await db.collection<Vote>('votes').deleteMany({ round: new ObjectId(roundId) });
-  await db.collection<VotingStatus>('votingStatus').deleteMany({ roundId: new ObjectId(roundId) });
+export async function deleteRoundVotes(roundId: string, eventId: ObjectId) {
+  await db.collection<Vote>('votes').deleteMany({ eventId: eventId, round: new ObjectId(roundId) });
+  await db.collection<VotingStatus>('votingStatus').deleteMany({ eventId: eventId, roundId: new ObjectId(roundId) });
 }
 
 // Check if round is locked
