@@ -5,9 +5,11 @@ import { Button, Box, Typography, Stack, TextField } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { apiFetch } from '../../../lib/utils/fetch';
 
-interface Props {}
+interface AdminLoginFormProps {
+  eventId: string;
+}
 
-const AdminLoginForm: React.FC<Props> = ({}) => {
+const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ eventId }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
@@ -22,6 +24,7 @@ const AdminLoginForm: React.FC<Props> = ({}) => {
         isAdmin: true,
         username,
         password,
+        eventId: eventId, // Add eventId to the payload
       }),
     })
       .then(async (res) => {

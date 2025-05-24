@@ -10,12 +10,14 @@ export interface WSServerEmittedEvents {
 
 export interface WSClientEmittedEvents {
   loadVotingMember: (
+    eventId: string,
     member: WithId<Member>,
     votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
   loadRound: (
+    eventId: string,
     roundId: string,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
@@ -23,12 +25,14 @@ export interface WSClientEmittedEvents {
   ping: (callback: (response: { ok: boolean; error?: string }) => void) => void;
 
   voteSubmitted: (
+    eventId: string,
     member: WithId<Member>,
     votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 
   voteProcessed: (
+    eventId: string,
     member: WithId<Member>,
     votingStand: number,
     callback: (response: { ok: boolean; error?: string }) => void

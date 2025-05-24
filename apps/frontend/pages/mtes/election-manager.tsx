@@ -79,6 +79,8 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
 
+  const eventId = event?._id; // Get eventId from props
+
   const presentMembersCount = members.filter(member => member.isPresent).length;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -144,7 +146,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     }
   }, [activeRound]);
 
-  const { socket, connectionStatus } = useWebsocket([
+  const { socket, connectionStatus } = useWebsocket(eventId, [ // Pass eventId to useWebsocket
     {
       name: 'voteSubmitted',
       handler: (votingMember: WithId<Member>, standId: number) => {
@@ -199,7 +201,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     ) {
       operations.push(
         new Promise(resolve => {
-          socket.emit('loadVotingMember', null, previousStandId, (response: { ok: boolean }) => {
+        socket.emit('loadVotingMember', eventId, null, previousStandId, (response: { ok: boolean }) => {
             resolve({
               standId: previousStandId,
               memberId: null,
@@ -214,7 +216,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
 
     operations.push(
       new Promise(resolve => {
-        socket.emit('loadVotingMember', member, targetStandId, (response: { ok: boolean }) => {
+        socket.emit('loadVotingMember', eventId, member, targetStandId, (response: { ok: boolean }) => {
           resolve({
             standId: targetStandId,
             memberId: member._id.toString(),
@@ -267,7 +269,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
 
   const handleReturnMemberToBank = (member: WithId<Member>, previousStandId: number) => {
     console.log('Returning member to bank:', member, 'from stand:', previousStandId);
-    socket.emit('loadVotingMember', null, previousStandId, (response: { ok: boolean }) => {
+    socket.emit('loadVotingMember', eventId, null, previousStandId, (response: { ok: boolean }) => {
       if (response.ok) {
         setStandStatuses(prev => ({
           ...prev,
@@ -283,7 +285,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const handleStartRound = (round: WithId<Round>) => {
     console.log('Starting round:', round);
     setActiveRound(round);
-    socket.emit('loadRound', round._id, (response: { ok: boolean }) => {
+    socket.emit('loadRound', eventId, round._id, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Round started successfully');
         enqueueSnackbar(`הסבב ${round.name} החל`, { variant: 'success' });
@@ -305,7 +307,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     console.log('Stopping round:', activeRound);
     setActiveRound(null);
     setSelectedRound(null);
-    socket.emit('loadRound', null, (response: { ok: boolean }) => {
+    socket.emit('loadRound', eventId, null, (response: { ok: boolean }) => {
       if (response.ok) {
         console.log('Round stopped successfully');
         enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
@@ -324,7 +326,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   };
 
   const handleCancelMember = (standId: number) => {
-    socket.emit('loadVotingMember', null, standId, (response: { ok: boolean }) => {
+    socket.emit('loadVotingMember', eventId, null, standId, (response: { ok: boolean }) => {
       if (response.ok) {
         setStandStatuses(prev => ({
           ...prev,
@@ -380,7 +382,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
         if (resultsRes.ok) {
           const data = await resultsRes.json();
           setRoundResults(data.results);
-          socket.emit('loadRound', null, (response: { ok: boolean }) => {
+          socket.emit('loadRound', eventId, null, (response: { ok: boolean }) => {
             if (response.ok) {
               console.log('Round stopped successfully');
               enqueueSnackbar(`הסבב ${activeRound?.name} הסתיים`, { variant: 'info' });
@@ -400,7 +402,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
           enqueueSnackbar(`הסבב ${activeRound.name} ננעל והתוצאות מוצגות`, { variant: 'success' });
         }
 
-        socket.emit('loadRound', null, (response: { ok: boolean }) => {
+        socket.emit('loadRound', eventId, null, (response: { ok: boolean }) => {
           if (response.ok) {
             console.log('Round locked successfully');
             enqueueSnackbar(`הסבב ${activeRound.name} ננעל`, { variant: 'info' });

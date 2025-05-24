@@ -1,0 +1,74 @@
+# Documentation Updates for Multi-Event Feature
+
+This document outlines the necessary updates to project documentation following the implementation of the multi-event feature.
+
+## I. Backend API Changes
+
+### A. Authentication (`/api/auth/login`)
+
+1.  **Request Body Modification:** The request body for the `/api/auth/login` endpoint now **requires** an `eventId: string` field. Clients must include the ID of the event the user is attempting to log into.
+2.  **JWT Payload Update:** The JSON Web Token (JWT) issued upon successful login now includes the `eventId` in its payload. This `eventId` is used by subsequent requests to determine the event context.
+
+### B. Event-Scoped Endpoints
+
+1.  **General Scoping:** Most data-related API endpoints under `/api/events/` (for general users) and `/api/admin/events/` (for admin users) are now event-scoped. This means that data creation, retrieval, updates, and deletions are specific to the event context established by the user's session.
+2.  **Event ID Extraction (JWT):** For most authenticated routes under `/api/events/`, the `eventId` is automatically extracted from the JWT by a backend middleware. This `eventId` is then used to filter database queries and scope operations. Client applications generally do not need to pass `eventId` explicitly in the body or query for these routes once authenticated.
+3.  **Event ID from URL Parameters (Admin Routes):** Certain administrative routes require `eventId` to be passed as a URL parameter. These include:
+    *   `PUT /api/admin/events/:eventIdParam` (for updating a specific event's details)
+    *   `DELETE /api/admin/events/:eventIdParam/data` (for deleting transactional data of a specific event)
+    *   All routes under `/api/admin/events/:eventIdParam/users/` (e.g., listing users for a specific event, exporting user credentials for a specific event). In these cases, `:eventIdParam` in the URL path identifies the target event.
+
+### C. New Endpoints
+
+1.  **`GET /api/events/active-events`**:
+    *   **Purpose:** This new public endpoint retrieves a list of all currently active election events. An event is considered active if its `endDate` is greater than or equal to the current date.
+    *   **Response Structure:** Returns a JSON array of `ElectionEvent` objects. Each object includes details of an active event (e.g., `_id`, `name`, `startDate`, `endDate`, `votingStands`).
+
+## II. WebSocket API Changes
+
+### A. Connection
+
+1.  **`eventId` in Query Parameter:** Clients must now provide the `eventId` as a query parameter when establishing a WebSocket connection. For example: `const socket = io(WS_URL, { query: { eventId: "your_event_id" } });`. The backend will use this `eventId` to associate the socket with the correct event room and context.
+
+### B. Client-Emitted Events
+
+1.  The following client-emitted WebSocket events now require `eventId: string` as their **first** argument in the payload:
+    *   `loadVotingMember(eventId, member, votingStand, callback)`
+    *   `loadRound(eventId, roundId, callback)`
+    *   `voteSubmitted(eventId, member, votingStand, callback)`
+    *   `voteProcessed(eventId, member, votingStand, callback)`
+
+### C. Server-Emitted Events
+
+1.  **Event-Scoped Data:** Data objects (e.g., `Round`, `Member`) included in server-emitted WebSocket events are now event-scoped. Where applicable, these objects will contain an `eventId` field, confirming their association with a specific event.
+2.  **Targeted Broadcasts:** Server-side event broadcasts are now targeted to specific rooms, which are named based on the `eventId`. This ensures that updates and notifications are only sent to clients connected to the relevant event.
+
+## III. Frontend User Experience
+
+### A. Login Flow
+
+1.  **Event Selection Step:** The login page (`/login`) now features an event selection step. Before the username/password fields are presented, a dropdown or chooser component will display a list of active election events fetched from the backend.
+2.  **Mandatory Event Selection:** Users must select an event from this list before they can proceed to enter their login credentials. The login forms (for both admin and regular users) will only become active/visible after an event is chosen.
+
+### B. Application Context
+
+1.  **Event-Scoped Operation:** Once logged in, the application operates entirely within the context of the event selected during login. All data displayed (e.g., rounds, members, voting status) and actions performed (e.g., starting a round, submitting a vote) are scoped to this specific event.
+
+## IV. Database Schema Changes (For Developers)
+
+### A. `eventId` Field Addition
+
+The following MongoDB collections/types now include an `eventId: ObjectId` field to associate records with a specific election event:
+*   `Round` (in the `rounds` collection)
+*   `Member` (in the `members` collection)
+*   `ElectionState` (in the `election-state` collection, effectively making each document an "EventState")
+*   `Vote` (in the `votes` collection)
+*   `VotingStatus` (in the `votingStatus` collection)
+
+### B. User-Event Association
+
+User association with specific events is primarily managed through the `ElectionEvent.eventUsers` array (which lists roles allowed for that event) and the user's global role (`User.role` and `User.isAdmin`). The `eventId` from the JWT (and subsequently on the `req` object or WebSocket `socket` object) determines the current event context for user actions.
+
+### C. Updated CRUD Functions
+
+Database Create, Read, Update, Delete (CRUD) functions in `libs/database/src/lib/crud/` have been updated to support `eventId` filtering. Most functions that operate on event-specific data now accept an `eventId` as a parameter to ensure operations are correctly scoped.

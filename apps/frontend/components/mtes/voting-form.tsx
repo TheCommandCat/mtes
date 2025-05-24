@@ -9,6 +9,7 @@ import { useRef, useState } from 'react';
 import Signature, { type SignatureRef } from '@uiw/react-signature';
 
 interface VotingFormProps {
+  eventId: string; // Added eventId prop
   round: WithId<Round>;
   member: WithId<Member>;
   votingStandId: number;
@@ -21,6 +22,7 @@ interface RoleErrors {
 }
 
 export const VotingForm = ({
+  eventId, // Destructure eventId
   round,
   member,
   votingStandId,
@@ -78,7 +80,7 @@ export const VotingForm = ({
     };
 
     try {
-      socket.emit('voteSubmitted', member, votingStandId);
+      socket.emit('voteSubmitted', eventId, member, votingStandId); // Added eventId
 
       const response = await apiFetch('/api/events/vote', {
         method: 'POST',
@@ -91,7 +93,7 @@ export const VotingForm = ({
       }
 
       enqueueSnackbar('ההצבעה נשלחה בהצלחה!', { variant: 'success' });
-      socket.emit('voteProcessed', member, votingStandId);
+      socket.emit('voteProcessed', eventId, member, votingStandId); // Added eventId
       onVoteComplete();
       resetForm();
       signatureRef.current?.clear();

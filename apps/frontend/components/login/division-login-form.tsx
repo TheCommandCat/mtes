@@ -12,9 +12,10 @@ import { localizedRoles } from '../../localization/roles';
 
 interface DivisionLoginFormProps {
   votingStands: number;
+  eventId: string;
 }
 
-const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) => {
+const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands, eventId }) => {
   const [role, setRole] = useState<Role>('' as Role);
   const [password, setPassword] = useState<string>('');
   const [association, setAssociation] = useState<number>();
@@ -34,11 +35,12 @@ const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) =
           ? {
               roleAssociation: {
                 type: 'stand',
-                value: association
-              }
+                value: association,
+              },
             }
-          : undefined)
-      })
+          : undefined),
+        eventId: eventId, // Add eventId to the payload
+      }),
     })
       .then(async res => {
         const data = await res.json();

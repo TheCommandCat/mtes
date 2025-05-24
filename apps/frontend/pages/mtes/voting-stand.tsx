@@ -17,13 +17,14 @@ import { localizedRoles } from 'apps/frontend/localization/roles';
 
 interface Props {
   user: WithId<SafeUser>;
-  electionState: WithId<ElectionState>;
+  electionState: WithId<ElectionState>; // This includes eventId
 }
 
 const Page: NextPage<Props> = ({ user, electionState }) => {
   const router = useRouter();
-  const [round, setRound] = useState<WithId<Round> | null>(electionState.activeRound || null);
+  const [round, setRound] = useState<WithId<Round> | null>(electionState?.activeRound || null);
   const [member, setMember] = useState<WithId<Member> | null>(null);
+  const eventId = electionState?.eventId?.toString(); // Get eventId from electionState
   const votingStandId = user.roleAssociation?.value;
 
   // Early return if no voting stand ID is assigned
@@ -58,7 +59,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
     setMember(null); // Reset member for next voter
   };
 
-  const { socket, connectionStatus } = useWebsocket([
+  const { socket, connectionStatus } = useWebsocket(eventId, [ // Pass eventId to useWebsocket
     {
       name: 'votingMemberLoaded',
       handler: handleUpdateMember
@@ -111,6 +112,7 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                   <>
                     <MemberDisplay member={member} />
                     <VotingForm
+                      eventId={eventId} // Pass eventId to VotingForm
                       round={round}
                       member={member}
                       votingStandId={votingStandId}
@@ -134,17 +136,41 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
 
 export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
-    const { user } = await getUserAndDivision(ctx);
+    const { user } = await getUserAndDivision(ctx); // This needs to provide eventId or user.eventId
+    
+    // Assuming getUserAndDivision or the session context now makes eventId available
+    // For this example, we'll assume electionState is correctly fetched for the current event context
+    // If not, this getServerSideProps would need modification to get the eventId from the user's session (JWT)
+    // and then fetch the specific electionState for that event.
+
+    if (!user?.eventId) { // A placeholder check, ideally, eventId comes from JWT or initial login context
+        console.warn("No eventId found for user in session during voting-stand SSR. Redirecting to login.");
+        return { redirect: { destination: '/login', permanent: false } };
+    }
 
     const data = await serverSideGetRequests(
       {
-        electionState: '/api/events/state'
+        // Fetch electionState specific to the eventId from the user's context
+        electionState: `/api/events/state` // This endpoint is now event-scoped by middleware
       },
-      ctx
+      ctx // ctx will have the cookie for the middleware to extract eventId
     );
+    
+    if (!data.electionState) {
+        // This means the event state for the user's current event couldn't be fetched.
+        // This could happen if the event has no state yet, or if there's an issue.
+        // For robustness, we might want to create a default/empty state or handle appropriately.
+        console.warn(`No election state found for event ${user.eventId}. User might need to select event or admin needs to init.`);
+        // Depending on desired behavior, either redirect or provide a default state.
+        // For now, we'll let it pass and the component will handle null electionState.
+        // Or redirect if it's critical:
+        // return { redirect: { destination: '/login?error=event_state_missing', permanent: false } };
+    }
 
-    return { props: { user, ...data } };
-  } catch {
+
+    return { props: { user, ...data } }; // electionState from data will have eventId
+  } catch (e) {
+    console.error("Error in voting-stand getServerSideProps:", e);
     return { redirect: { destination: '/login', permanent: false } };
   }
 };

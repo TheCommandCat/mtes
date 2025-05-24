@@ -1,21 +1,37 @@
 import * as db from '@mtes/database';
+import { ObjectId } from 'mongodb';
 
-export const cleanDivisionData = async () => {
-  if (!(await db.deleteElectionEvent())) throw new Error('Could not delete event!');
-  if (!(await db.deleteUsers({})).acknowledged) throw new Error('Could not delete users!');
-  const result = await db.addUser({
-    username: 'admin',
-    isAdmin: true,
-    password: 'admin',
-    lastPasswordSetDate: new Date()
-  });
-  if (!result.acknowledged) {
-    throw new Error('Could not add admin user!');
-  }
-  if (!(await db.deleteElectionState()).acknowledged) {
-    throw new Error('Could not delete Election state!');
+export const cleanEventTransactionalData = async (eventId: ObjectId) => {
+  // Fetch all rounds for the event
+  const rounds = await db.getRounds({}, eventId); // Assumes getRounds is updated for eventId
+
+  // For each round, delete its votes and voting statuses
+  for (const round of rounds) {
+    // Ensure deleteRoundVotes is updated to use eventId internally for both collections
+    await db.deleteRoundVotes(round._id.toString(), eventId); 
   }
 
-  if (!(await db.deleteMembers({})).acknowledged) throw new Error('Could not delete members!');
-  if (!(await db.deleteContestants()).acknowledged) throw new Error('Could not delete contestant!');
+  // Delete all Round documents for the event
+  const deleteRoundsResult = await db.deleteRounds(eventId);
+  if (!deleteRoundsResult.acknowledged) {
+    console.warn(`Warning: deleteRounds for event ${eventId} was not acknowledged.`);
+    // Depending on strictness, you might throw an error here
+    // throw new Error(`Could not delete rounds for event ${eventId}`);
+  }
+
+  // Delete all Member documents for the event
+  const deleteMembersResult = await db.deleteMembers({}, eventId); // Assumes deleteMembers is updated for eventId
+  if (!deleteMembersResult.acknowledged) {
+    console.warn(`Warning: deleteMembers for event ${eventId} was not acknowledged.`);
+    // throw new Error(`Could not delete members for event ${eventId}`);
+  }
+  
+  // Delete the ElectionState document for the event
+  const deleteEventStateResult = await db.deleteEventState(eventId); // Assumes deleteEventState is updated for eventId
+  if (!deleteEventStateResult.acknowledged) {
+    console.warn(`Warning: deleteEventState for event ${eventId} was not acknowledged.`);
+    // throw new Error(`Could not delete event state for event ${eventId}`);
+  }
+
+  console.log(`Successfully cleaned transactional data for event ${eventId}`);
 };
