@@ -8,6 +8,7 @@
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socket.io&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Nx](https://img.shields.io/badge/Nx-143055?style=for-the-badge&logo=nx&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ## ✨ Features
 
@@ -58,6 +59,33 @@ npm install
 ```bash
 npm run dev
 ```
+
+## 🐳 Deploying with Docker Compose
+
+Deploy the application swiftly using Docker Compose. 🚀 Ensure Docker is running.
+
+> [!IMPORTANT] 
+> Before launching, configure your environment variables. The backend service needs an `apps/backend/.env.local` file (copy `apps/backend/.env` if needed). The `JWT_SECRET` is crucial. ✨
+
+Run this from the project root:
+
+```bash
+docker-compose up -d
+```
+
+This builds and starts frontend and backend services in detached mode.
+
+Access:
+- **Frontend**: `http://localhost:4200` 🖥️
+- **Backend API**: `http://localhost:3333` ⚙️
+
+To stop:
+
+```bash
+docker-compose down
+```
+
+Happy deploying! 🎉
 
 ## 🏗️ Project Structure
 
