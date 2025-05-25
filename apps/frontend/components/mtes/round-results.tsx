@@ -42,7 +42,39 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
 
       {round.roles.map(role => {
         const roleResults = (results[role.role] || []) as RoleResult[];
-        const maxVotes = Math.max(...roleResults.map((r: RoleResult) => r.votes));
+        if (roleResults.length === 0) {
+          return (
+            <Box key={role.role} sx={{ mb: 6 }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  mb: 3,
+                  color: 'text.primary',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  '&::before, &::after': {
+                    content: '""',
+                    flex: 1,
+                    borderBottom: '2px solid',
+                    borderImage:
+                      'linear-gradient(to right, transparent, primary.main, transparent) 1',
+                    mx: 2
+                  }
+                }}
+              >
+                {role.role}
+              </Typography>
+              <Typography sx={{ textAlign: 'center', color: 'text.secondary', mt: 2 }}>
+                אין נתונים להצגה עבור תפקיד זה.
+              </Typography>
+            </Box>
+          );
+        }
+
+        const maxVotes = Math.max(0, ...roleResults.map((r: RoleResult) => r.votes));
+        const potentialWinners = roleResults.filter(r => r.votes === maxVotes && maxVotes > 0);
+        const isDrawForRole = potentialWinners.length > 1;
 
         return (
           <Box key={role.role} sx={{ mb: 6 }}>
@@ -67,10 +99,54 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
               {role.role}
             </Typography>
 
+            {isDrawForRole && (
+              <Typography
+                variant="subtitle1"
+                color="warning.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                תיקו בין המתמודדים המובילים!
+              </Typography>
+            )}
+
             <Box sx={{ px: 2 }}>
-              {roleResults.map((result: RoleResult, index: number) => {
-                const percentage = (result.votes / maxVotes) * 100;
-                const isWinning = index === 0 && result.votes > 0;
+              {roleResults.map((result: RoleResult) => {
+                const percentage = maxVotes > 0 ? (result.votes / maxVotes) * 100 : 0;
+                const isContestantPartOfDraw =
+                  isDrawForRole && result.votes === maxVotes && maxVotes > 0;
+                const isClearWinner = !isDrawForRole && result.votes === maxVotes && maxVotes > 0;
+
+                let bgColor = 'background.default';
+                let borderColor = 'divider';
+                let scale = 'scale(1)';
+                let shadow = 'none';
+                let avatarBgColor = 'primary.main';
+                let nameFontWeight = 'medium';
+                let nameColor = 'text.primary';
+                let votesColor = 'primary.main';
+                let progressBarBgColor = 'primary.soft';
+
+                if (isClearWinner) {
+                  bgColor = 'success.soft';
+                  borderColor = 'success.main';
+                  scale = 'scale(1.02)';
+                  shadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  avatarBgColor = 'success.main';
+                  nameFontWeight = 'bold';
+                  nameColor = 'success.dark';
+                  votesColor = 'success.dark';
+                  progressBarBgColor = 'success.soft';
+                } else if (isContestantPartOfDraw) {
+                  bgColor = 'warning.soft';
+                  borderColor = 'warning.main';
+                  scale = 'scale(1.01)';
+                  shadow = '0 3px 10px rgba(0,0,0,0.08)';
+                  avatarBgColor = 'warning.main';
+                  nameFontWeight = 'bold';
+                  nameColor = 'warning.dark';
+                  votesColor = 'warning.dark';
+                  progressBarBgColor = 'warning.soft';
+                }
 
                 return (
                   <Box
@@ -79,12 +155,12 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                       mb: 2,
                       p: 2,
                       borderRadius: 2,
-                      bgcolor: isWinning ? 'success.soft' : 'background.default',
+                      bgcolor: bgColor,
                       border: '1px solid',
-                      borderColor: isWinning ? 'success.main' : 'divider',
+                      borderColor: borderColor,
                       transition: 'all 0.3s ease',
-                      transform: isWinning ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: isWinning ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
+                      transform: scale,
+                      boxShadow: shadow,
                       position: 'relative',
                       overflow: 'hidden'
                     }}
@@ -102,7 +178,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                         sx={{
                           width: 56,
                           height: 56,
-                          bgcolor: isWinning ? 'success.main' : 'primary.main',
+                          bgcolor: avatarBgColor,
                           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}
                       >
@@ -113,8 +189,8 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                         <Typography
                           variant="h6"
                           sx={{
-                            fontWeight: isWinning ? 'bold' : 'medium',
-                            color: isWinning ? 'success.dark' : 'text.primary'
+                            fontWeight: nameFontWeight,
+                            color: nameColor
                           }}
                         >
                           {result.contestant.name}
@@ -129,7 +205,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                           variant="h5"
                           sx={{
                             fontWeight: 'bold',
-                            color: isWinning ? 'success.dark' : 'primary.main'
+                            color: votesColor
                           }}
                         >
                           {result.votes}
@@ -137,6 +213,15 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                         <Typography variant="caption" color="text.secondary">
                           קולות
                         </Typography>
+                        {totalMembers > 0 && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block', mt: 0.25 }}
+                          >
+                            ({Math.round((result.votes / totalMembers) * 100)}% מהמליאה)
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
 
@@ -148,8 +233,8 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                         left: 0,
                         height: '100%',
                         width: `${percentage}%`,
-                        bgcolor: isWinning ? 'success.soft' : 'primary.soft',
-                        opacity: 0.15,
+                        bgcolor: progressBarBgColor,
+                        opacity: 0.2, // Adjusted opacity for better visibility with warning colors
                         transition: 'width 1s ease-out'
                       }}
                     />
@@ -199,7 +284,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
             fontWeight: 'medium'
           }}
         >
-          {Math.round((votedMembers.length / totalMembers) * 100)}% הצבעה הושלמה
+          {Math.round((votedMembers.length / totalMembers) * 100)}% אחוז מהמליאה הצביעו
         </Typography>
       </Box>
     </Paper>
