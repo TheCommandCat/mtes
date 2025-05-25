@@ -1,0 +1,40 @@
+###########################################
+# MTES Application Stack Configuration
+###########################################
+
+services:
+  #-----------------------------------------
+  # Backend Service
+  #-----------------------------------------
+  backend:    
+    build:
+        context: .
+        dockerfile: apps/backend/Dockerfile    
+    ports:
+        - "3333:3333"
+    env_file:
+        - apps/backend/.env.local
+    networks:
+        - app-network
+  #-----------------------------------------
+  # Frontend Service
+  #-----------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "4200:4200"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3333
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
+#-----------------------------------------
+# Network Configuration
+#-----------------------------------------
+networks:
+  app-network:
+    driver: bridge

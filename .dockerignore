@@ -1,0 +1,33 @@
+# General ignores
+.git
+.gitignore
+node_modules
+npm-debug.log
+README.md
+LICENSE
+.vscode
+.idea
+
+# Nx specific
+.nx/cache
+tmp
+dist # We let each Dockerfile copy from dist selectively if needed, but don't send the whole thing to daemon initially for all stages.
+
+# Application-specific node_modules if any (though root node_modules should cover it)
+# apps/*/node_modules # Covered by root node_modules if it's a single install
+# libs/*/node_modules
+
+# Test reports
+coverage
+junit.xml
+
+# Environment files (should be handled by docker-compose or build args, not copied directly if sensitive)
+# .env
+# .env.local
+# apps/backend/.env.local # Handled by env_file, ensure it's not copied into the image by mistake
+# apps/frontend/.env*
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+apps/*/Dockerfile

@@ -1,0 +1,8 @@
+# Exclude files specific to backend development if not needed in the image,
+# assuming the build context IS apps/backend.
+# Our primary .dockerignore is at the root for docker-compose builds.
+node_modules
+# 'dist' for backend is the output of `nx build backend`.
+# The backend Dockerfile copies from a host 'dist/apps/backend'.
+# If building from 'apps/backend' context, this local 'dist' (if any) should be ignored.
+dist

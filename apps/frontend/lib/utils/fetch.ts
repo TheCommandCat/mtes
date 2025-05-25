@@ -2,8 +2,8 @@ import { Division, SafeUser } from '@mtes/types';
 import { WithId } from 'mongodb';
 import { GetServerSidePropsContext } from 'next';
 
-export const getApiBase = (forceClient = false) => {
-  return 'http://localhost:3333';
+export const getApiBase = () => {
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 };
 
 export const apiFetch = (
@@ -22,8 +22,8 @@ export const apiFetch = (
     }
     headers = { Authorization: `Bearer ${token}`, ...init?.headers };
   }
-
-  return fetch('http://localhost:3333' + path, {
+  const apiBase = getApiBase();
+  return fetch(apiBase + path, {
     credentials: 'include',
     headers,
     ...init
@@ -43,7 +43,6 @@ export const serverSideGetRequests = async (
 ) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: { [key: string]: any } = {};
-
 
   await Promise.all(
     Object.entries(toFetch).map(async ([key, urlPath]) => {

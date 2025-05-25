@@ -62,7 +62,6 @@
     "esbuild": "^0.25.4",
     "nx": "20.3.2",
     "prettier": "^2.6.2",
-    "tslib": "^2.3.0",
     "typescript": "~5.6.2",
     "webpack-cli": "^5.1.4"
   }
