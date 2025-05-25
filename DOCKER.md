@@ -8,17 +8,6 @@ This document outlines how to use Docker and Docker Compose to build and run thi
 *   A terminal or command prompt.
 *   Ensure you are in the root directory of this monorepo.
 
-## Initial Setup
-
-Before running Docker Compose for the first time, or if you've made changes that affect the backend's built distributables:
-
-1.  **Build the Backend Application:**
-    The backend service's Docker image expects the backend application to be already built on your host machine. Run the following command from the monorepo root:
-    ```bash
-    npx nx build backend
-    ```
-    This step is necessary because the `apps/backend/Dockerfile` copies files directly from the `dist/apps/backend` directory.
-
 ## Building and Running with Docker Compose
 
 1.  **Build and Start Services:**
@@ -65,6 +54,5 @@ Before running Docker Compose for the first time, or if you've made changes that
 *   **Frontend Build Issues (`ProjectsWithNoNameError` or similar):**
     Ensure your root `.dockerignore` file correctly excludes `dist/` and `node_modules/`. The refined `COPY` commands in `apps/frontend/Dockerfile` are designed to prevent this, but ensure no local `dist` artifacts are inadvertently copied into the build stage.
 *   **Backend Not Starting:**
-    *   Ensure you have run `npx nx build backend` on your host *before* `docker-compose up --build`.
     *   Check logs: `docker-compose logs backend`.
 *   **Port Conflicts:** If other applications on your host machine are using ports `3000` or `3001`, you can change the host-side port mapping in `docker-compose.yml`. For example, change `ports: - "3000:3000"` to `ports: - "3005:3000"` to map the container's port `3000` to your host's port `3005`.
