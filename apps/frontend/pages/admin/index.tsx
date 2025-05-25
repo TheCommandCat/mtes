@@ -84,6 +84,7 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
         enqueueSnackbar(event ? 'האירוע עודכן בהצלחה' : 'האירוע נוצר בהצלחה', {
           variant: 'success'
         });
+        router.reload();
       })
       .catch(() =>
         enqueueSnackbar(
@@ -157,7 +158,7 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
       <Stack spacing={2}>
         {members.map((member, index) => (
           <Grid container spacing={2} key={index} alignItems="center">
-            <Grid size={5}>
+            <Grid size={4}>
               <TextField
                 fullWidth
                 label="שם"
@@ -165,10 +166,10 @@ const Page: NextPage<Props> = ({ user, event, initMembers }) => {
                 onChange={e => updateMember(index, 'name', e.target.value)}
               />
             </Grid>
-            <Grid size={5}>
+            <Grid size={4}>
               <TextField
                 fullWidth
-                label="עיר"
+                label="רשות"
                 value={member.city}
                 onChange={e => updateMember(index, 'city', e.target.value)}
               />
