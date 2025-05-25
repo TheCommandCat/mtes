@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import divisionUsersRouter from './users';
-import { ElectionEvent, ElectionState, User } from '@mtes/types';
+import { ElectionEvent, ElectionState, User, Member } from '@mtes/types'; // Added Member import
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 import { CreateVotingStandUsers } from 'apps/backend/src/lib/schedule/voting-stands-users';
@@ -32,8 +32,23 @@ router.post(
       return;
     }
 
-    if (eventData.members.length <= 0 || eventData.members.every(m => m.name && m.city)) {
-      res.status(400).json({ error: 'כל החברים חייבים לכלול שם ועיר' });
+    // Validate members
+    if (
+      !eventData.members ||
+      !Array.isArray(eventData.members) ||
+      eventData.members.length === 0 ||
+      !eventData.members.every(
+        (member: Member) =>
+          member &&
+          typeof member.name === 'string' &&
+          member.name.trim() !== '' &&
+          typeof member.city === 'string' &&
+          member.city.trim() !== ''
+      )
+    ) {
+      res.status(400).json({
+        error: 'יש לספק רשימת חברים. כל חבר חייב לכלול שם ועיר מלאים, ולפחות חבר אחד נדרש.'
+      });
       return;
     }
 
