@@ -1,5 +1,6 @@
-import { Box, Typography, Paper, Chip } from '@mui/material';
+import { Box, Typography, Paper, useTheme } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 interface MemberPresenceStatusProps {
   presentCount: number;
@@ -7,94 +8,142 @@ interface MemberPresenceStatusProps {
 }
 
 export const MemberPresenceStatus = ({ presentCount, totalCount }: MemberPresenceStatusProps) => {
+  const theme = useTheme();
   const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
   const isLowPresence = percentage < 66;
-  const missingMembers = totalCount - presentCount;
+  const requiredMembersForQuorum = totalCount > 0 ? Math.ceil(totalCount * 0.66) : 0;
 
   if (isLowPresence) {
+    const membersLeftForQuorum = Math.max(0, requiredMembersForQuorum - presentCount);
     return (
       <Paper
         elevation={2}
         sx={{
-          p: 2,
+          p: { xs: 2, sm: 3 },
           mb: 2,
-          background: 'linear-gradient(to right, #fff3e0, #ffcc80)',
+          backgroundColor: 'rgb(255, 244, 229)', // Keeping custom subtle background
+          border: '1px solid rgb(255, 224, 178)', // Keeping custom subtle border
           borderRadius: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
           textAlign: 'center'
         }}
       >
-        <Typography variant="h6" color="warning.dark" gutterBottom>
-          סטטוס נוכחות
+        <WarningAmberIcon
+          sx={{
+            fontSize: { xs: '2.5rem', sm: '3rem' },
+            color: theme.palette.warning.main,
+            mb: 0.5
+          }}
+        />
+        <Typography
+          variant="h5"
+          color={theme.palette.warning.dark}
+          sx={{ fontWeight: 'bold', mb: 1 }} // Removed gutterBottom, adjusted mb
+        >
+          נדרשת נוכחות נוספת
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Typography variant="h4" fontWeight="bold" color="warning.dark">
-            {presentCount}
+        <Typography
+          variant="h1"
+          fontWeight="bold"
+          color={theme.palette.error.main} // Using error color for critical number
+          sx={{ my: 1, lineHeight: 1.1 }}
+        >
+          {membersLeftForQuorum}
+        </Typography>
+        <Typography variant="h6" color={theme.palette.warning.dark} sx={{ mb: 2 }}>
+          חברים לנוכחות תקינה (66%)
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'baseline',
+            gap: 0.5,
+            my: 1.5,
+            opacity: 0.85
+          }}
+        >
+          <Typography variant="body1" color="text.secondary">
+            נוכחים:
           </Typography>
-          <Typography variant="h5" color="warning.dark">
-            /
+          <Typography variant="body1" fontWeight="medium" color={theme.palette.warning.dark}>
+            {presentCount} / {totalCount}
           </Typography>
-          <Typography variant="h4" fontWeight="bold" color="warning.dark">
-            {totalCount}
+          <Typography variant="body1" color="text.secondary">
+            ({percentage}%)
           </Typography>
         </Box>
-        <Typography variant="body1" color="warning.dark" sx={{ mb: 0.5 }}>
-          {percentage}% מהחברים נוכחים
-        </Typography>
-        <Typography variant="subtitle2" color="warning.dark" sx={{ mb: 0.5 }}>
-          חסרים {missingMembers} חברים לנוכחות תקינה.
-        </Typography>
-        <Typography variant="subtitle1" color="error.dark" fontWeight="bold">
-          לקיום בחירות תקינות נדרשת נוכחות של לפחות 66% מהחברים.
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mt: 1, px: 1, display: 'block' }}
+        >
+          לקיום בחירות תקינות נדרשת נוכחות של לפחות {requiredMembersForQuorum} מתוך {totalCount}{' '}
+          חברים.
         </Typography>
       </Paper>
     );
   } else {
-    const requiredMembersForQuorum = Math.ceil(totalCount * 0.66);
     const extraMembers = presentCount - requiredMembersForQuorum;
 
     return (
-      <Chip
-        icon={<CheckCircleOutlineIcon sx={{ fontSize: '1.1rem', color: 'success.dark' }} />}
-        label={
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-            <Typography variant="caption" sx={{ fontWeight: 'medium' }}>
-              נוכחות תקינה:
-            </Typography>
-            <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'success.dark' }}>
-              {`${presentCount}/${totalCount}`}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {`(${percentage}%)`}
-            </Typography>
-            {extraMembers > 0 ? (
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 'bold', color: 'success.main', ml: 0.25 }}
-              >
-                {`(+${extraMembers} מעל הנדרש)`}
-              </Typography>
-            ) : (
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 'bold', color: 'error.main', ml: 0.25 }}
-              >
-                {`בדיוק`}
-              </Typography>
-            )}
-          </Box>
-        }
-        variant="outlined"
+      <Box
         sx={{
-          height: 'auto',
-          minHeight: '30px',
-          padding: '4px 10px',
-          backgroundColor: '#e8f5e9',
-          borderColor: '#a5d6a7'
+          p: { xs: '6px 12px', sm: '8px 16px' },
+          mb: 2,
+          backgroundColor: 'rgb(232, 245, 233)', // Reverted to softer green
+          border: '1px solid rgb(165, 214, 167)', // Reverted to softer green border
+          borderRadius: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1,
+          textAlign: 'center',
+          width: 'fit-content',
+          margin: '0 auto 16px auto'
         }}
-      />
+      >
+        <CheckCircleOutlineIcon
+          sx={{ fontSize: { xs: '1.1rem', sm: '1.2rem' }, color: 'rgb(46, 125, 50)' }} // Reverted to specific RGB green
+        />
+        <Typography
+          variant="body2"
+          color="rgb(46, 125, 50)" // Reverted to specific RGB green
+          fontWeight="medium"
+          sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}
+        >
+          נוכחות תקינה:
+          <Typography component="span" variant="body2" fontWeight="bold" color="rgb(27, 94, 32)">
+            {' '}
+            {/* Reverted to specific RGB green */}
+            {presentCount}/{totalCount}
+          </Typography>
+          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.25 }}>
+            ({percentage}%)
+          </Typography>
+          {extraMembers > 0 && (
+            <Typography
+              component="span"
+              variant="caption"
+              fontWeight="bold"
+              color="rgb(27, 94, 32)" // Reverted to specific RGB green
+              sx={{ ml: 0.5 }}
+            >
+              ({extraMembers}+ מעל הנדרש)
+            </Typography>
+          )}
+          {extraMembers === 0 && (
+            <Typography
+              component="span"
+              variant="caption"
+              fontWeight="medium"
+              color="rgb(27, 94, 32)" // Reverted to specific RGB green
+              sx={{ ml: 0.5 }}
+            >
+              (בדיוק הנדרש)
+            </Typography>
+          )}
+        </Typography>
+      </Box>
     );
   }
 };
