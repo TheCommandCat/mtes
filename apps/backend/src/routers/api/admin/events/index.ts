@@ -96,13 +96,12 @@ router.put(
     const body = req.body;
 
     if (body.startDate) body.startDate = new Date(body.startDate);
-    if (body.endDate) body.endDate = new Date(body.endDate);
-
-    const validElectionEvent = {
+    if (body.endDate) body.endDate = new Date(body.endDate);    const validElectionEvent = {
       name: body.name,
       eventUsers: body.eventUsers,
       hasState: body.hasState,
       votingStands: body.votingStands,
+      electionThreshold: body.electionThreshold,
       startDate: body.startDate,
       endDate: body.endDate
     };

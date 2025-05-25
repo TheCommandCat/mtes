@@ -10,6 +10,7 @@ export interface ElectionEvent {
   eventUsers: Array<EventUserAllowedRoles>;
   votingStands: number;
   hasState: boolean;
+  electionThreshold?: number;
 }
 
 export interface DivisionWithEvent extends Division {

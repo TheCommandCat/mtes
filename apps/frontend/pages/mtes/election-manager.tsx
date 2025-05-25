@@ -573,12 +573,12 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                       />
 
                       {roundResults ? (
-                        <>
-                          <RoundResults
+                        <>                          <RoundResults
                             round={activeRound}
                             results={roundResults}
                             votedMembers={votedMembers}
                             totalMembers={members.length}
+                            electionThreshold={event.electionThreshold}
                           />
                           <MembersGrid
                             members={members}

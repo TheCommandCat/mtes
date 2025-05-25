@@ -12,9 +12,10 @@ interface RoundResultsProps {
   results: Record<string, RoleResult[]>;
   votedMembers: WithId<VotingStatus>[];
   totalMembers: number;
+  electionThreshold?: number;
 }
 
-export const RoundResults = ({ round, results, votedMembers, totalMembers }: RoundResultsProps) => {
+export const RoundResults = ({ round, results, votedMembers, totalMembers, electionThreshold = 50 }: RoundResultsProps) => {
   return (
     <Paper
       elevation={3}
@@ -70,11 +71,12 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
               </Typography>
             </Box>
           );
-        }
-
-        const maxVotes = Math.max(0, ...roleResults.map((r: RoleResult) => r.votes));
+        }        const maxVotes = Math.max(0, ...roleResults.map((r: RoleResult) => r.votes));
+        const totalVotesForRole = votedMembers.length; // Total number of votes cast
+        const thresholdVotes = (electionThreshold / 100) * totalVotesForRole;
         const potentialWinners = roleResults.filter(r => r.votes === maxVotes && maxVotes > 0);
         const isDrawForRole = potentialWinners.length > 1;
+        const hasThresholdWinner = maxVotes >= thresholdVotes && maxVotes > 0 && !isDrawForRole;
 
         return (
           <Box key={role.role} sx={{ mb: 6 }}>
@@ -97,9 +99,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
               }}
             >
               {role.role}
-            </Typography>
-
-            {isDrawForRole && (
+            </Typography>            {isDrawForRole && (
               <Typography
                 variant="subtitle1"
                 color="warning.main"
@@ -109,12 +109,32 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
               </Typography>
             )}
 
-            <Box sx={{ px: 2 }}>
+            {!hasThresholdWinner && !isDrawForRole && maxVotes > 0 && (
+              <Typography
+                variant="subtitle1"
+                color="error.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}%)
+              </Typography>
+            )}
+
+            {hasThresholdWinner && (
+              <Typography
+                variant="subtitle1"
+                color="success.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                🎉 יש מנצח שעבר את אחוז הכשירות!
+              </Typography>
+            )}            <Box sx={{ px: 2 }}>
               {roleResults.map((result: RoleResult) => {
                 const percentage = maxVotes > 0 ? (result.votes / maxVotes) * 100 : 0;
+                const votesPercentage = totalVotesForRole > 0 ? (result.votes / totalVotesForRole) * 100 : 0;
                 const isContestantPartOfDraw =
                   isDrawForRole && result.votes === maxVotes && maxVotes > 0;
-                const isClearWinner = !isDrawForRole && result.votes === maxVotes && maxVotes > 0;
+                const isClearWinner = hasThresholdWinner && result.votes === maxVotes && maxVotes > 0;
+                const isHighestButBelowThreshold = !isDrawForRole && result.votes === maxVotes && maxVotes > 0 && !hasThresholdWinner;
 
                 let bgColor = 'background.default';
                 let borderColor = 'divider';
@@ -135,8 +155,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                   nameFontWeight = 'bold';
                   nameColor = 'success.dark';
                   votesColor = 'success.dark';
-                  progressBarBgColor = 'success.soft';
-                } else if (isContestantPartOfDraw) {
+                  progressBarBgColor = 'success.soft';                } else if (isContestantPartOfDraw) {
                   bgColor = 'warning.soft';
                   borderColor = 'warning.main';
                   scale = 'scale(1.01)';
@@ -146,6 +165,16 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                   nameColor = 'warning.dark';
                   votesColor = 'warning.dark';
                   progressBarBgColor = 'warning.soft';
+                } else if (isHighestButBelowThreshold) {
+                  bgColor = 'error.soft';
+                  borderColor = 'error.main';
+                  scale = 'scale(1.01)';
+                  shadow = '0 3px 10px rgba(0,0,0,0.08)';
+                  avatarBgColor = 'error.main';
+                  nameFontWeight = 'bold';
+                  nameColor = 'error.dark';
+                  votesColor = 'error.dark';
+                  progressBarBgColor = 'error.soft';
                 }
 
                 return (
@@ -209,10 +238,18 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                           }}
                         >
                           {result.votes}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </Typography>                        <Typography variant="caption" color="text.secondary">
                           קולות
                         </Typography>
+                        {totalVotesForRole > 0 && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block', mt: 0.25 }}
+                          >
+                            ({votesPercentage.toFixed(1)}% מהקולות)
+                          </Typography>
+                        )}
                         {totalMembers > 0 && (
                           <Typography
                             variant="caption"
@@ -275,8 +312,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
           <Typography component="span" variant="h5" color="text.secondary">
             מתוך {totalMembers}
           </Typography>
-        </Typography>
-        <Typography
+        </Typography>        <Typography
           variant="body1"
           sx={{
             mt: 1,
@@ -285,6 +321,21 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
           }}
         >
           {Math.round((votedMembers.length / totalMembers) * 100)}% אחוז מהמליאה הצביעו
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            mt: 2,
+            color: 'info.main',
+            fontWeight: 'medium',
+            px: 2,
+            py: 1,
+            bgcolor: 'info.soft',
+            borderRadius: 1,
+            display: 'inline-block'
+          }}
+        >
+          אחוז כשירות נדרש לניצחון: {electionThreshold}%
         </Typography>
       </Box>
     </Paper>
