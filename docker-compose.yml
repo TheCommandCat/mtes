@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: . # Root of the monorepo
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - "3001:3000" # Map host port 3001 to container port 3000 (backend's ENV PORT)
+    env_file:
+      - apps/backend/.env.local # Load environment variables for the backend
+    # volumes: # Optional: For development, mount sources to enable hot-reloading if the Dockerfile/app supports it
+      # - ./apps/backend/src:/app/src # Example, adjust if backend/main.js is not directly from src
+    networks:
+      - app-network
+    # The backend Dockerfile expects 'dist/apps/backend' to be populated.
+    # This means you must run 'npx nx build backend' on the host before 'docker-compose up --build'.
+
+  frontend:
+    build:
+      context: . # Root of the monorepo, as the Dockerfile copies from root
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "3000:3000" # Map host port 3000 to container port 3000 (frontend's default/ENV PORT)
+    networks:
+      - app-network
+    # For Next.js, hot reloading with Docker volumes can be complex due to the build process.
+    # It's often better to rebuild the image for changes during development,
+    # or use Next.js's dev mode outside Docker for faster iteration.
+    # volumes:
+      # - ./apps/frontend:/app # This would map your source code
+      # - /app/node_modules # Exclude node_modules from being overwritten by the host
+      # - /app/.next # Exclude .next from being overwritten
+    depends_on:
+      - backend # Optional: Ensures backend starts before frontend, though apps should be resilient
+
+networks:
+  app-network:
+    driver: bridge

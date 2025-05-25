@@ -1,0 +1,9 @@
+# Exclude files specific to frontend development if not needed in the image,
+# assuming the build context IS apps/frontend.
+# Our primary .dockerignore is at the root for docker-compose builds.
+node_modules
+.next
+# 'dist' for frontend is usually the output of `nx build frontend` which contains .next, etc.
+# If building from 'apps/frontend' context, this local 'dist' (if any) should be ignored.
+dist
+build
