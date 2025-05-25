@@ -32,13 +32,9 @@ router.post(
       return;
     }
 
-    // Validate members format if provided
-    if (eventData.members) {
-      const validMembers = eventData.members.every(m => m.name && m.city);
-      if (!validMembers) {
-        res.status(400).json({ error: 'כל החברים חייבים לכלול שם ועיר' });
-        return;
-      }
+    if (eventData.members.length <= 0 || eventData.members.every(m => m.name && m.city)) {
+      res.status(400).json({ error: 'כל החברים חייבים לכלול שם ועיר' });
+      return;
     }
 
     eventData.startDate = new Date(eventData.startDate);
