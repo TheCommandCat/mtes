@@ -22,11 +22,20 @@ RUN npm ci
 
 # ---- Build ----
 # This stage builds the Next.js application using the installed dependencies.
-FROM deps AS build
-# Copy the entire monorepo source code.
-# Alternatively, be more selective to improve caching if only certain parts change.
-# For instance, copy libs first, then apps/frontend.
-COPY . .
+FROM deps AS build # This already has node_modules and root configs from 'deps' stage
+
+# Selectively copy application code and necessary shared libraries
+# Copy the frontend application code
+COPY apps/frontend apps/frontend
+# Copy shared libraries (adjust if specific libs are known and not all are needed)
+COPY libs libs
+# Copy root package files again to ensure context is correct for Nx build if needed, though 'deps' stage should provide them
+COPY package.json package-lock.json* nx.json tsconfig.base.json ./
+# Copy any other specific root-level configuration files frontend might need for its build process
+# e.g., COPY postcss.config.js postcss.config.js
+# e.g., COPY tailwind.config.js tailwind.config.js
+# e.g., COPY .env .env # If build process requires .env file
+
 # Build the frontend application using Nx.
 # The --skip-nx-cache flag ensures it runs the build regardless of local Nx cache.
 RUN npx nx build frontend --skip-nx-cache
