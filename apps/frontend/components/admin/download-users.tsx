@@ -14,7 +14,7 @@ const DownloadUsersButton: React.FC<DownloadUsersButtonProps> = ({ event, ...pro
       component="a"
       startIcon={<DownloadIcon />}
       variant="contained"
-      href={`${getApiBase(true)}/api/admin/events/users/export`}
+      href={`${getApiBase()}/api/admin/events/users/export`}
       target="_blank"
       download
       {...props}
