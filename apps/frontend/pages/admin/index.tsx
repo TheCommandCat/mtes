@@ -32,9 +32,13 @@ import type { GetServerSidePropsContext } from 'next';
 // Define validation schema
 export const validationSchema = z.object({
   name: z.string().min(1, 'שם האירוע הוא שדה חובה'),
-  votingStands: z
+  votingStands: z.coerce // Coerce to number
     .number({ required_error: 'מספר עמדות הצבעה הוא שדה חובה' })
-    .min(1, 'לפחות עמדת הצבעה אחת נדרשת')
+    .min(1, 'לפחות עמדת הצבעה אחת נדרשת'),
+  electionThreshold: z.coerce // Coerce to number
+    .number({ required_error: 'אחוז הכשירות הוא שדה חובה' })
+    .min(0, 'אחוז הכשירות חייב להיות לפחות 0')
+    .max(100, 'אחוז הכשירות לא יכול להיות יותר מ-100')
 });
 
 export type ValidationSchema = z.infer<typeof validationSchema>;
@@ -96,11 +100,11 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
       setSubmitting(false);
       return;
     }
-
     const basePayload = {
       name: values.name,
       eventUsers: { 'election-manager': true, 'voting-stand': true },
       votingStands: values.votingStands,
+      electionThreshold: values.electionThreshold,
       startDate: new Date(),
       endDate: new Date()
     };
@@ -187,10 +191,10 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
     setMembers(newMembers);
     setHasErrors(prev => ({ ...prev, members: !validateMembers(newMembers) }));
   };
-
   const getInitialValues = (): FormValues => ({
     name: event?.name || '',
-    votingStands: event?.votingStands || 1
+    votingStands: event?.votingStands || 1,
+    electionThreshold: event?.electionThreshold || 50
   });
 
   const renderMemberFields = () => (
@@ -279,6 +283,9 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                 ...prev,
                 event: Object.keys(errors).length > 0
               }));
+              if (Object.keys(errors).length > 0) {
+                enqueueSnackbar('יש שגיאות בטופס. אנא בדוק את השדות שסומנו.', { variant: 'error' });
+              }
             }, [errors]);
 
             // Validate members on mount and when members change, for new events
@@ -299,8 +306,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                       }
                     />
                   </Tabs>
-                </Box>
-
+                </Box>{' '}
                 {currentTab === 0 && (
                   <Box sx={{ mb: 4 }}>
                     <Grid container spacing={3}>
@@ -325,12 +331,22 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                           inputProps={{ min: 1 }}
                         />
                       </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <FormikTextField
+                          variant="outlined"
+                          type="number"
+                          name="electionThreshold"
+                          label="אחוז הכשירות לניצחון (%)"
+                          fullWidth
+                          required
+                          inputProps={{ min: 0, max: 100, step: 0.1 }}
+                          helperText="אחוז מינימלי של קולות הנדרש לקביעת מנצח"
+                        />
+                      </Grid>
                     </Grid>
                   </Box>
                 )}
-
                 {currentTab === 1 && <Box sx={{ mt: 2 }}>{renderMemberFields()}</Box>}
-
                 {!event && ( // Create Event Button
                   <Button
                     type="submit"
@@ -344,7 +360,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                     {isSubmitting ? 'יוצר אירוע...' : 'צור אירוע'}
                   </Button>
                 )}
-
                 {event &&
                   currentTab === 0 && ( // Update Event Details Button (only on event tab when editing)
                     <Button
@@ -357,7 +372,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                       {isSubmitting ? 'מעדכן אירוע...' : 'עדכן פרטי אירוע'}
                     </Button>
                   )}
-
                 {event && ( // Additional actions for existing events (Delete, Download)
                   <Paper
                     elevation={0}

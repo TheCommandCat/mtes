@@ -12,9 +12,34 @@ interface RoundResultsProps {
   results: Record<string, RoleResult[]>;
   votedMembers: WithId<VotingStatus>[];
   totalMembers: number;
+  electionThreshold?: number;
 }
 
-export const RoundResults = ({ round, results, votedMembers, totalMembers }: RoundResultsProps) => {
+export const RoundResults = ({
+  round,
+  results,
+  votedMembers,
+  totalMembers,
+  electionThreshold = 50
+}: RoundResultsProps) => {
+  if (!round || !results || !votedMembers || totalMembers <= 0) {
+    return (
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          mb: 4,
+          bgcolor: 'background.paper',
+          borderRadius: 3
+        }}
+      >
+        <Typography variant="h5" color="text.secondary" align="center">
+          אין נתונים להצגה.
+        </Typography>
+      </Paper>
+    );
+  }
+
   return (
     <Paper
       elevation={3}
@@ -41,40 +66,13 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
       </Typography>
 
       {round.roles.map(role => {
-        const roleResults = (results[role.role] || []) as RoleResult[];
-        if (roleResults.length === 0) {
-          return (
-            <Box key={role.role} sx={{ mb: 6 }}>
-              <Typography
-                variant="h5"
-                sx={{
-                  mb: 3,
-                  color: 'text.primary',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  '&::before, &::after': {
-                    content: '""',
-                    flex: 1,
-                    borderBottom: '2px solid',
-                    borderImage:
-                      'linear-gradient(to right, transparent, primary.main, transparent) 1',
-                    mx: 2
-                  }
-                }}
-              >
-                {role.role}
-              </Typography>
-              <Typography sx={{ textAlign: 'center', color: 'text.secondary', mt: 2 }}>
-                אין נתונים להצגה עבור תפקיד זה.
-              </Typography>
-            </Box>
-          );
-        }
-
-        const maxVotes = Math.max(0, ...roleResults.map((r: RoleResult) => r.votes));
+        const roleResults = results[role.role] as RoleResult[];
+        const maxVotes = Math.max(...roleResults.map((r: RoleResult) => r.votes));
+        const thresholdVotersNeeded = (electionThreshold / 100) * totalMembers;
         const potentialWinners = roleResults.filter(r => r.votes === maxVotes && maxVotes > 0);
         const isDrawForRole = potentialWinners.length > 1;
+        const hasThresholdWinner =
+          maxVotes > 0 && maxVotes > thresholdVotersNeeded && !isDrawForRole;
 
         return (
           <Box key={role.role} sx={{ mb: 6 }}>
@@ -98,8 +96,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
             >
               {role.role}
             </Typography>
-
-            {isDrawForRole && (
+            {isDrawForRole ? (
               <Typography
                 variant="subtitle1"
                 color="warning.main"
@@ -107,14 +104,33 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
               >
                 תיקו בין המתמודדים המובילים!
               </Typography>
-            )}
+            ) : !hasThresholdWinner ? (
+              <Typography
+                variant="subtitle1"
+                color="error.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}% + 1)
+              </Typography>
+            ) : hasThresholdWinner ? (
+              <Typography
+                variant="subtitle1"
+                color="success.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                🎉 יש מנצח שעבר את אחוז הכשירות!
+              </Typography>
+            ) : null}
 
             <Box sx={{ px: 2 }}>
               {roleResults.map((result: RoleResult) => {
-                const percentage = maxVotes > 0 ? (result.votes / maxVotes) * 100 : 0;
-                const isContestantPartOfDraw =
-                  isDrawForRole && result.votes === maxVotes && maxVotes > 0;
-                const isClearWinner = !isDrawForRole && result.votes === maxVotes && maxVotes > 0;
+                const isContestantPartOfDraw = isDrawForRole && result.votes === maxVotes;
+                const isClearWinner = hasThresholdWinner && result.votes === maxVotes;
+                const isHighestButBelowThreshold =
+                  maxVotes > 0 &&
+                  !isDrawForRole &&
+                  result.votes === maxVotes &&
+                  !hasThresholdWinner;
 
                 let bgColor = 'background.default';
                 let borderColor = 'divider';
@@ -124,7 +140,6 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                 let nameFontWeight = 'medium';
                 let nameColor = 'text.primary';
                 let votesColor = 'primary.main';
-                let progressBarBgColor = 'primary.soft';
 
                 if (isClearWinner) {
                   bgColor = 'success.soft';
@@ -135,7 +150,6 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                   nameFontWeight = 'bold';
                   nameColor = 'success.dark';
                   votesColor = 'success.dark';
-                  progressBarBgColor = 'success.soft';
                 } else if (isContestantPartOfDraw) {
                   bgColor = 'warning.soft';
                   borderColor = 'warning.main';
@@ -145,7 +159,15 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                   nameFontWeight = 'bold';
                   nameColor = 'warning.dark';
                   votesColor = 'warning.dark';
-                  progressBarBgColor = 'warning.soft';
+                } else if (isHighestButBelowThreshold) {
+                  bgColor = 'error.soft';
+                  borderColor = 'error.main';
+                  scale = 'scale(1.01)';
+                  shadow = '0 3px 10px rgba(0,0,0,0.08)';
+                  avatarBgColor = 'error.main';
+                  nameFontWeight = 'bold';
+                  nameColor = 'error.dark';
+                  votesColor = 'error.dark';
                 }
 
                 return (
@@ -209,35 +231,19 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
                           }}
                         >
                           {result.votes}
-                        </Typography>
+                        </Typography>{' '}
                         <Typography variant="caption" color="text.secondary">
                           קולות
                         </Typography>
-                        {totalMembers > 0 && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: 'block', mt: 0.25 }}
-                          >
-                            ({Math.round((result.votes / totalMembers) * 100)}% מהמליאה)
-                          </Typography>
-                        )}
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.25 }}
+                        >
+                          ({Math.round((result.votes / totalMembers) * 100)}% מהמליאה)
+                        </Typography>
                       </Box>
                     </Box>
-
-                    {/* Progress bar background */}
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        height: '100%',
-                        width: `${percentage}%`,
-                        bgcolor: progressBarBgColor,
-                        opacity: 0.2, // Adjusted opacity for better visibility with warning colors
-                        transition: 'width 1s ease-out'
-                      }}
-                    />
                   </Box>
                 );
               })}
@@ -275,7 +281,7 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
           <Typography component="span" variant="h5" color="text.secondary">
             מתוך {totalMembers}
           </Typography>
-        </Typography>
+        </Typography>{' '}
         <Typography
           variant="body1"
           sx={{
@@ -285,6 +291,21 @@ export const RoundResults = ({ round, results, votedMembers, totalMembers }: Rou
           }}
         >
           {Math.round((votedMembers.length / totalMembers) * 100)}% אחוז מהמליאה הצביעו
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            mt: 2,
+            color: 'info.main',
+            fontWeight: 'medium',
+            px: 2,
+            py: 1,
+            bgcolor: 'info.soft',
+            borderRadius: 1,
+            display: 'inline-block'
+          }}
+        >
+          אחוז כשירות נדרש לניצחון: {electionThreshold}% + 1
         </Typography>
       </Box>
     </Paper>
