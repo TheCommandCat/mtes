@@ -68,14 +68,11 @@ export const RoundResults = ({
       {round.roles.map(role => {
         const roleResults = results[role.role] as RoleResult[];
         const maxVotes = Math.max(...roleResults.map((r: RoleResult) => r.votes));
-        const totalVotesForRole = votedMembers.length;
-
         const thresholdVotersNeeded = (electionThreshold / 100) * totalMembers;
-
         const potentialWinners = roleResults.filter(r => r.votes === maxVotes && maxVotes > 0);
         const isDrawForRole = potentialWinners.length > 1;
         const hasThresholdWinner =
-          maxVotes > 0 && maxVotes >= thresholdVotersNeeded && !isDrawForRole;
+          maxVotes > 0 && maxVotes > thresholdVotersNeeded && !isDrawForRole;
 
         return (
           <Box key={role.role} sx={{ mb: 6 }}>
@@ -113,7 +110,7 @@ export const RoundResults = ({
                 color="error.main"
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}%)
+                אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}% + 1)
               </Typography>
             ) : hasThresholdWinner ? (
               <Typography
@@ -134,19 +131,6 @@ export const RoundResults = ({
                   !isDrawForRole &&
                   result.votes === maxVotes &&
                   !hasThresholdWinner;
-
-                // log to understand error
-                console.log(
-                  `Processing result for ${
-                    result.contestant.name
-                  } (${result.contestant._id.toString()}): votes=${
-                    result.votes
-                  }, isContestantPartOfDraw=${isContestantPartOfDraw}, isClearWinner=${isClearWinner}, isHighestButBelowThreshold=${isHighestButBelowThreshold}`,
-                  electionThreshold,
-                  maxVotes,
-                  result.votes === maxVotes,
-                  thresholdVotersNeeded
-                );
 
                 let bgColor = 'background.default';
                 let borderColor = 'divider';
@@ -321,7 +305,7 @@ export const RoundResults = ({
             display: 'inline-block'
           }}
         >
-          אחוז כשירות נדרש לניצחון: {electionThreshold}%
+          אחוז כשירות נדרש לניצחון: {electionThreshold}% + 1
         </Typography>
       </Box>
     </Paper>
