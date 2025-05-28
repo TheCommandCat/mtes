@@ -284,7 +284,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                 event: Object.keys(errors).length > 0
               }));
               if (Object.keys(errors).length > 0) {
-                console.error('Form errors:', errors);
+                enqueueSnackbar('יש שגיאות בטופס. אנא בדוק את השדות שסומנו.', { variant: 'error' });
               }
             }, [errors]);
 
