@@ -573,7 +573,8 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                       />
 
                       {roundResults ? (
-                        <>                          <RoundResults
+                        <>
+                          <RoundResults
                             round={activeRound}
                             results={roundResults}
                             votedMembers={votedMembers}
