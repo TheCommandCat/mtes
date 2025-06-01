@@ -2,8 +2,14 @@ import { Division, SafeUser } from '@mtes/types';
 import { WithId } from 'mongodb';
 import { GetServerSidePropsContext } from 'next';
 
-export const getApiBase = () => {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+export const getApiBase = (isServerSide: boolean = false) => {
+  if (isServerSide) {
+    // Server-side requests (SSR) - use Docker service name
+    return process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  } else {
+    // Client-side requests - use localhost for browser
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  }
 };
 
 export const apiFetch = (
@@ -22,7 +28,8 @@ export const apiFetch = (
     }
     headers = { Authorization: `Bearer ${token}`, ...init?.headers };
   }
-  const apiBase = getApiBase();
+  // Use server-side URL when we have server context (SSR), client-side URL otherwise
+  const apiBase = getApiBase(!!ctx);
   return fetch(apiBase + path, {
     credentials: 'include',
     headers,

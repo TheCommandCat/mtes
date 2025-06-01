@@ -1,21 +1,45 @@
 ###########################################
 # MTES Application Stack Configuration
+# Docker Compose for Deployment
 ###########################################
 
 services:
   #-----------------------------------------
+  # MongoDB Database
+  #-----------------------------------------
+  mongodb:
+    image: mongo:7.0.5
+    container_name: mtes-mongodb
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: mtes_production
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  #-----------------------------------------
   # Backend Service
   #-----------------------------------------
-  backend:    
+  backend:
     build:
-        context: .
-        dockerfile: apps/backend/Dockerfile    
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: mtes-backend
     ports:
-        - "3333:3333"
+      - '3333:3333'
     env_file:
-        - apps/backend/.env.local
+      - apps/backend/.env.production
     networks:
-        - app-network
+      - app-network
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
   #-----------------------------------------
   # Frontend Service
   #-----------------------------------------
@@ -23,17 +47,26 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
+    container_name: mtes-frontend
     ports:
-      - "4200:4200"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:3333
+      - '4200:4200'
+    env_file:
+      - apps/frontend/.env.production
     networks:
       - app-network
     depends_on:
       - backend
+    restart: unless-stopped
 
 #-----------------------------------------
-# Network Configuration
+# Volumes
+#-----------------------------------------
+volumes:
+  mongodb_data:
+    driver: local
+
+#-----------------------------------------
+# Networks
 #-----------------------------------------
 networks:
   app-network:
