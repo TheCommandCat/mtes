@@ -17,6 +17,9 @@ const nextConfig = {
     // For other options, see https://nextjs.org/docs/architecture/nextjs-compiler#emotion
     emotion: true,
   },
+
+  // Enable standalone output for better Docker deployment
+  output: 'standalone',
 };
 
 const plugins = [

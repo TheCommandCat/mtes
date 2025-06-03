@@ -33,10 +33,10 @@ ENV NODE_ENV=production
 ENV PORT=4200
 WORKDIR /app
 
-# Production files and dependencies
-COPY --from=build /app/dist/apps/frontend ./
-RUN npm install --omit=dev
+# Copy the standalone Next.js application
+COPY --from=build /app/dist/apps/frontend/standalone ./
+COPY --from=build /app/dist/apps/frontend/static ./static
 
 USER frontend
 EXPOSE ${PORT}
-CMD ["npx", "next", "start"]
+CMD ["node", "server.js"]
