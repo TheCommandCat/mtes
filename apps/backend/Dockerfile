@@ -3,11 +3,11 @@
 # Build the docker image with `npx nx docker-build backend`.
 # Tip: Modify "docker-build" options in project.json to change docker build args.
 #
-# Run the container with `docker run -p 3000:3000 -t backend`.
+# Run the container with `docker run -p 3333:3333 -t backend`.
 FROM docker.io/node:lts-alpine
 
 ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV PORT=3333
 
 WORKDIR /app
 
