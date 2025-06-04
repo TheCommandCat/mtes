@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from '@mui/system';
 import { red } from '@mui/material/colors';
 
 const mainColor = '#0071e3';
