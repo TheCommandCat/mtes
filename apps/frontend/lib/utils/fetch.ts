@@ -5,7 +5,11 @@ import { GetServerSidePropsContext } from 'next';
 export const getApiBase = (isServerSide: boolean = false) => {
   if (isServerSide) {
     // Server-side requests (SSR) - use Docker service name
-    return process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+    return (
+      process.env.NEXT_INTERNAL_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:3333'
+    );
   } else {
     // Client-side requests - use localhost for browser
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
