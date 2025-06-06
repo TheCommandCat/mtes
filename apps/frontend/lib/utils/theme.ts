@@ -1,4 +1,4 @@
-import { darken, lighten } from '@mui/material/styles';
+import { darken, lighten } from '@mui/system';
 
 export const getBackgroundColor = (color: string, mode: string) =>
   mode === 'dark' ? darken(color, 0.7) : lighten(color, 0.7);

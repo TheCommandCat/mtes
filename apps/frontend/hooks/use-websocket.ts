@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { ConnectionStatus, WSEventListener } from '@mtes/types';
 
-const WS_URL = 'http://localhost:3333';
+const WS_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 let socket: Socket | null = null;
 const MAX_RETRIES = 5;
 const TIMEOUT = 800;
