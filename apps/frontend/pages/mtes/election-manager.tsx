@@ -65,7 +65,9 @@ interface VotingStandStatus {
 
 const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, electionState, event }) => {
   const router = useRouter();
-  const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
+  const [members, setMembers] = useState<WithId<Member>[]>(
+    Array.isArray(initialMembers) ? initialMembers : []
+  );
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
@@ -79,7 +81,12 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
 
-  const presentMembersCount = members.filter(member => member.isPresent).length;
+  // Single array check to avoid repetition throughout the component
+  const isMembersArray = Array.isArray(members);
+  const membersLength = isMembersArray ? members.length : 0;
+  const presentMembersCount = isMembersArray
+    ? members.filter(member => member.isPresent).length
+    : 0;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -96,11 +103,12 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       console.error('Error fetching voted members:', response.statusText);
     }
   };
-
   const handleMemberPresence = (memberId: string, isPresent: boolean) => {
-    const updatedMembers = members.map(member =>
-      member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
-    );
+    const updatedMembers = isMembersArray
+      ? members.map(member =>
+          member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
+        )
+      : [];
     setMembers(updatedMembers);
 
     apiFetch(`/api/events/members/${memberId}/presence`, {
@@ -508,12 +516,13 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               <Typography variant="h4" fontWeight="bold">
                 ניהול הבחירות
               </Typography>
-            </Paper>
+            </Paper>{' '}
             <Paper elevation={2} sx={{ p: 4 }}>
-              {presentMembersCount / members.length >= 0.66 ? null : (
+              {' '}
+              {presentMembersCount / (membersLength || 1) >= 0.66 ? null : (
                 <MemberPresenceStatus
                   presentCount={presentMembersCount}
-                  totalCount={members.length}
+                  totalCount={membersLength}
                 />
               )}
               <Box
@@ -525,7 +534,8 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                   mb: 3
                 }}
               >
-                {presentMembersCount / members.length >= 0.66 && (
+                {' '}
+                {presentMembersCount / (membersLength || 1) >= 0.66 && (
                   <Box
                     sx={{
                       position: 'absolute',
@@ -536,11 +546,10 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                   >
                     <MemberPresenceStatus
                       presentCount={presentMembersCount}
-                      totalCount={members.length}
+                      totalCount={membersLength}
                     />
                   </Box>
                 )}
-
                 <Tabs
                   value={currentTab}
                   onChange={handleTabChange}
@@ -574,11 +583,12 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
 
                       {roundResults ? (
                         <>
+                          {' '}
                           <RoundResults
                             round={activeRound}
                             results={roundResults}
                             votedMembers={votedMembers}
-                            totalMembers={members.length}
+                            totalMembers={membersLength}
                             electionThreshold={event.electionThreshold}
                           />
                           <MembersGrid
@@ -598,11 +608,11 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                         </>
                       ) : (
                         <>
+                          {' '}
                           <VotingStatusComponent
                             votedCount={votedMembers.length}
-                            totalCount={members.length}
+                            totalCount={membersLength}
                           />
-
                           <MembersGrid
                             members={members}
                             votedMembers={votedMembers}
@@ -610,7 +620,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                             filterType="waitingToVote"
                             onDropMemberBackToBank={handleReturnMemberToBank}
                           />
-
                           <MembersGrid
                             members={members}
                             votedMembers={votedMembers}
@@ -657,7 +666,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                 </Box>
               )}
             </Paper>
-
             <Dialog
               open={roundToDelete !== null}
               onClose={() => setRoundToDelete(null)}
