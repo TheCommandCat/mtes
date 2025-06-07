@@ -42,7 +42,9 @@ const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
         if (data && !data.error) {
           document.getElementById('recaptcha-script')?.remove();
           document.querySelector('.grecaptcha-badge')?.remove();
-          const returnUrl = router.query.returnUrl || `/mtes`;
+
+          const destination = `/mtes/${data.role}`;
+          const returnUrl = router.query.returnUrl || destination;
           router.push(returnUrl as string);
         } else if (data.error) {
           if (data.error === 'INVALID_CREDENTIALS') {

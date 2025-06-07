@@ -43,7 +43,8 @@ const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({ votingStands }) =
       .then(async res => {
         const data = await res.json();
         if (data && !data.error) {
-          const returnUrl = router.query.returnUrl || `/mtes`;
+          const destination = `/mtes/${data.role}`;
+          const returnUrl = router.query.returnUrl || destination;
           router.push(returnUrl as string);
         } else if (data.error) {
           if (data.error === 'INVALID_CREDENTIALS') {
