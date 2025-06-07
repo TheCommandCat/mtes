@@ -15,19 +15,56 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 const app = express();
 const server = http.createServer(app);
 const corsOptions = {
-  origin: [
-    /localhost:\d+$/,
-    /^https?:\/\/167\.71\.43\.0(:\d+)?$/, // Allows http/https on any port
-    /^https?:\/\/mtes\.thecommandcat\.me$/,
-    /^https?:\/\/mtes-api\.thecommandcat\.me$/
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    console.log(`CORS check - Origin: ${origin}`);
+
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) {
+      console.log('No origin - allowing');
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [/localhost:\d+$/, 'https://mtes-api.thecommandcat.me'];
+
+    const isOriginAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        const matches = origin === allowedOrigin;
+        console.log(`String match "${allowedOrigin}": ${matches}`);
+        return matches;
+      } else {
+        const matches = allowedOrigin.test(origin);
+        console.log(`Regex match ${allowedOrigin}: ${matches}`);
+        return matches;
+      }
+    });
+
+    console.log(`CORS check - Origin: ${origin}, Allowed: ${isOriginAllowed}`);
+
+    if (isOriginAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 };
 const io = new Server(server, { cors: corsOptions });
 
 app.use(cookies());
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Add explicit preflight handler
+app.options('*', cors(corsOptions));
+
+// Add debugging middleware for CORS
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+  next();
+});
 
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
@@ -37,6 +74,14 @@ app.use('/api', apiRouter);
 
 app.get('/status', (req, res) => {
   return res.status(200).json({ ok: true });
+});
+
+app.get('/cors-test', (req, res) => {
+  return res.status(200).json({
+    origin: req.headers.origin || 'No origin',
+    userAgent: req.headers['user-agent'],
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use((req, res) => res.status(404).json({ error: 'ROUTE_NOT_DEFINED' }));

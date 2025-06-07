@@ -24,14 +24,15 @@ export const RouteAuthorizer: React.FC<RouteAuthorizerProps> = ({ children }) =>
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const authCheck = (url: string) => {
     const publicPaths = ['/login'];
     const adminPaths = ['/admin'];
     const path = url.split('?')[0];
 
+    console.log('AuthCheck: Making API call to /api/me');
     apiFetch('/api/me')
       .then(async response => {
+        console.log('AuthCheck: API response status:', response.status);
         if (!response.ok) {
           if (!publicPaths.includes(path)) {
             setAuthorized(false);

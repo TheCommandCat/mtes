@@ -408,7 +408,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
 
 export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const data = await serverSideGetRequests(
-    { user: '/api/me', event: '/public/event', initMembers: '/api//events/members' },
+    { user: '/api/me', event: '/public/event', initMembers: '/api/events/members' },
     ctx
   );
   return { props: data };
