@@ -15,7 +15,7 @@ services:
     ports:
       - '3333:3333'
     env_file:
-      - apps/backend/.env.production
+      - apps/backend/.env
     networks:
       - app-network
     restart: unless-stopped
@@ -31,13 +31,12 @@ services:
     ports:
       - '4200:4200'
     env_file:
-      - apps/frontend/.env.production
+      - apps/frontend/.env
     networks:
       - app-network
     depends_on:
       - backend
     restart: unless-stopped
-
 
 #-----------------------------------------
 # Networks
