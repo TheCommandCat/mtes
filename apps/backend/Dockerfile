@@ -1,43 +1,44 @@
-###########################################
-# STAGE 1: Base Image Setup
-###########################################
-FROM docker.io/node:lts-alpine AS base
-WORKDIR /app
-RUN addgroup --system backend && adduser --system -G backend backend
+# Dockerfile
 
-###########################################
-# STAGE 2: Dependencies Installation
-###########################################
-FROM base AS deps
-# Project configuration files
+# 1. Base stage: Install all dependencies for building
+FROM node:20-alpine AS deps
+WORKDIR /app
 COPY package.json package-lock.json* ./
-COPY nx.json ./
-COPY tsconfig.base.json ./
 RUN npm ci
 
-###########################################
-# STAGE 3: Build Application
-###########################################
-FROM deps AS build
-# Source files and libraries
-COPY apps/backend apps/backend
-COPY libs libs
-COPY package.json package-lock.json* nx.json tsconfig.base.json ./
-RUN npx nx build backend --skip-nx-cache
+# 2. Builder stage: Build the Express application
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Build the 'backend' app
+RUN npx nx build backend --prod
 
-###########################################
-# STAGE 4: Production Runtime
-###########################################
-FROM base AS runner
-ENV NODE_ENV=production
-ENV PORT=3333
-ENV HOST=0.0.0.0
+# 3. Runner stage: Create the final production image
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Production files and dependencies
-COPY --from=build /app/dist/apps/backend ./
-RUN npm install --omit=dev
+ENV NODE_ENV=production
 
-USER backend
-EXPOSE ${PORT}
+# Create a non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+# Change ownership of the app directory BEFORE switching user
+RUN chown nodejs:nodejs /app
+
+# Switch to the non-root user
+USER nodejs
+
+# Copy package definitions and install only production dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
+
+# Copy the built 'backend' app from the builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist/apps/backend/. .
+
+EXPOSE 3333
+ENV PORT 3333
+
+# Start the Express server (Nx typically outputs a main.js file)
 CMD ["node", "main.js"]
