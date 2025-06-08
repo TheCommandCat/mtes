@@ -35,7 +35,12 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       }
     );
 
-    res.cookie('auth-token', token, { expires: expires.toDate(), httpOnly: true, secure: true });
+    res.cookie('auth-token', token, {
+      expires: expires.toDate(),
+      httpOnly: true,
+      secure: false,
+      partitioned: true,
+    });
     return res.json(user);
   } catch (err) {
     next(err);
