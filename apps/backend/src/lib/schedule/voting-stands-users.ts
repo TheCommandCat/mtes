@@ -15,7 +15,7 @@ export const CreateVotingStandUsers = (numOfStands: number): User[] => {
   users.push({
     isAdmin: false,
     role: 'election-manager',
-    password: 'admin', // randomString(4)
+    password: randomString(4),
     lastPasswordSetDate: new Date()
   });
 
@@ -23,7 +23,7 @@ export const CreateVotingStandUsers = (numOfStands: number): User[] => {
     users.push({
       isAdmin: false,
       role: 'voting-stand',
-      password: 'admin', // randomString(4)
+      password: randomString(4),
       lastPasswordSetDate: new Date(),
       roleAssociation: {
         type: 'stand',
