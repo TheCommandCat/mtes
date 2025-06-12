@@ -1,30 +1,46 @@
+###########################################
+# MTES Application Stack Configuration
+# Docker Compose for Deployment
+###########################################
+
 services:
+  #-----------------------------------------
+  # Backend Service
+  #-----------------------------------------
   backend:
     build:
-      dockerfile: apps/backend/Dockerfile
       context: .
-    env_file:
-      - './apps/backend/.env.prod'
+      dockerfile: apps/backend/Dockerfile
+    container_name: mtes-backend
     ports:
       - '3333:3333'
+    env_file:
+      - apps/backend/.env
     networks:
-      - mtes-network
-    restart: always
+      - app-network
+    restart: unless-stopped
 
+  #-----------------------------------------
+  # Frontend Service
+  #-----------------------------------------
   frontend:
     build:
-      dockerfile: apps/frontend/Dockerfile
       context: .
-    env_file:
-      - './apps/frontend/.env.prod'
+      dockerfile: apps/frontend/Dockerfile
+    container_name: mtes-frontend
     ports:
       - '4200:4200'
+    env_file:
+      - apps/frontend/.env
+    networks:
+      - app-network
     depends_on:
       - backend
-    networks:
-      - mtes-network
-    restart: always
+    restart: unless-stopped
 
+#-----------------------------------------
+# Networks
+#-----------------------------------------
 networks:
-  mtes-network:
+  app-network:
     driver: bridge

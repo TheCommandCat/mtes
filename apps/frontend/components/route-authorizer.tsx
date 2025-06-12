@@ -30,35 +30,44 @@ export const RouteAuthorizer: React.FC<RouteAuthorizerProps> = ({ children }) =>
     const adminPaths = ['/admin'];
     const path = url.split('?')[0];
 
-    apiFetch('/api/me').then(response => {
-      if (!response.ok && !publicPaths.includes(path)) {
-        apiFetch('/auth/logout', { method: 'POST' }).then(response => {
+    apiFetch('/api/me')
+      .then(async response => {
+        if (!response.ok) {
+          if (!publicPaths.includes(path)) {
+            setAuthorized(false);
+            router.push({
+              pathname: '/login',
+              query: { returnUrl: router.asPath }
+            });
+          } else {
+            setAuthorized(true);
+          }
+        } else {
+          const user = await response.json();
+          if (adminPaths.includes(path)) {
+            if (!user || !user.isAdmin) {
+              setAuthorized(false);
+              router.push({
+                pathname: '/login'
+              });
+            } else {
+              setAuthorized(true);
+            }
+          } else {
+            setAuthorized(true);
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching /api/me in RouteAuthorizer:', error);
+        if (!publicPaths.includes(path)) {
           setAuthorized(false);
           router.push({
             pathname: '/login',
             query: { returnUrl: router.asPath }
           });
-        });
-      } else {
-        if (adminPaths.includes(path)) {
-          response
-            .json()
-            .then(user => user.isAdmin)
-            .then(admin => {
-              if (!admin) {
-                setAuthorized(false);
-                router.push({
-                  pathname: '/login'
-                });
-              } else {
-                setAuthorized(true);
-              }
-            });
-        } else {
-          setAuthorized(true);
         }
-      }
-    });
+      });
   };
 
   return authorized && children;

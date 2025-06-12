@@ -15,7 +15,12 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 const app = express();
 const server = http.createServer(app);
 const corsOptions = {
-  origin: [/localhost:\d+$/],
+  origin: [
+    /localhost:\d+$/,
+    /^https?:\/\/167\.71\.43\.0(:\d+)?$/, // Allows http/https on any port
+    /^https?:\/\/mtes\.thecommandcat\.me$/,
+    /^https?:\/\/mtes-api\.thecommandcat\.me$/
+  ],
   credentials: true
 };
 const io = new Server(server, { cors: corsOptions });
