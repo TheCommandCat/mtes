@@ -556,13 +556,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                 <>
                   {activeRound ? (
                     <Box>
-                      {!roundResults && (
-                        <VotingStandsGrid
-                          standStatuses={standStatuses}
-                          onCancel={handleCancelMember}
-                          onDropMember={handleSendMember}
-                        />
-                      )}
                       <RoundHeader
                         title={activeRound.name}
                         isActive
@@ -571,6 +564,19 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                         onLock={!isRoundLocked ? handleLockRound : undefined}
                         onStop={!isRoundLocked ? handleStopRound : undefined}
                       />
+                      {!roundResults && (
+                        <>
+                          <VotingStatusComponent
+                            votedCount={votedMembers.length}
+                            totalCount={members.length}
+                          />
+                          <VotingStandsGrid
+                            standStatuses={standStatuses}
+                            onCancel={handleCancelMember}
+                            onDropMember={handleSendMember}
+                          />
+                        </>
+                      )}
 
                       {roundResults ? (
                         <>
@@ -598,11 +604,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                         </>
                       ) : (
                         <>
-                          <VotingStatusComponent
-                            votedCount={votedMembers.length}
-                            totalCount={members.length}
-                          />
-
                           <MembersGrid
                             members={members}
                             votedMembers={votedMembers}
