@@ -1,19 +1,14 @@
-import { Division, SafeUser } from '@mtes/types';
-import { WithId } from 'mongodb';
+import { SafeUser } from '@mtes/types';
 import { GetServerSidePropsContext } from 'next';
 
 export const getApiBase = (isServerSide: boolean = false) => {
-  if (isServerSide) {
-    // Server-side requests (SSR) - use Docker service name
-    return (
-      process.env.NEXT_INTERNAL_API_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      'http://localhost:3333'
-    );
-  } else {
-    // Client-side requests - use localhost for browser
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-  }
+  console.log(
+    `Calling fetch with isServerSide=${isServerSide}, NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}`
+  );
+
+  // TODO: handle internal API URL for server-side rendering
+
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 };
 
 export const apiFetch = (
