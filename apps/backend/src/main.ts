@@ -17,9 +17,7 @@ const server = http.createServer(app);
 const corsOptions = {
   origin: [
     /localhost:\d+$/,
-    /^https?:\/\/167\.71\.43\.0(:\d+)?$/, // Allows http/https on any port
-    /^https?:\/\/mtes\.thecommandcat\.me$/,
-    /^https?:\/\/mtes-api\.thecommandcat\.me$/
+    /\.thecommandcat\.me$/
   ],
   credentials: true
 };

@@ -55,7 +55,18 @@ export interface FormValues extends ValidationSchema {
 
 const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
   const router = useRouter();
-  const [members, setMembers] = useState<Member[]>(initMembers || []);
+
+  // 1. LOG THE INCOMING PROP
+  console.log(
+    '[Page Prop] Received initMembers:',
+    initMembers,
+    'Is Array:',
+    Array.isArray(initMembers)
+  );
+
+  // 2. FIX THE INITIAL STATE
+  // This ensures `members` is always an array, even if initMembers is invalid.
+  const [members, setMembers] = useState<Member[]>(Array.isArray(initMembers) ? initMembers : []);
   const [currentTab, setCurrentTab] = useState(0);
   const [hasErrors, setHasErrors] = useState<{ event: boolean; members: boolean }>({
     event: false,
@@ -67,7 +78,11 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
   };
 
   const validateMembers = (memberList: Member[]) => {
-    // For new events, at least one member is required. For existing events, members can be empty if they are all deleted.
+    if (!Array.isArray(memberList)) {
+      console.error('[validateMembers] Error: input is not an array. Received:', memberList);
+      return false;
+    }
+
     if (!event && memberList.length === 0) return false;
     return memberList.every(isValidMember);
   };
@@ -406,11 +421,20 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
   );
 };
 
+// 4. LOG IN getServerSideProps
 export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const data = await serverSideGetRequests(
-    { user: '/api/me', event: '/public/event', initMembers: '/api/events/members' },
+    {
+      user: '/api/me',
+      event: '/public/event',
+      initMembers: '/api/events/members'
+    },
     ctx
   );
+
+  // This log will appear in your Next.js server console
+  console.log('[GSSP] Data fetched from APIs:', JSON.stringify(data, null, 2));
+
   return { props: data };
 };
 
