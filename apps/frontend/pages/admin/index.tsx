@@ -431,10 +431,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSideP
     },
     ctx
   );
-
-  // This log will appear in your Next.js server console
-  console.log('[GSSP] Data fetched from APIs:', JSON.stringify(data, null, 2));
-
   return { props: data };
 };
 

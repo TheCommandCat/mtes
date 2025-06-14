@@ -3,7 +3,7 @@ import { GetServerSidePropsContext } from 'next';
 
 export const getApiBase = (isServerSide: boolean = false) => {
   console.log(
-    `Calling fetch with isServerSide=${isServerSide}, NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}`
+    `🌐 Calling fetch with isServerSide=${isServerSide}, NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}`
   );
 
   // TODO: handle internal API URL for server-side rendering
