@@ -5,7 +5,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { localizedRoles } from 'apps/frontend/localization/roles';
 
 interface UsersTableProps {
-  users?: User[];
+  users: User[];
 }
 
 const UsersList: React.FC<UsersTableProps> = ({ users }) => {
@@ -26,7 +26,7 @@ const UsersList: React.FC<UsersTableProps> = ({ users }) => {
         width: '100%'
       }}
     >
-      {users?.map((user, index) => (
+      {users.map((user, index) => (
         <Paper
           key={index}
           elevation={3}
@@ -45,7 +45,7 @@ const UsersList: React.FC<UsersTableProps> = ({ users }) => {
           }}
         >
           <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            {localizedRoles[user.role]}
+            {user.role ? localizedRoles[user.role] : 'Unknown Role'}
           </Typography>
           <Typography
             sx={{ display: 'block', mb: 1 }}

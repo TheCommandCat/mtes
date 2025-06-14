@@ -26,6 +26,7 @@ import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import type { GetServerSidePropsContext } from 'next';
 import UsersTable from 'apps/frontend/components/admin/users-table';
+import { enqueueSnackbar } from 'notistack';
 
 export const validationSchema = z.object({
   name: z.string().min(1, 'שם האירוע הוא שדה חובה'),
