@@ -13,49 +13,12 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 router.get(
-  '/export',
+  '/credentials',
   asyncHandler(async (req: Request, res: Response) => {
     const usersWithAdmin = await db.getEventUsersWithCredentials();
-
-    // remove admin user
     const users = usersWithAdmin.filter(user => !user.isAdmin);
 
-    const credentials = await Promise.all(
-      users.map(async user => {
-        const { role, password, roleAssociation } = user;
-
-        return {
-          role,
-          value: roleAssociation ? roleAssociation.value : '',
-          password
-        };
-      })
-    );
-
-    res.set(
-      'Content-Disposition',
-      `attachment; filename=division_${req.params.divisionId}_passwords.csv`
-    );
-    res.set('Content-Type', 'text/csv');
-
-    const opts = {
-      fields: [
-        {
-          label: 'תפקיד',
-          value: 'role'
-        },
-        {
-          label: 'ערך תפקיד',
-          value: 'value'
-        },
-        {
-          label: 'סיסמה',
-          value: 'password'
-        }
-      ]
-    };
-    const parser = new Parser(opts);
-    res.send(`\ufeff${parser.parse(credentials)}`);
+    res.json(users);
   })
 );
 

@@ -15,10 +15,7 @@ import type { WithId } from 'mongodb';
 import type { ElectionEvent, Member, User } from '@mtes/types';
 import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
 import Layout from '../../components/layout';
-import DownloadUsersButton from '../../components/admin/download-users';
 import { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
-import { enqueueSnackbar } from 'notistack';
 import { Formik, Form, FormikHelpers } from 'formik';
 import FormikTextField from '../../components/general/forms/formik-text-field';
 import Grid from '@mui/material/Grid2';
@@ -28,14 +25,14 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import type { GetServerSidePropsContext } from 'next';
+import UsersTable from 'apps/frontend/components/admin/users-table';
 
-// Define validation schema
 export const validationSchema = z.object({
   name: z.string().min(1, 'שם האירוע הוא שדה חובה'),
-  votingStands: z.coerce // Coerce to number
+  votingStands: z.coerce
     .number({ required_error: 'מספר עמדות הצבעה הוא שדה חובה' })
     .min(1, 'לפחות עמדת הצבעה אחת נדרשת'),
-  electionThreshold: z.coerce // Coerce to number
+  electionThreshold: z.coerce
     .number({ required_error: 'אחוז הכשירות הוא שדה חובה' })
     .min(0, 'אחוז הכשירות חייב להיות לפחות 0')
     .max(100, 'אחוז הכשירות לא יכול להיות יותר מ-100')
@@ -47,25 +44,13 @@ export interface PageProps {
   user: WithId<User>;
   event?: WithId<ElectionEvent & { members?: Array<{ name: string; city: string }> }>;
   initMembers?: Member[];
+  credentials?: User[];
 }
 
-export interface FormValues extends ValidationSchema {
-  // Add any additional form values here
-}
+export interface FormValues extends ValidationSchema {}
 
-const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
+const Page: NextPage<PageProps> = ({ user, event, initMembers, credentials }) => {
   const router = useRouter();
-
-  // 1. LOG THE INCOMING PROP
-  console.log(
-    '[Page Prop] Received initMembers:',
-    initMembers,
-    'Is Array:',
-    Array.isArray(initMembers)
-  );
-
-  // 2. FIX THE INITIAL STATE
-  // This ensures `members` is always an array, even if initMembers is invalid.
   const [members, setMembers] = useState<Member[]>(Array.isArray(initMembers) ? initMembers : []);
   const [currentTab, setCurrentTab] = useState(0);
   const [hasErrors, setHasErrors] = useState<{ event: boolean; members: boolean }>({
@@ -73,29 +58,20 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
     members: false
   });
 
-  const isValidMember = (member: Member) => {
-    return member.name.trim() !== '' && member.city.trim() !== '';
-  };
-
+  const isValidMember = (member: Member) => member.name.trim() !== '' && member.city.trim() !== '';
   const validateMembers = (memberList: Member[]) => {
-    if (!Array.isArray(memberList)) {
-      console.error('[validateMembers] Error: input is not an array. Received:', memberList);
-      return false;
-    }
-
+    if (!Array.isArray(memberList)) return false;
     if (!event && memberList.length === 0) return false;
     return memberList.every(isValidMember);
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) =>
     setCurrentTab(newValue);
-  };
 
   const handleDelete = async () => {
     try {
       const res = await apiFetch('/api/admin/events/data', { method: 'DELETE' });
       if (!res.ok) throw new Error('http-error');
-
       await res.json();
       enqueueSnackbar('האירוע נמחק בהצלחה', { variant: 'success' });
       router.reload();
@@ -106,12 +82,10 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
 
   const handleSubmit = async (values: FormValues, { setSubmitting }: FormikHelpers<FormValues>) => {
     setSubmitting(true);
-
-    // Validate members if creating new event
     if (!event && !validateMembers(members)) {
       setHasErrors(prev => ({ ...prev, members: true }));
       enqueueSnackbar('יש להזין לפחות חבר אחד עם שם ועיר', { variant: 'error' });
-      setCurrentTab(1); // Switch to members tab
+      setCurrentTab(1);
       setSubmitting(false);
       return;
     }
@@ -123,36 +97,21 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
       startDate: new Date(),
       endDate: new Date()
     };
-
     let finalPayload;
     if (event) {
-      finalPayload = {
-        ...basePayload,
-        hasState: event.hasState
-      };
+      finalPayload = { ...basePayload, hasState: event.hasState };
     } else {
-      finalPayload = {
-        ...basePayload,
-        hasState: true,
-        members: members
-      };
+      finalPayload = { ...basePayload, hasState: true, members: members };
     }
-
     try {
       const res = await apiFetch('/api/admin/events', {
         method: event ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalPayload)
       });
-
-      if (!res.ok) {
-        throw new Error('http-error');
-      }
-
+      if (!res.ok) throw new Error('http-error');
       await res.json();
-      enqueueSnackbar(event ? 'האירוע עודכן בהצלחה' : 'האירוע נוצר בהצלחה', {
-        variant: 'success'
-      });
+      enqueueSnackbar(event ? 'האירוע עודכן בהצלחה' : 'האירוע נוצר בהצלחה', { variant: 'success' });
       router.reload();
     } catch {
       enqueueSnackbar(
@@ -169,18 +128,13 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
       enqueueSnackbar('יש להזין שם ועיר לכל החברים', { variant: 'error' });
       return;
     }
-
     try {
       const res = await apiFetch('/api/events/members', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ members: updatedMembers })
       });
-
-      if (!res.ok) {
-        throw new Error('http-error');
-      }
-
+      if (!res.ok) throw new Error('http-error');
       await res.json();
       setMembers(updatedMembers);
       setHasErrors(prev => ({ ...prev, members: false }));
@@ -190,16 +144,12 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
     }
   };
 
-  const addMember = () => {
-    setMembers([...members, { name: '', city: 'תל אביב יפו' }]);
-  };
-
+  const addMember = () => setMembers([...members, { name: '', city: 'תל אביב יפו' }]);
   const removeMember = (index: number) => {
     const newMembers = members.filter((_, i) => i !== index);
     setMembers(newMembers);
     setHasErrors(prev => ({ ...prev, members: !validateMembers(newMembers) }));
   };
-
   const updateMember = (index: number, field: keyof Member, value: string) => {
     const newMembers = [...members];
     newMembers[index] = { ...newMembers[index], [field]: value };
@@ -262,7 +212,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
         <Button
           variant="contained"
           onClick={() => handleUpdateMembers(members)}
-          disabled={!validateMembers(members)} // Ensures all existing members are valid before saving
+          disabled={!validateMembers(members)}
           sx={{ mt: 3 }}
           fullWidth
         >
@@ -292,7 +242,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
           validateOnMount
         >
           {({ values, errors, touched, isSubmitting, setFieldValue }) => {
-            // Update event errors when form validation changes
             useEffect(() => {
               setHasErrors(prev => ({
                 ...prev,
@@ -302,14 +251,11 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                 enqueueSnackbar('יש שגיאות בטופס. אנא בדוק את השדות שסומנו.', { variant: 'error' });
               }
             }, [errors]);
-
-            // Validate members on mount and when members change, for new events
             useEffect(() => {
               if (!event) {
                 setHasErrors(prev => ({ ...prev, members: !validateMembers(members) }));
               }
             }, [members, event]);
-
             return (
               <Form>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -320,8 +266,9 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                         <TabLabel label="רשימת חברים" hasError={hasErrors.members && !event} />
                       }
                     />
+                    {event && <Tab label={<TabLabel label="ניהול משתמשים" hasError={false} />} />}
                   </Tabs>
-                </Box>{' '}
+                </Box>
                 {currentTab === 0 && (
                   <Box sx={{ mb: 4 }}>
                     <Grid container spacing={3}>
@@ -362,32 +309,49 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                   </Box>
                 )}
                 {currentTab === 1 && <Box sx={{ mt: 2 }}>{renderMemberFields()}</Box>}
-                {!event && ( // Create Event Button
+                {currentTab === 2 && event && (
+                  <Box sx={{ mt: 3 }}>
+                    {!credentials || credentials.length === 0 ? (
+                      <Box
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        minHeight="200px"
+                      >
+                        <Paper sx={{ p: 3, textAlign: 'center', width: '100%', maxWidth: 'sm' }}>
+                          <Typography variant="h6" color="text.secondary">
+                            אין משתמשים להצגה.
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    ) : (
+                      <UsersTable users={credentials} />
+                    )}
+                  </Box>
+                )}
+                {!event && (
                   <Button
                     type="submit"
                     variant="contained"
                     fullWidth
                     sx={{ mt: 4 }}
-                    disabled={
-                      isSubmitting || hasErrors.event || hasErrors.members // This covers member validation for new events
-                    }
+                    disabled={isSubmitting || hasErrors.event || hasErrors.members}
                   >
                     {isSubmitting ? 'יוצר אירוע...' : 'צור אירוע'}
                   </Button>
                 )}
-                {event &&
-                  currentTab === 0 && ( // Update Event Details Button (only on event tab when editing)
-                    <Button
-                      type="submit" // This will trigger the main Formik handleSubmit
-                      variant="contained"
-                      fullWidth
-                      sx={{ mt: 3 }}
-                      disabled={isSubmitting || hasErrors.event}
-                    >
-                      {isSubmitting ? 'מעדכן אירוע...' : 'עדכן פרטי אירוע'}
-                    </Button>
-                  )}
-                {event && ( // Additional actions for existing events (Delete, Download)
+                {event && currentTab === 0 && (
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    sx={{ mt: 3 }}
+                    disabled={isSubmitting || hasErrors.event}
+                  >
+                    {isSubmitting ? 'מעדכן אירוע...' : 'עדכן פרטי אירוע'}
+                  </Button>
+                )}
+                {event && (
                   <Paper
                     elevation={0}
                     sx={{
@@ -405,7 +369,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
                       פעולות נוספות
                     </Typography>
                     <Stack justifyContent="center" direction={{ xs: 'column', sm: 'row' }} gap={2}>
-                      <DownloadUsersButton event={event} disabled={!event?.hasState} />
                       <Button variant="outlined" color="error" onClick={handleDelete} fullWidth>
                         מחק אירוע
                       </Button>
@@ -421,13 +384,13 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers }) => {
   );
 };
 
-// 4. LOG IN getServerSideProps
 export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const data = await serverSideGetRequests(
     {
       user: '/api/me',
       event: '/public/event',
-      initMembers: '/api/events/members'
+      initMembers: '/api/events/members',
+      credentials: '/api/admin/events/users/credentials'
     },
     ctx
   );
