@@ -29,7 +29,6 @@ import type { GetServerSidePropsContext } from 'next';
 import UsersTable from 'apps/frontend/components/admin/users-table';
 import { enqueueSnackbar } from 'notistack';
 
-// Define the shape of the entire form
 const createValidationSchema = (isNewEvent: boolean) =>
   z
     .object({
@@ -44,7 +43,7 @@ const createValidationSchema = (isNewEvent: boolean) =>
       cities: z.array(
         z.object({
           name: z.string().min(1, 'שם העיר לא יכול להיות ריק'),
-          numOfVoters: z.number()
+          numOfVoters: z.coerce.number().min(0, 'מספר המצביעים חייב להיות לפחות 0')
         })
       ),
       members: z.array(
@@ -56,13 +55,13 @@ const createValidationSchema = (isNewEvent: boolean) =>
     })
     .refine(data => !isNewEvent || data.members.length > 0, {
       message: 'ליצירת אירוע חדש, יש להזין לפחות חבר אחד',
-      path: ['members'] // Assign error to the members field
+      path: ['members']
     })
     .refine(
       data => data.members.every(member => data.cities.some(city => city.name === member.city)),
       {
         message: 'חבר אחד או יותר משויך לעיר שאינה קיימת ברשימה',
-        path: ['members'] // Assign error to the members field
+        path: ['members']
       }
     );
 
@@ -95,7 +94,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
   const handleSubmit = async (values: FormValues, { setSubmitting }: FormikHelpers<FormValues>) => {
     setSubmitting(true);
 
-    // Helper to reduce repetition for API calls
     const updateEndpoint = async (
       endpoint: string,
       method: 'POST' | 'PUT',
@@ -110,15 +108,12 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
-        // Create a specific error message to be caught below
         throw new Error(errorData?.message || `An error occurred while updating ${entityName}.`);
       }
       return res.json();
     };
 
     try {
-      // Step 1: Create or Update the main event details.
-      // This must succeed before we proceed.
       const eventDetailsPayload = {
         name: values.name,
         votingStands: values.votingStands,
@@ -131,8 +126,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
         'event details'
       );
 
-      // Step 2: Update the members list.
-      // This is a PUT because we are replacing the entire list for an existing event.
       await updateEndpoint(
         '/api/events/members',
         'PUT',
@@ -140,7 +133,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
         'members'
       );
 
-      // Step 3: Update the cities list.
       await updateEndpoint(
         '/api/admin/events/cities',
         'PUT',
@@ -148,17 +140,14 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
         'cities'
       );
 
-      // If all three requests succeed:
       enqueueSnackbar('האירוע נשמר בהצלחה', { variant: 'success' });
       router.reload();
     } catch (error: any) {
-      // Catches any error thrown from updateEndpoint
       console.error('Failed to save event data:', error);
       enqueueSnackbar(error.message || 'אופס, אירעה שגיאה בלתי צפויה.', {
         variant: 'error'
       });
     } finally {
-      // This will run regardless of success or failure
       setSubmitting(false);
     }
   };
@@ -188,7 +177,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
               (errors.votingStands && touched.votingStands) ||
               (errors.electionThreshold && touched.electionThreshold)
             );
-            // For arrays, we check if the error is a string (top-level) or an array (item-level)
             const hasMembersError = !!(errors.members && touched.members);
             const hasCitiesError = !!(errors.cities && touched.cities);
 
@@ -196,7 +184,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
               const trimmedName = newCityName.trim();
               if (trimmedName && !values.cities.some(c => c.name === trimmedName)) {
                 setFieldValue('cities', [...values.cities, { name: trimmedName, numOfVoters: 0 }]);
-                setNewCityName(''); // Clear input
+                setNewCityName('');
               } else if (!trimmedName) {
                 enqueueSnackbar('שם העיר אינו יכול להיות ריק.', {
                   variant: 'warning'
@@ -211,9 +199,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
             const handleDeleteCity = (cityName: string) => {
               const updatedCities = values.cities.filter(city => city.name !== cityName);
               const updatedMembers = values.members.map(member =>
-                member.city === cityName
-                  ? { ...member, city: '' } // Reset city for affected members
-                  : member
+                member.city === cityName ? { ...member, city: '' } : member
               );
               setFieldValue('cities', updatedCities);
               setFieldValue('members', updatedMembers);
@@ -230,12 +216,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                   {event ? 'עדכן אירוע' : 'צור אירוע חדש'}
                 </Button>
                 {event && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    // onClick={handleDelete}
-                    disabled={isSubmitting}
-                  >
+                  <Button variant="outlined" color="error" disabled={isSubmitting}>
                     מחק אירוע
                   </Button>
                 )}
@@ -328,7 +309,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                                   </MenuItem>
                                   {values.cities.map(city => (
                                     <MenuItem key={city.name} value={city.name}>
-                                      {city.name}
+                                      {city.name} ({city.numOfVoters} מצביעים)
                                     </MenuItem>
                                   ))}
                                 </FormikTextField>
@@ -380,7 +361,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                         הוסף עיר
                       </Button>
                     </Stack>
-                    {values.cities.map(city => (
+                    {values.cities.map((city, index) => (
                       <Paper
                         key={city.name}
                         elevation={1}
@@ -392,14 +373,29 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                           alignItems: 'center'
                         }}
                       >
-                        <Typography sx={{ flexGrow: 1 }}>{city.name}</Typography>
-                        <IconButton
-                          onClick={() => handleDeleteCity(city.name)}
-                          color="error"
-                          size="small"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <Grid container spacing={2} alignItems="center">
+                          <Grid item xs={6}>
+                            <Typography sx={{ flexGrow: 1 }}>{city.name}</Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <FormikTextField
+                              name={`cities.${index}.numOfVoters`}
+                              label="מספר מצביעים"
+                              type="number"
+                              fullWidth
+                              size="small"
+                            />
+                          </Grid>
+                          <Grid item xs={2}>
+                            <IconButton
+                              onClick={() => handleDeleteCity(city.name)}
+                              color="error"
+                              size="small"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Grid>
+                        </Grid>
                       </Paper>
                     ))}
                     {renderActionButtons()}
@@ -424,7 +420,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
   );
 };
 
-// No changes needed for getServerSideProps
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx: GetServerSidePropsContext
 ) => {
