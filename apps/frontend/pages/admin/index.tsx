@@ -309,7 +309,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                                   </MenuItem>
                                   {values.cities.map(city => (
                                     <MenuItem key={city.name} value={city.name}>
-                                      {city.name} ({city.numOfVoters} מצביעים)
+                                      {city.name}
                                     </MenuItem>
                                   ))}
                                 </FormikTextField>
