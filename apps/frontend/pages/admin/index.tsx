@@ -152,6 +152,30 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
     }
   };
 
+  const handleDelete = async () => {
+    if (!event?._id) return;
+
+    const confirmed = confirm('האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה ניתנת לביטול.');
+    if (!confirmed) return;
+
+    try {
+      const res = await apiFetch(`/api/admin/events/data`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || 'An error occurred while deleting the event.');
+      }
+
+      enqueueSnackbar('האירוע נמחק בהצלחה', { variant: 'success' });
+      router.push('/admin');
+    } catch (error: any) {
+      console.error('Failed to delete event:', error);
+      enqueueSnackbar(error.message || 'אופס, אירעה שגיאה בלתי צפויה.', { variant: 'error' });
+    }
+  };
+
   const TabLabel = ({ label, hasError }: { label: string; hasError: boolean }) => (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
       <span>{label}</span>
@@ -216,7 +240,12 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                   {event ? 'עדכן אירוע' : 'צור אירוע חדש'}
                 </Button>
                 {event && (
-                  <Button variant="outlined" color="error" disabled={isSubmitting}>
+                  <Button
+                    onClick={handleDelete}
+                    variant="outlined"
+                    color="error"
+                    disabled={isSubmitting}
+                  >
                     מחק אירוע
                   </Button>
                 )}

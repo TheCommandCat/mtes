@@ -68,6 +68,16 @@ export async function deleteRoundVotes(roundId: string) {
   await db.collection<VotingStatus>('votingStatus').deleteMany({ roundId: new ObjectId(roundId) });
 }
 
+// Delete all votes
+export const deleteVotes = () => {
+  return db.collection<Vote>('votes').deleteMany({});
+};
+
+// Delete all voting statuses
+export const deleteVotingStatuses = () => {
+  return db.collection<VotingStatus>('votingStatus').deleteMany({});
+};
+
 // Check if round is locked
 export async function isRoundLocked(roundId: string) {
   const round = await db.collection<Round>('rounds').findOne({ _id: new ObjectId(roundId) });
