@@ -38,7 +38,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     res.cookie('auth-token', token, {
       expires: expires.toDate(),
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: 'lax'
     });
     return res.json(user);
