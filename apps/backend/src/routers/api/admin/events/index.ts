@@ -7,6 +7,15 @@ import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 import { CreateVotingStandUsers } from 'apps/backend/src/lib/schedule/voting-stands-users';
 
+const randomString = (length: number) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 const router = express.Router({ mergeParams: true });
 
 function getInitialDivisionState(): ElectionState {
@@ -133,7 +142,7 @@ router.put(
         db.addUser({
           isAdmin: false,
           role: 'voting-stand',
-          password: 'admin',
+          password: randomString(4),
           lastPasswordSetDate: new Date(),
           roleAssociation: {
             type: 'stand',
