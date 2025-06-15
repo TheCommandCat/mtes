@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import divisionUsersRouter from './users';
+import citiesRouter from './cities';
 import { ElectionEvent, ElectionState, User, Member } from '@mtes/types'; // Added Member import
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
@@ -172,5 +173,6 @@ router.delete(
 );
 
 router.use('/users', divisionUsersRouter);
+router.use('/cities', citiesRouter);
 
 export default router;
