@@ -1,38 +1,23 @@
-import { GetServerSideProps, NextPage } from 'next';
-import { useRouter } from 'next/router';
-import {
-  Paper,
-  Typography,
-  Stack,
-  Button,
-  Box,
-  TextField,
-  IconButton,
-  Tabs,
-  Tab,
-  MenuItem,
-  Grid,
-  Select,
-  FormControl,
-  InputLabel,
-  Switch,
-  FormControlLabel
-} from '@mui/material';
-import type { WithId } from 'mongodb';
-import type { ElectionEvent, Member, User, City } from '@mtes/types';
-import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
-import Layout from '../../components/layout';
 import { useState } from 'react';
-import { Formik, Form, FieldArray, FormikHelpers, Field } from 'formik';
-import FormikTextField from '../../components/general/forms/formik-text-field';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import { GetServerSideProps, NextPage } from 'next';
+import type { GetServerSidePropsContext } from 'next';
+import { useRouter } from 'next/router';
+import { Paper, Typography, Stack, Button, Box, Tabs, Tab } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
+import { enqueueSnackbar } from 'notistack';
+import { Formik, Form, FormikHelpers } from 'formik';
 import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import type { GetServerSidePropsContext } from 'next';
-import UsersTable from 'apps/frontend/components/admin/users-table';
-import { enqueueSnackbar } from 'notistack';
+
+import type { WithId } from 'mongodb';
+import type { ElectionEvent, Member, User, City } from '@mtes/types';
+
+import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
+import Layout from '../../components/layout';
+import UsersTable from '../../components/admin/users-table';
+import EventDetailsForm from '../../components/admin/EventDetailsForm';
+import MembersManagementForm from '../../components/admin/MembersManagementForm';
+import CitiesManagementForm from '../../components/admin/CitiesManagementForm';
 
 const createValidationSchema = (isNewEvent: boolean) =>
   z
@@ -110,7 +95,6 @@ export interface PageProps {
 const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, credentials }) => {
   const router = useRouter();
   const [currentTab, setCurrentTab] = useState(0);
-  const [newCityName, setNewCityName] = useState('');
 
   const isNewEvent = !event;
   const validationSchema = createValidationSchema(isNewEvent);
@@ -237,22 +221,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
             const hasMembersError = !!(errors.members && touched.members);
             const hasCitiesError = !!(errors.cities && touched.cities);
 
-            const handleAddCity = () => {
-              const trimmedName = newCityName.trim();
-              if (trimmedName && !values.cities.some(c => c.name === trimmedName)) {
-                setFieldValue('cities', [...values.cities, { name: trimmedName, numOfVoters: 0 }]);
-                setNewCityName('');
-              } else if (!trimmedName) {
-                enqueueSnackbar('שם העיר אינו יכול להיות ריק.', {
-                  variant: 'warning'
-                });
-              } else {
-                enqueueSnackbar('עיר עם שם זה כבר קיימת.', {
-                  variant: 'info'
-                });
-              }
-            };
-
             const renderActionButtons = () => (
               <Stack
                 direction="row"
@@ -292,227 +260,25 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                   </Tabs>
                 </Box>
 
-                {currentTab === 0 && (
-                  <Paper elevation={3} sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                      פרטי אירוע
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <FormikTextField name="name" label="שם האירוע" fullWidth />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <FormikTextField
-                          name="votingStands"
-                          label="מספר עמדות הצבעה"
-                          type="number"
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <FormikTextField
-                          name="electionThreshold"
-                          label="אחוז הכשירות (%)"
-                          type="number"
-                          fullWidth
-                        />
-                      </Grid>
-                    </Grid>
-                    {renderActionButtons()}
-                  </Paper>
-                )}
+                {currentTab === 0 && <EventDetailsForm renderActionButtons={renderActionButtons} />}
 
                 {currentTab === 1 && (
-                  <Paper elevation={3} sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                      ניהול חברים
-                    </Typography>
-                    {typeof errors.members === 'string' && (
-                      <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-                        {errors.members}
-                      </Typography>
-                    )}
-                    <FieldArray name="members">
-                      {({ remove, push }) => (
-                        <>
-                          {values.members.map((_member, index) => (
-                            <Grid
-                              container
-                              spacing={2}
-                              key={index}
-                              sx={{ mb: 2 }}
-                              alignItems="center"
-                            >
-                              <Grid item xs={12} sm={4}>
-                                <FormikTextField
-                                  name={`members.${index}.name`}
-                                  label="שם חבר"
-                                  fullWidth
-                                />
-                              </Grid>
-                              <Grid item xs={12} sm={3}>
-                                <FormControl fullWidth>
-                                  <InputLabel id={`city-select-label-${index}`}>עיר</InputLabel>
-                                  <Field
-                                    as={Select}
-                                    name={`members[${index}].city`}
-                                    labelId={`city-select-label-${index}`}
-                                    label="עיר"
-                                    required
-                                  >
-                                    {values.cities.map(city => (
-                                      <MenuItem key={city.name} value={city.name}>
-                                        {city.name}
-                                      </MenuItem>
-                                    ))}
-                                  </Field>
-                                </FormControl>
-                              </Grid>
-                              <Grid item xs={12} sm={3}>
-                                <FormControlLabel
-                                  control={
-                                    <Switch
-                                      checked={_member.isMM || false}
-                                      onChange={e => {
-                                        const newIsMM = e.target.checked;
-                                        let finalIsMM = newIsMM;
-
-                                        if (newIsMM === false) {
-                                          const cityOfMember = values.members[index].city;
-                                          const cityConfig = values.cities.find(
-                                            c => c.name === cityOfMember
-                                          );
-                                          const maxVotersForCity = cityConfig
-                                            ? cityConfig.numOfVoters
-                                            : 0;
-
-                                          let otherNonMMCountInCity = 0;
-                                          values.members.forEach((m, idx) => {
-                                            if (
-                                              idx !== index &&
-                                              m.city === cityOfMember &&
-                                              !m.isMM
-                                            ) {
-                                              otherNonMMCountInCity++;
-                                            }
-                                          });
-
-                                          if (otherNonMMCountInCity + 1 > maxVotersForCity) {
-                                            finalIsMM = true;
-                                            enqueueSnackbar(
-                                              `הגעת למכסת הנציגים המקסימלית (${maxVotersForCity}) עבור ${cityOfMember}. החבר "${values.members[index].name}" סומן כממלא מקום.`,
-                                              { variant: 'warning' }
-                                            );
-                                          }
-                                        }
-                                        setFieldValue(`members[${index}].isMM`, finalIsMM);
-                                      }}
-                                    />
-                                  }
-                                  label={_member.isMM ? 'מ"מ' : 'נציג'}
-                                  sx={{ justifyContent: 'flex-start' }}
-                                />
-                              </Grid>
-                              <Grid
-                                item
-                                xs={12}
-                                sm={2}
-                                sx={{ textAlign: { xs: 'left', sm: 'right' } }}
-                              >
-                                <IconButton onClick={() => remove(index)} color="error">
-                                  <DeleteIcon />
-                                </IconButton>
-                              </Grid>
-                            </Grid>
-                          ))}
-                          <Button
-                            startIcon={<AddIcon />}
-                            onClick={() =>
-                              push({
-                                name: '',
-                                city: values.cities[0]?.name || ''
-                              })
-                            }
-                            variant="outlined"
-                          >
-                            הוסף חבר
-                          </Button>
-                        </>
-                      )}
-                    </FieldArray>
-                    {renderActionButtons()}
-                  </Paper>
+                  <MembersManagementForm
+                    values={values}
+                    errors={errors}
+                    setFieldValue={setFieldValue}
+                    renderActionButtons={renderActionButtons}
+                  />
                 )}
 
                 {currentTab === 2 && (
-                  <Paper elevation={3} sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                      ניהול ערים
-                    </Typography>
-                    <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                      <TextField
-                        label="שם עיר חדשה"
-                        value={newCityName}
-                        onChange={e => setNewCityName(e.target.value)}
-                        onKeyPress={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddCity();
-                          }
-                        }}
-                      />
-                      <Button onClick={handleAddCity} variant="contained" startIcon={<AddIcon />}>
-                        הוסף עיר
-                      </Button>
-                    </Stack>
-                    <FieldArray name="cities">
-                      {cityFieldArrayHelpers => (
-                        <>
-                          {values.cities.map((city, index) => (
-                            <Paper key={index} elevation={2} sx={{ p: 2, mb: 2 }}>
-                              <Grid container spacing={2} alignItems="center">
-                                <Grid item xs={12} sm={5}>
-                                  <FormikTextField
-                                    name={`cities[${index}].name`}
-                                    label="שם עיר"
-                                    fullWidth
-                                    disabled={
-                                      !isNewEvent && initCities.some(c => c.name === city.name)
-                                    }
-                                  />
-                                </Grid>
-                                <Grid item xs={12} sm={5}>
-                                  <FormikTextField
-                                    name={`cities[${index}].numOfVoters`}
-                                    label="מספר מצביעים"
-                                    type="number"
-                                    fullWidth
-                                  />
-                                </Grid>
-                                <Grid
-                                  item
-                                  xs={12}
-                                  sm={2}
-                                  sx={{ textAlign: { xs: 'left', sm: 'right' } }}
-                                >
-                                  <IconButton
-                                    onClick={() => cityFieldArrayHelpers.remove(index)}
-                                    color="error"
-                                    disabled={
-                                      !isNewEvent && initCities.some(c => c.name === city.name)
-                                    }
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </Grid>
-                              </Grid>
-                            </Paper>
-                          ))}
-                        </>
-                      )}
-                    </FieldArray>
-                    {renderActionButtons()}
-                  </Paper>
+                  <CitiesManagementForm
+                    values={values}
+                    setFieldValue={setFieldValue}
+                    renderActionButtons={renderActionButtons}
+                    isNewEvent={isNewEvent}
+                    initCities={initCities}
+                  />
                 )}
 
                 {currentTab === 3 && (

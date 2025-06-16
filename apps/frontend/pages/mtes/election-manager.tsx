@@ -346,15 +346,11 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       });
       if (!res.ok) throw new Error('Failed to delete round');
       enqueueSnackbar('Round deleted successfully', { variant: 'success' });
-      refreshData();
+      router.replace(router.asPath);
     } catch (error) {
       enqueueSnackbar('Failed to delete round', { variant: 'error' });
     }
     setRoundToDelete(null);
-  };
-
-  const refreshData = () => {
-    router.replace(router.asPath);
   };
 
   const handleLockRound = async () => {
@@ -646,7 +642,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                         setSelectedRound={setSelectedRound}
                         handleShowResults={handleShowResults}
                         members={members}
-                        refreshData={refreshData}
+                        refreshData={() => router.replace(router.asPath)}
                       />
                     </Box>
                   )}
