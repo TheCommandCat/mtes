@@ -206,19 +206,14 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                     }
                   }}
                 >
-                  תפקיד
+                  סטטוס
                 </TableSortLabel>
               </TableCell>
-              <TableCell
-                align="center"
-                sx={headerCellSx}
-                sortDirection={sortConfig?.key === 'status' ? sortConfig.direction : false}
-              >
+              <TableCell align="center" sx={headerCellSx}>
                 <TableSortLabel
-                  active={sortConfig?.key === 'status'}
-                  direction={sortConfig?.key === 'status' ? sortConfig.direction : 'asc'}
-                  onClick={() => requestSort('status')}
-                  IconComponent={sortConfig?.key === 'status' ? undefined : SortPlaceholderIcon}
+                  active={false}
+                  hideSortIcon
+                  IconComponent={SortPlaceholderIcon}
                   sx={{
                     '& .MuiTableSortLabel-icon': {
                       color: 'rgba(0, 0, 0, 0.87) !important',
@@ -232,12 +227,12 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedMembers.map((member) => (
+            {sortedMembers.map(member => (
               <TableRow
                 key={member._id.toString()}
                 sx={{
-                  '&:nth-of-type(odd)': { backgroundColor: alpha("#000", 0.02) },
-                  '&:hover': { backgroundColor: alpha("#000", 0.04) }
+                  '&:nth-of-type(odd)': { backgroundColor: alpha('#000', 0.02) },
+                  '&:hover': { backgroundColor: alpha('#000', 0.04) }
                 }}
               >
                 <TableCell align="center" sx={commonCellSx}>
@@ -250,27 +245,39 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                   {member.isMM ? 'מ"מ' : 'נציג'}
                 </TableCell>
                 <TableCell align="center" sx={commonCellSx}>
-                  {member.isPresent ? (
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={() => onMemberUpdate(member._id.toString(), false)}
-                      startIcon={<LogoutIcon />}
-                      sx={{ minWidth: '120px' }}
-                    >
-                      צ׳ק-אאוט
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => onMemberUpdate(member._id.toString(), true)}
-                      startIcon={<LoginIcon />}
-                      sx={{ minWidth: '120px' }}
-                    >
-                      צ׳ק-אין
-                    </Button>
-                  )}
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                    {member.isPresent ? (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => onMemberUpdate(member._id.toString(), false)}
+                        startIcon={<LogoutIcon />}
+                        sx={{ minWidth: '110px' }}
+                      >
+                        צ׳ק-אאוט
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => onMemberUpdate(member._id.toString(), true)}
+                        startIcon={<LoginIcon />}
+                        sx={{ minWidth: '110px' }}
+                      >
+                        צ׳ק-אין
+                      </Button>
+                    )}
+                    {!member.isMM && (
+                      <Button
+                        variant="outlined"
+                        // onClick={() => console.log('Choose MM for:', member.name)} // Placeholder action
+                        disabled // Placeholder - to be implemented
+                        sx={{ minWidth: '110px' }}
+                      >
+                        בחר מ"מ
+                      </Button>
+                    )}
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}

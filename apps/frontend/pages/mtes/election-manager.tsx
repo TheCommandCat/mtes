@@ -98,12 +98,19 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   };
 
   const handleMemberPresence = (memberId: string, isPresent: boolean) => {
+    const memberToUpdate = members.find(m => m._id.toString() === memberId);
+    if (!memberToUpdate) return;
+
     const updatedMembers = members.map(member =>
       member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
     );
     setMembers(updatedMembers);
 
-    apiFetch(`/api/events/members/${memberId}/presence`, {
+    const endpoint = memberToUpdate.isMM
+      ? `/api/events/mm-members/${memberId}/presence`
+      : `/api/events/members/${memberId}/presence`;
+
+    apiFetch(endpoint, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPresent: isPresent })
@@ -696,12 +703,19 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
         rounds: '/api/events/rounds',
         electionState: '/api/events/state',
         members: '/api/events/members',
+        mmMembers: '/api/events/mm-members', // Added mmMembers endpoint
         event: '/public/event'
       },
       ctx
     );
 
-    return { props: { user, ...data } };
+    // Combine regular members and MM members
+    const allMembers = [
+      ...(data.members || []),
+      ...(data.mmMembers || []).map((mm: WithId<Member>) => ({ ...mm, isMM: true })) // Mark MM members and type mm
+    ];
+
+    return { props: { user, ...data, members: allMembers } }; // Pass combined list as members
   } catch {
     return { redirect: { destination: '/login', permanent: false } };
   }
