@@ -11,14 +11,19 @@ import {
   Tabs,
   Tab,
   MenuItem,
-  Grid
+  Grid,
+  Select,
+  FormControl,
+  InputLabel,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import type { WithId } from 'mongodb';
 import type { ElectionEvent, Member, User, City } from '@mtes/types';
 import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
 import Layout from '../../components/layout';
 import { useState } from 'react';
-import { Formik, Form, FieldArray, FormikHelpers } from 'formik';
+import { Formik, Form, FieldArray, FormikHelpers, Field } from 'formik';
 import FormikTextField from '../../components/general/forms/formik-text-field';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -48,8 +53,11 @@ const createValidationSchema = (isNewEvent: boolean) =>
       ),
       members: z.array(
         z.object({
+          _id: z.string().optional(),
           name: z.string().min(1, 'שם החבר הוא שדה חובה'),
-          city: z.string().min(1, 'יש לבחור עיר לחבר')
+          city: z.string().min(1, 'יש לבחור עיר לחבר'),
+          isMM: z.boolean().optional(),
+          isPresent: z.boolean().optional()
         })
       )
     })
@@ -63,6 +71,30 @@ const createValidationSchema = (isNewEvent: boolean) =>
         message: 'חבר אחד או יותר משויך לעיר שאינה קיימת ברשימה',
         path: ['members']
       }
+    )
+    .refine(
+      data => {
+        const cityCounts = data.cities.reduce((acc, city) => {
+          acc[city.name] = city.numOfVoters;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const memberCountsByCity: Record<string, number> = {};
+        for (const member of data.members) {
+          if (!member.isMM) {
+            memberCountsByCity[member.city] = (memberCountsByCity[member.city] || 0) + 1;
+            if (memberCountsByCity[member.city] > (cityCounts[member.city] || 0)) {
+              return false;
+            }
+          }
+        }
+        return true;
+      },
+      {
+        message:
+          'מספר הנציגים בעיר אינו יכול לעלות על מספר המצביעים שהוגדר לאותה עיר. חברים נוספים מאותה עיר יסומנו אוטומטית כממלאי מקום.',
+        path: ['members']
+      }
     );
 
 export type FormValues = z.infer<ReturnType<typeof createValidationSchema>>;
@@ -70,7 +102,7 @@ export type FormValues = z.infer<ReturnType<typeof createValidationSchema>>;
 export interface PageProps {
   user: WithId<User>;
   event?: WithId<ElectionEvent>;
-  initMembers: Member[];
+  initMembers: WithId<Member>[];
   initCities: City[];
   credentials: User[];
 }
@@ -87,7 +119,15 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
     name: event?.name || '',
     votingStands: event?.votingStands || 1,
     electionThreshold: event?.electionThreshold || 50,
-    members: Array.isArray(initMembers) ? initMembers : [],
+    members: Array.isArray(initMembers)
+      ? initMembers.map(m => ({
+          _id: m._id.toString(),
+          name: m.name,
+          city: m.city,
+          isMM: m.isMM || false,
+          isPresent: m.isPresent || false
+        }))
+      : [],
     cities: Array.isArray(initCities) ? initCities : []
   };
 
@@ -126,12 +166,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
         'event details'
       );
 
-      await updateEndpoint(
-        '/api/events/members',
-        'PUT',
-        { members: values.members as Member[] },
-        'members'
-      );
+      await updateEndpoint('/api/events/members', 'PUT', { members: values.members }, 'members');
 
       await updateEndpoint(
         '/api/admin/events/cities',
@@ -143,7 +178,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
       enqueueSnackbar('האירוע נשמר בהצלחה', { variant: 'success' });
       router.reload();
     } catch (error: any) {
-      console.error('Failed to save event data:', error);
       enqueueSnackbar(error.message || 'אופס, אירעה שגיאה בלתי צפויה.', {
         variant: 'error'
       });
@@ -171,7 +205,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
       enqueueSnackbar('האירוע נמחק בהצלחה', { variant: 'success' });
       router.push('/admin');
     } catch (error: any) {
-      console.error('Failed to delete event:', error);
       enqueueSnackbar(error.message || 'אופס, אירעה שגיאה בלתי צפויה.', { variant: 'error' });
     }
   };
@@ -218,15 +251,6 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                   variant: 'info'
                 });
               }
-            };
-
-            const handleDeleteCity = (cityName: string) => {
-              const updatedCities = values.cities.filter(city => city.name !== cityName);
-              const updatedMembers = values.members.map(member =>
-                member.city === cityName ? { ...member, city: '' } : member
-              );
-              setFieldValue('cities', updatedCities);
-              setFieldValue('members', updatedMembers);
             };
 
             const renderActionButtons = () => (
@@ -319,32 +343,83 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                               sx={{ mb: 2 }}
                               alignItems="center"
                             >
-                              <Grid item xs={5}>
+                              <Grid item xs={12} sm={4}>
                                 <FormikTextField
                                   name={`members.${index}.name`}
                                   label="שם חבר"
                                   fullWidth
                                 />
                               </Grid>
-                              <Grid item xs={5}>
-                                <FormikTextField
-                                  select
-                                  name={`members.${index}.city`}
-                                  label="עיר"
-                                  fullWidth
-                                >
-                                  <MenuItem value="">
-                                    <em>בחר עיר</em>
-                                  </MenuItem>
-                                  {values.cities.map(city => (
-                                    <MenuItem key={city.name} value={city.name}>
-                                      {city.name}
-                                    </MenuItem>
-                                  ))}
-                                </FormikTextField>
+                              <Grid item xs={12} sm={3}>
+                                <FormControl fullWidth>
+                                  <InputLabel id={`city-select-label-${index}`}>עיר</InputLabel>
+                                  <Field
+                                    as={Select}
+                                    name={`members[${index}].city`}
+                                    labelId={`city-select-label-${index}`}
+                                    label="עיר"
+                                    required
+                                  >
+                                    {values.cities.map(city => (
+                                      <MenuItem key={city.name} value={city.name}>
+                                        {city.name}
+                                      </MenuItem>
+                                    ))}
+                                  </Field>
+                                </FormControl>
                               </Grid>
-                              <Grid item xs={2}>
-                                <IconButton onClick={() => remove(index)}>
+                              <Grid item xs={12} sm={3}>
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      checked={_member.isMM || false}
+                                      onChange={e => {
+                                        const newIsMM = e.target.checked;
+                                        let finalIsMM = newIsMM;
+
+                                        if (newIsMM === false) {
+                                          const cityOfMember = values.members[index].city;
+                                          const cityConfig = values.cities.find(
+                                            c => c.name === cityOfMember
+                                          );
+                                          const maxVotersForCity = cityConfig
+                                            ? cityConfig.numOfVoters
+                                            : 0;
+
+                                          let otherNonMMCountInCity = 0;
+                                          values.members.forEach((m, idx) => {
+                                            if (
+                                              idx !== index &&
+                                              m.city === cityOfMember &&
+                                              !m.isMM
+                                            ) {
+                                              otherNonMMCountInCity++;
+                                            }
+                                          });
+
+                                          if (otherNonMMCountInCity + 1 > maxVotersForCity) {
+                                            finalIsMM = true;
+                                            enqueueSnackbar(
+                                              `הגעת למכסת הנציגים המקסימלית (${maxVotersForCity}) עבור ${cityOfMember}. החבר "${values.members[index].name}" סומן כממלא מקום.`,
+                                              { variant: 'warning' }
+                                            );
+                                          }
+                                        }
+                                        setFieldValue(`members[${index}].isMM`, finalIsMM);
+                                      }}
+                                    />
+                                  }
+                                  label={_member.isMM ? 'מ"מ' : 'נציג'}
+                                  sx={{ justifyContent: 'flex-start' }}
+                                />
+                              </Grid>
+                              <Grid
+                                item
+                                xs={12}
+                                sm={2}
+                                sx={{ textAlign: { xs: 'left', sm: 'right' } }}
+                              >
+                                <IconButton onClick={() => remove(index)} color="error">
                                   <DeleteIcon />
                                 </IconButton>
                               </Grid>
@@ -390,43 +465,52 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                         הוסף עיר
                       </Button>
                     </Stack>
-                    {values.cities.map((city, index) => (
-                      <Paper
-                        key={city.name}
-                        elevation={1}
-                        sx={{
-                          p: 1,
-                          mb: 1,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item xs={6}>
-                            <Typography sx={{ flexGrow: 1 }}>{city.name}</Typography>
-                          </Grid>
-                          <Grid item xs={4}>
-                            <FormikTextField
-                              name={`cities.${index}.numOfVoters`}
-                              label="מספר מצביעים"
-                              type="number"
-                              fullWidth
-                              size="small"
-                            />
-                          </Grid>
-                          <Grid item xs={2}>
-                            <IconButton
-                              onClick={() => handleDeleteCity(city.name)}
-                              color="error"
-                              size="small"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Grid>
-                        </Grid>
-                      </Paper>
-                    ))}
+                    <FieldArray name="cities">
+                      {cityFieldArrayHelpers => (
+                        <>
+                          {values.cities.map((city, index) => (
+                            <Paper key={index} elevation={2} sx={{ p: 2, mb: 2 }}>
+                              <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={12} sm={5}>
+                                  <FormikTextField
+                                    name={`cities[${index}].name`}
+                                    label="שם עיר"
+                                    fullWidth
+                                    disabled={
+                                      !isNewEvent && initCities.some(c => c.name === city.name)
+                                    }
+                                  />
+                                </Grid>
+                                <Grid item xs={12} sm={5}>
+                                  <FormikTextField
+                                    name={`cities[${index}].numOfVoters`}
+                                    label="מספר מצביעים"
+                                    type="number"
+                                    fullWidth
+                                  />
+                                </Grid>
+                                <Grid
+                                  item
+                                  xs={12}
+                                  sm={2}
+                                  sx={{ textAlign: { xs: 'left', sm: 'right' } }}
+                                >
+                                  <IconButton
+                                    onClick={() => cityFieldArrayHelpers.remove(index)}
+                                    color="error"
+                                    disabled={
+                                      !isNewEvent && initCities.some(c => c.name === city.name)
+                                    }
+                                  >
+                                    <DeleteIcon />
+                                  </IconButton>
+                                </Grid>
+                              </Grid>
+                            </Paper>
+                          ))}
+                        </>
+                      )}
+                    </FieldArray>
                     {renderActionButtons()}
                   </Paper>
                 )}
@@ -436,7 +520,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                     <Typography variant="h6" gutterBottom>
                       ניהול משתמשים
                     </Typography>
-                    <UsersTable users={credentials || []} />
+                    <UsersTable users={credentials} />
                     {renderActionButtons()}
                   </Paper>
                 )}
@@ -462,14 +546,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     },
     ctx
   );
-
-  console.log('Server-side data fetched:', {
-    user: data.user,
-    event: data.event,
-    initMembers: data.initMembers,
-    initCities: data.initCities,
-    credentials: data.credentials
-  });
 
   return {
     props: {
