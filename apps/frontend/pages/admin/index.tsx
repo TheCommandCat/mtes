@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { Paper, Typography, Stack, Button, Box, Tabs, Tab } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
 import { enqueueSnackbar } from 'notistack';
-import { Formik, Form, FormikHelpers } from 'formik';
+import { Formik, Form, FormikHelpers, getIn } from 'formik';
 import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 
@@ -18,6 +18,13 @@ import UsersTable from '../../components/admin/users-table';
 import EventDetailsForm from '../../components/admin/EventDetailsForm';
 import MembersManagementForm from '../../components/admin/MembersManagementForm';
 import CitiesManagementForm from '../../components/admin/CitiesManagementForm';
+
+const memberFormSchema = z.object({
+  _id: z.string().optional(),
+  name: z.string().min(1, 'שם החבר הוא שדה חובה'),
+  city: z.string().min(1, 'יש לבחור עיר לחבר'),
+  isPresent: z.boolean().optional().default(false)
+});
 
 const createValidationSchema = (isNewEvent: boolean) =>
   z
@@ -36,49 +43,44 @@ const createValidationSchema = (isNewEvent: boolean) =>
           numOfVoters: z.coerce.number().min(0, 'מספר המצביעים חייב להיות לפחות 0')
         })
       ),
-      members: z.array(
-        z.object({
-          _id: z.string().optional(),
-          name: z.string().min(1, 'שם החבר הוא שדה חובה'),
-          city: z.string().min(1, 'יש לבחור עיר לחבר'),
-          isMM: z.boolean().optional(),
-          isPresent: z.boolean().optional()
-        })
-      )
+      regularMembers: z.array(memberFormSchema),
+      mmMembers: z.array(memberFormSchema)
     })
-    .refine(data => !isNewEvent || data.members.length > 0, {
-      message: 'ליצירת אירוע חדש, יש להזין לפחות חבר אחד',
-      path: ['members']
+    .refine(data => !isNewEvent || data.regularMembers.length + data.mmMembers.length > 0, {
+      message: 'ליצירת אירוע חדש, יש להזין לפחות חבר אחד (נציג או מ"מ)',
+      path: ['regularMembers'] // Or a general path
     })
     .refine(
-      data => data.members.every(member => data.cities.some(city => city.name === member.city)),
+      data => {
+        const allMembers = [...data.regularMembers, ...data.mmMembers];
+        return allMembers.every(member => data.cities.some(city => city.name === member.city));
+      },
       {
         message: 'חבר אחד או יותר משויך לעיר שאינה קיימת ברשימה',
-        path: ['members']
+        path: ['regularMembers'] // Or a general path
       }
     )
     .refine(
       data => {
-        const cityCounts = data.cities.reduce((acc, city) => {
+        const cityConfigs = data.cities.reduce((acc, city) => {
           acc[city.name] = city.numOfVoters;
           return acc;
         }, {} as Record<string, number>);
 
-        const memberCountsByCity: Record<string, number> = {};
-        for (const member of data.members) {
-          if (!member.isMM) {
-            memberCountsByCity[member.city] = (memberCountsByCity[member.city] || 0) + 1;
-            if (memberCountsByCity[member.city] > (cityCounts[member.city] || 0)) {
-              return false;
-            }
+        for (const city of data.cities) {
+          const regularMembersInCityCount = data.regularMembers.filter(
+            m => m.city === city.name
+          ).length;
+          if (regularMembersInCityCount > (cityConfigs[city.name] || 0)) {
+            return false;
           }
         }
         return true;
       },
       {
         message:
-          'מספר הנציגים בעיר אינו יכול לעלות על מספר המצביעים שהוגדר לאותה עיר. חברים נוספים מאותה עיר יסומנו אוטומטית כממלאי מקום.',
-        path: ['members']
+          'מספר הנציגים בעיר אינו יכול לעלות על מספר המצביעים שהוגדר לאותה עיר. יש להעביר חברים עודפים לרשימת ממלאי מקום.',
+        path: ['regularMembers']
       }
     );
 
@@ -87,12 +89,20 @@ export type FormValues = z.infer<ReturnType<typeof createValidationSchema>>;
 export interface PageProps {
   user: WithId<User>;
   event?: WithId<ElectionEvent>;
-  initMembers: WithId<Member>[];
+  initMembers: WithId<Member>[]; // These are regular members (isMM: false or undefined)
+  initMMMembers: WithId<Member>[]; // These are MM members (isMM: true)
   initCities: City[];
   credentials: User[];
 }
 
-const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, credentials }) => {
+const Page: NextPage<PageProps> = ({
+  user,
+  event,
+  initMembers,
+  initMMMembers,
+  initCities,
+  credentials
+}) => {
   const router = useRouter();
   const [currentTab, setCurrentTab] = useState(0);
 
@@ -103,14 +113,25 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
     name: event?.name || '',
     votingStands: event?.votingStands || 1,
     electionThreshold: event?.electionThreshold || 50,
-    members: Array.isArray(initMembers)
-      ? initMembers.map(m => ({
-          _id: m._id.toString(),
-          name: m.name,
-          city: m.city,
-          isMM: m.isMM || false,
-          isPresent: m.isPresent || false
-        }))
+    regularMembers: Array.isArray(initMembers)
+      ? initMembers
+          .filter(m => !m.isMM) // Ensure only non-MM members (isMM is false or undefined)
+          .map(m => ({
+            _id: m._id.toString(),
+            name: m.name,
+            city: m.city,
+            isPresent: m.isPresent || false
+          }))
+      : [],
+    mmMembers: Array.isArray(initMMMembers)
+      ? initMMMembers
+          .filter(m => m.isMM === true) // Ensure only explicitly MM members
+          .map(m => ({
+            _id: m._id.toString(),
+            name: m.name,
+            city: m.city,
+            isPresent: m.isPresent || false
+          }))
       : [],
     cities: Array.isArray(initCities) ? initCities : []
   };
@@ -150,7 +171,34 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
         'event details'
       );
 
-      await updateEndpoint('/api/events/members', 'PUT', { members: values.members }, 'members');
+      const regularMembersPayload = values.regularMembers.map(m => ({
+        ...m,
+        isMM: false,
+        isPresent: m.isPresent || false
+      }));
+      const mmMembersPayload = values.mmMembers.map(m => ({
+        ...m,
+        isMM: true,
+        isPresent: m.isPresent || false
+      }));
+
+      await updateEndpoint(
+        '/api/events/members',
+        'PUT',
+        { members: regularMembersPayload },
+        'members'
+      );
+
+      // Send MM members to a different endpoint
+      if (mmMembersPayload.length > 0 || event) {
+        // Always send MM members if event exists, even if empty to clear them
+        await updateEndpoint(
+          '/api/events/mm-members',
+          'PUT',
+          { mmMembers: mmMembersPayload },
+          'MM members'
+        );
+      }
 
       await updateEndpoint(
         '/api/admin/events/cities',
@@ -218,7 +266,10 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
               (errors.votingStands && touched.votingStands) ||
               (errors.electionThreshold && touched.electionThreshold)
             );
-            const hasMembersError = !!(errors.members && touched.members);
+            const hasMembersError = !!(
+              (getIn(errors, 'regularMembers') && getIn(touched, 'regularMembers')) ||
+              (getIn(errors, 'mmMembers') && getIn(touched, 'mmMembers'))
+            );
             const hasCitiesError = !!(errors.cities && touched.cities);
 
             const renderActionButtons = () => (
@@ -263,12 +314,28 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
                 {currentTab === 0 && <EventDetailsForm renderActionButtons={renderActionButtons} />}
 
                 {currentTab === 1 && (
-                  <MembersManagementForm
-                    values={values}
-                    errors={errors}
-                    setFieldValue={setFieldValue}
-                    renderActionButtons={renderActionButtons}
-                  />
+                  <Stack spacing={3}>
+                    <MembersManagementForm
+                      title="ניהול נציגים"
+                      membersFieldName="regularMembers"
+                      values={values}
+                      errors={errors}
+                      setFieldValue={setFieldValue}
+                      renderActionButtons={null} // Buttons rendered once below
+                      isMMList={false}
+                    />
+                    <MembersManagementForm
+                      title="ניהול ממלאי מקום"
+                      membersFieldName="mmMembers"
+                      values={values}
+                      errors={errors}
+                      setFieldValue={setFieldValue}
+                      renderActionButtons={null} // Buttons rendered once below
+                      isMMList={true}
+                    />
+                    {/* Render action buttons once after both member forms */}
+                    {renderActionButtons()}
+                  </Stack>
                 )}
 
                 {currentTab === 2 && (
@@ -306,7 +373,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     {
       user: '/api/me',
       event: '/public/event',
-      initMembers: '/api/events/members',
+      initMembers: '/api/events/members', // Fetches non-MM members
+      initMMMembers: '/api/events/mm-members', // Fetches MM members
       initCities: '/api/admin/events/cities',
       credentials: '/api/admin/events/users/credentials'
     },
@@ -318,6 +386,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       user: data.user,
       event: data.event ?? null,
       initMembers: data.initMembers ?? [],
+      initMMMembers: data.initMMMembers ?? [], // Ensure this is correctly populated
       initCities: data.initCities ?? [],
       credentials: data.credentials ?? []
     }

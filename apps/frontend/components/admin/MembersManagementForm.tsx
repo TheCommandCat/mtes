@@ -8,55 +8,90 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Switch,
-  IconButton
+  IconButton,
+  Box
 } from '@mui/material';
-import { FieldArray, Field, FormikValues } from 'formik';
+import { FieldArray, Field, FormikValues, getIn } from 'formik';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; // Icon for the move button
 import FormikTextField from '../general/forms/formik-text-field';
 import { enqueueSnackbar } from 'notistack';
 import { FormValues } from '../../pages/admin'; // Adjust path as necessary
 
 interface MembersManagementFormProps {
+  title: string;
+  membersFieldName: 'regularMembers' | 'mmMembers';
   values: FormValues;
   errors: any; // Consider using a more specific type for errors
   setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
-  renderActionButtons: () => JSX.Element;
+  renderActionButtons: (() => JSX.Element) | null;
+  isMMList: boolean; // True if this form is for MM members
 }
 
 const MembersManagementForm: React.FC<MembersManagementFormProps> = ({
+  title,
+  membersFieldName,
   values,
   errors,
   setFieldValue,
-  renderActionButtons
+  renderActionButtons,
+  isMMList
 }) => {
+  const membersList = getIn(values, membersFieldName) || [];
+  const membersErrors = getIn(errors, membersFieldName);
+
+  const handleMoveMember = (index: number) => {
+    const memberToMove = { ...membersList[index] };
+    const currentList = [...membersList];
+    currentList.splice(index, 1); // Remove from current list
+
+    if (isMMList) {
+      // Moving from MM to Regular
+      const currentRegularMembers = values.regularMembers || [];
+      setFieldValue(membersFieldName, currentList); // Update current (MM) list
+      setFieldValue('regularMembers', [...currentRegularMembers, memberToMove]);
+      enqueueSnackbar(`החבר "${memberToMove.name}" הועבר לרשימת נציגים.`, { variant: 'info' });
+    } else {
+      // Moving from Regular to MM
+      const currentMMMembers = values.mmMembers || [];
+      setFieldValue(membersFieldName, currentList); // Update current (Regular) list
+      setFieldValue('mmMembers', [...currentMMMembers, memberToMove]);
+      enqueueSnackbar(`החבר "${memberToMove.name}" הועבר לרשימת ממלאי מקום.`, { variant: 'info' });
+    }
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Typography variant="h6" gutterBottom>
-        ניהול חברים
+        {title}
       </Typography>
-      {typeof errors.members === 'string' && (
+      {typeof membersErrors === 'string' && (
         <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-          {errors.members}
+          {membersErrors}
         </Typography>
       )}
-      <FieldArray name="members">
+      <FieldArray name={membersFieldName}>
         {({ remove, push }) => (
           <>
-            {values.members.map((_member, index) => (
-              <Grid container spacing={2} key={index} sx={{ mb: 2 }} alignItems="center">
+            {membersList.map((_member: any, index: number) => (
+              <Grid container spacing={1} key={index} sx={{ mb: 2 }} alignItems="center">
                 <Grid item xs={12} sm={4}>
-                  <FormikTextField name={`members.${index}.name`} label="שם חבר" fullWidth />
+                  <FormikTextField
+                    name={`${membersFieldName}.${index}.name`}
+                    label="שם חבר"
+                    fullWidth
+                  />
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth>
-                    <InputLabel id={`city-select-label-${index}`}>עיר</InputLabel>
+                    <InputLabel id={`city-select-label-${membersFieldName}-${index}`}>
+                      עיר
+                    </InputLabel>
                     <Field
                       as={Select}
-                      name={`members[${index}].city`}
-                      labelId={`city-select-label-${index}`}
+                      name={`${membersFieldName}[${index}].city`}
+                      labelId={`city-select-label-${membersFieldName}-${index}`}
                       label="עיר"
                       required
                     >
@@ -69,41 +104,15 @@ const MembersManagementForm: React.FC<MembersManagementFormProps> = ({
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={3}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={_member.isMM || false}
-                        onChange={e => {
-                          const newIsMM = e.target.checked;
-                          let finalIsMM = newIsMM;
-
-                          if (newIsMM === false) {
-                            const cityOfMember = values.members[index].city;
-                            const cityConfig = values.cities.find(c => c.name === cityOfMember);
-                            const maxVotersForCity = cityConfig ? cityConfig.numOfVoters : 0;
-
-                            let otherNonMMCountInCity = 0;
-                            values.members.forEach((m, idx) => {
-                              if (idx !== index && m.city === cityOfMember && !m.isMM) {
-                                otherNonMMCountInCity++;
-                              }
-                            });
-
-                            if (otherNonMMCountInCity + 1 > maxVotersForCity) {
-                              finalIsMM = true;
-                              enqueueSnackbar(
-                                `הגעת למכסת הנציגים המקסימלית (${maxVotersForCity}) עבור ${cityOfMember}. החבר "${values.members[index].name}" סומן כממלא מקום.`,
-                                { variant: 'warning' }
-                              );
-                            }
-                          }
-                          setFieldValue(`members[${index}].isMM`, finalIsMM);
-                        }}
-                      />
-                    }
-                    label={_member.isMM ? 'מ"מ' : 'נציג'}
-                    sx={{ justifyContent: 'flex-start' }}
-                  />
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SwapHorizIcon />}
+                    onClick={() => handleMoveMember(index)}
+                    fullWidth
+                  >
+                    {isMMList ? 'העבר לנציג' : 'העבר למ"מ'}
+                  </Button>
                 </Grid>
                 <Grid item xs={12} sm={2} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
                   <IconButton onClick={() => remove(index)} color="error">
@@ -122,12 +131,12 @@ const MembersManagementForm: React.FC<MembersManagementFormProps> = ({
               }
               variant="outlined"
             >
-              הוסף חבר
+              {isMMList ? 'הוסף ממלא מקום' : 'הוסף נציג'}
             </Button>
           </>
         )}
       </FieldArray>
-      {renderActionButtons()}
+      {renderActionButtons && renderActionButtons()}
     </Paper>
   );
 };
