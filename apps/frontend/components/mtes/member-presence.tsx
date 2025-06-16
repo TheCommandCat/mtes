@@ -26,7 +26,7 @@ interface MemberPresenceProps {
 
 type SortDirection = 'asc' | 'desc';
 interface SortConfig {
-  key: keyof Member | 'status';
+  key: keyof Member | 'status' | 'isMM';
   direction: SortDirection;
 }
 
@@ -74,6 +74,9 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
         if (sortConfig.key === 'status') {
           aValue = a.isPresent || false;
           bValue = b.isPresent || false;
+        } else if (sortConfig.key === 'isMM') {
+          aValue = a.isMM || false;
+          bValue = b.isMM || false;
         } else {
           aValue = a[sortConfig.key];
           bValue = b[sortConfig.key];
@@ -96,7 +99,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
     return sortableItems;
   }, [allMembers, sortConfig]);
 
-  const requestSort = (key: keyof Member | 'status') => {
+  const requestSort = (key: keyof Member | 'status' | 'isMM') => {
     let direction: SortDirection = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -186,7 +189,26 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                   עיר
                 </TableSortLabel>
               </TableCell>
-
+              <TableCell
+                align="center"
+                sx={headerCellSx}
+                sortDirection={sortConfig?.key === 'isMM' ? sortConfig.direction : false}
+              >
+                <TableSortLabel
+                  active={sortConfig?.key === 'isMM'}
+                  direction={sortConfig?.key === 'isMM' ? sortConfig.direction : 'asc'}
+                  onClick={() => requestSort('isMM')}
+                  IconComponent={sortConfig?.key === 'isMM' ? undefined : SortPlaceholderIcon}
+                  sx={{
+                    '& .MuiTableSortLabel-icon': {
+                      color: 'rgba(0, 0, 0, 0.87) !important',
+                      opacity: 1
+                    }
+                  }}
+                >
+                  תפקיד
+                </TableSortLabel>
+              </TableCell>
               <TableCell
                 align="center"
                 sx={headerCellSx}
@@ -210,48 +232,48 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedMembers.map(member => {
-              const isPresent = member.isPresent || false;
-              return (
-                <TableRow
-                  key={member._id.toString()}
-                  sx={theme => ({
-                    backgroundColor: isPresent
-                      ? alpha(theme.palette.success.main, 0.08)
-                      : alpha(theme.palette.error.main, 0.08),
-                    '&:last-child td, &:last-child th': { borderBottom: 0 },
-                    '& td, & th': {
-                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`
-                    },
-                    '&:hover': {
-                      backgroundColor: isPresent
-                        ? alpha(theme.palette.success.main, 0.16)
-                        : alpha(theme.palette.error.main, 0.16)
-                    },
-                    transition: 'background-color 0.2s ease-in-out'
-                  })}
-                >
-                  <TableCell component="th" scope="row" align="center" sx={commonCellSx}>
-                    {member.name}
-                  </TableCell>
-                  <TableCell align="center" sx={commonCellSx}>
-                    {member.city || '-'}
-                  </TableCell>
-
-                  <TableCell align="center" sx={commonCellSx}>
+            {sortedMembers.map((member) => (
+              <TableRow
+                key={member._id.toString()}
+                sx={{
+                  '&:nth-of-type(odd)': { backgroundColor: alpha("#000", 0.02) },
+                  '&:hover': { backgroundColor: alpha("#000", 0.04) }
+                }}
+              >
+                <TableCell align="center" sx={commonCellSx}>
+                  {member.name}
+                </TableCell>
+                <TableCell align="center" sx={commonCellSx}>
+                  {member.city}
+                </TableCell>
+                <TableCell align="center" sx={commonCellSx}>
+                  {member.isMM ? 'מ"מ' : 'נציג'}
+                </TableCell>
+                <TableCell align="center" sx={commonCellSx}>
+                  {member.isPresent ? (
                     <Button
-                      variant={isPresent ? 'outlined' : 'contained'}
-                      color={isPresent ? 'error' : 'primary'}
-                      onClick={() => onMemberUpdate(member._id.toString(), !isPresent)}
-                      startIcon={isPresent ? <LogoutIcon /> : <LoginIcon />}
+                      variant="outlined"
+                      color="error"
+                      onClick={() => onMemberUpdate(member._id.toString(), false)}
+                      startIcon={<LogoutIcon />}
                       sx={{ minWidth: '120px' }}
                     >
-                      {isPresent ? 'צ׳ק-אאוט' : 'צ׳ק-אין'}
+                      צ׳ק-אאוט
                     </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => onMemberUpdate(member._id.toString(), true)}
+                      startIcon={<LoginIcon />}
+                      sx={{ minWidth: '120px' }}
+                    >
+                      צ׳ק-אין
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
