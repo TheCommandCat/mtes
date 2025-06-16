@@ -14,12 +14,7 @@ interface EventSelectorProps {
   getEventDisabled?: (event: WithId<ElectionEvent>) => boolean;
 }
 
-const EventSelector: React.FC<EventSelectorProps> = ({
-  events,
-  onChange,
-  getEventDisabled,
-}) => {
-
+const EventSelector: React.FC<EventSelectorProps> = ({ events, onChange, getEventDisabled }) => {
   const sortedEvents = useMemo(
     () =>
       events.sort((a, b) => {
@@ -51,8 +46,7 @@ const EventSelector: React.FC<EventSelectorProps> = ({
             <ListItemAvatar>
               <Avatar
                 sx={{
-                  color: event.color ?? '#a7ab99',
-                  backgroundColor: getBackgroundColor(event.color ?? '#a7ab99', 'light')
+                  backgroundColor: getBackgroundColor('#a7ab99', 'light')
                 }}
               >
                 <EventIcon />
