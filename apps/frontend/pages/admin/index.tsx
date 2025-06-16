@@ -217,7 +217,7 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, initCities, crede
   );
 
   return (
-    <Layout maxWidth="sm" title="ממשק ניהול">
+    <Layout maxWidth="md" title="ממשק ניהול">
       <Paper sx={{ p: { xs: 2, sm: 4 }, mt: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ mb: 3, textAlign: 'center' }}>
           {event ? 'עריכת אירוע' : 'יצירת אירוע חדש'}
