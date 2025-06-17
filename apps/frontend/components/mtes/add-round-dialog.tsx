@@ -1,58 +1,57 @@
-import React, { useMemo, useState } from 'react';
 import {
+  Autocomplete,
+  Avatar,
+  Box,
   Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  TextField,
-  IconButton,
-  Typography,
-  Box,
-  Grid,
-  Autocomplete,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  FormHelperText,
-  Checkbox,
+  Divider,
   FormControlLabel,
+  FormHelperText,
+  Grid,
+  IconButton,
+  InputAdornment,
   Stack,
-  Stepper,
   Step,
   StepLabel,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  useTheme,
-  Chip,
-  Avatar
+  Stepper,
+  TextField,
+  Typography,
+  useTheme
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import BadgeIcon from '@mui/icons-material/Badge';
+import BallotIcon from '@mui/icons-material/Ballot';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import SettingsIcon from '@mui/icons-material/Settings';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import BallotIcon from '@mui/icons-material/Ballot';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { Member, Position, Round } from '@mtes/types';
+import { FieldArray, FieldArrayRenderProps, Form, Formik, FormikHelpers, getIn } from 'formik';
 import { useSnackbar } from 'notistack';
-import { Formik, Form, FieldArray, getIn, FormikHelpers, FieldArrayRenderProps } from 'formik';
+import React, { useMemo, useState } from 'react';
 import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { apiFetch } from '../../lib/utils/fetch';
 import { WithId } from 'mongodb';
-import { Member, Position, Positions, Round } from '@mtes/types';
-
 const RoleSchema = z.object({
-  role: z.enum(Position, {
-    required_error: 'Position is required',
-    invalid_type_error: 'Invalid position selected'
-  }),
+  role: z
+    .string({
+      required_error: 'Position is required',
+      invalid_type_error: 'Invalid position selected'
+    })
+    .min(1, 'Position is required'),
   contestants: z
     .array(z.string(), { required_error: 'Contestants are required' })
     .min(2, 'At least 2 contestants is required'),
@@ -83,7 +82,7 @@ interface ApiRound {
   name: string;
   allowedMembers: string[];
   roles: {
-    role: Positions;
+    role: string;
     contestants: string[];
     maxVotes: number;
     whiteVote: boolean;
@@ -104,7 +103,7 @@ const createNewRole = (
   existingData?: Partial<z.infer<typeof RoleSchema>> & { contestants?: string[] }
 ): RoleFormValues => ({
   _tempClientId: `role_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-  role: existingData?.role || Position[0] || ('' as Positions),
+  role: existingData?.role || '',
   contestants: existingData?.contestants || [],
   maxVotes: existingData?.maxVotes ?? 1,
   whiteVote: existingData?.whiteVote ?? false
@@ -233,7 +232,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }
 
         if (Object.keys(changes).length > 0) {
-          const res = await apiFetch('/api/events/updateRound', {
+          const res = await apiFetch('/api/events/rounds/update', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -258,7 +257,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           endTime: null,
           isLocked: false
         };
-        const res = await apiFetch('/api/events/addRound', {
+        const res = await apiFetch('/api/events/rounds/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ round: payload })
@@ -560,32 +559,40 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                       <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
                                         <Grid container spacing={3.5}>
                                           <Grid item xs={12} md={5}>
-                                            <FormControl
-                                              fullWidth
-                                              error={Boolean(
-                                                showRoleErrors && getIn(roleErrors, 'role')
+                                            <Autocomplete
+                                              freeSolo
+                                              options={Position}
+                                              getOptionLabel={option => option}
+                                              value={role.role}
+                                              onChange={(_, newValue) => {
+                                                setFieldValue(`${prefix}.role`, newValue ?? '');
+                                              }}
+                                              onInputChange={(_, newInputValue) => {
+                                                setFieldValue(`${prefix}.role`, newInputValue);
+                                              }}
+                                              renderInput={params => (
+                                                <TextField
+                                                  {...params}
+                                                  label="תפקיד"
+                                                  variant="outlined"
+                                                  error={Boolean(
+                                                    showRoleErrors && getIn(roleErrors, 'role')
+                                                  )}
+                                                  helperText={
+                                                    showRoleErrors && getIn(roleErrors, 'role')
+                                                  }
+                                                  disabled={isSubmitting}
+                                                  InputProps={{
+                                                    ...params.InputProps,
+                                                    startAdornment: (
+                                                      <InputAdornment position="start">
+                                                        <BadgeIcon />
+                                                      </InputAdornment>
+                                                    )
+                                                  }}
+                                                />
                                               )}
-                                              variant="outlined"
-                                            >
-                                              <InputLabel>סוג התפקיד</InputLabel>
-                                              <Select
-                                                name={`${prefix}.role`}
-                                                value={role.role}
-                                                label="סוג התפקיד"
-                                                onChange={handleChange}
-                                                disabled={isSubmitting}
-                                                sx={{ borderRadius: 2 }}
-                                              >
-                                                {Position.map(p => (
-                                                  <MenuItem key={p} value={p}>
-                                                    {p}
-                                                  </MenuItem>
-                                                ))}
-                                              </Select>
-                                              <FormHelperText>
-                                                {showRoleErrors && getIn(roleErrors, 'role')}
-                                              </FormHelperText>
-                                            </FormControl>
+                                            />
                                           </Grid>
 
                                           <Grid item xs={12} md={7}>

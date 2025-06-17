@@ -98,7 +98,7 @@ const Page: NextPage<Props> = ({
   };
 
   const refreshVotedMembers = async (roundId: string) => {
-    const response = await apiFetch(`/api/events/votedMembers/${roundId}`, {
+    const response = await apiFetch(`/api/events/rounds/votedMembers/${roundId}`, {
       method: 'GET'
     });
     if (response.ok) {
@@ -449,7 +449,7 @@ const Page: NextPage<Props> = ({
 
   const handleDeleteRound = async (round: WithId<Round>) => {
     try {
-      const res = await apiFetch(`/api/events/deleteRound`, {
+      const res = await apiFetch(`/api/events/rounds/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roundId: round._id })
@@ -473,14 +473,14 @@ const Page: NextPage<Props> = ({
     if (!shouldLock) return;
 
     try {
-      const res = await apiFetch(`/api/events/lockRound/${activeRound._id}`, {
+      const res = await apiFetch(`/api/events/rounds/lock/${activeRound._id}`, {
         method: 'POST'
       });
 
       if (res.ok) {
         setIsRoundLocked(true);
 
-        const resultsRes = await apiFetch(`/api/events/roundResults/${activeRound._id}`, {
+        const resultsRes = await apiFetch(`/api/events/rounds/results/${activeRound._id}`, {
           method: 'GET'
         });
         if (resultsRes.ok) {
@@ -533,7 +533,7 @@ const Page: NextPage<Props> = ({
 
   const handleShowResults = async (round: WithId<Round>) => {
     try {
-      const res = await apiFetch(`/api/events/roundResults/${round._id}`, {
+      const res = await apiFetch(`/api/events/rounds/results/${round._id}`, {
         method: 'GET'
       });
 
