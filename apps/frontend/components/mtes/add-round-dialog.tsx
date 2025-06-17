@@ -232,7 +232,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }
 
         if (Object.keys(changes).length > 0) {
-          const res = await apiFetch('/api/events/updateRound', {
+          const res = await apiFetch('/api/events/rounds/update', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -257,7 +257,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           endTime: null,
           isLocked: false
         };
-        const res = await apiFetch('/api/events/addRound', {
+        const res = await apiFetch('/api/events/rounds/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ round: payload })

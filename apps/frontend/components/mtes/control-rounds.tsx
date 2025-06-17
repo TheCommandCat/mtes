@@ -26,7 +26,7 @@ const handleDeleteRound = (round: WithId<Round>) => {
   }
 
   console.log('Deleting round:', round);
-  apiFetch(`/api/events/deleteRound`, {
+  apiFetch(`/api/events/rounds/delete`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ roundId: round._id })
@@ -100,8 +100,8 @@ export const ControlRounds = ({
                             padding: '8px 12px', // Increased padding
                             height: 'auto', // Allow height to adjust to content
                             borderRadius: '16px', // More rounded corners
-                            fontWeight: 'bold',
-                           }}
+                            fontWeight: 'bold'
+                          }}
                         />
                       ))}
                     </Box>
