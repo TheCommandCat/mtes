@@ -41,22 +41,38 @@ router.put('/', async (req: Request, res: Response) => {
 
 router.put('/:memberId/presence', async (req: Request, res: Response) => {
     const { memberId } = req.params;
-    const { isPresent } = req.body as { isPresent: boolean };
+    const { isPresent, replacedBy } = req.body as { isPresent: boolean; replacedBy?: string };
 
     if (!memberId) {
         console.log('❌ Member ID is null or undefined');
         return res.status(400).json({ ok: false, message: 'Member ID is missing' });
     }
 
-    if (typeof isPresent !== 'boolean') {
-        console.log('❌ isPresent is missing or not a boolean');
-        return res.status(400).json({ ok: false, message: 'isPresent field (boolean) is required' });
+    if (typeof isPresent !== 'boolean' && replacedBy === undefined) {
+        console.log('❌ isPresent is missing or not a boolean, and replacedBy is not provided');
+        return res.status(400).json({ ok: false, message: 'isPresent field (boolean) or replacedBy field (string) is required' });
     }
 
-    console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
+    if (replacedBy && typeof replacedBy !== 'string') {
+        console.log('❌ replacedBy is not a string');
+        return res.status(400).json({ ok: false, message: 'replacedBy field must be a string (ObjectId)' });
+    }
+
+    let updatePayload: { isPresent: boolean; replacedBy: ObjectId | null } = { isPresent, replacedBy: null };
+
+
+
+    if (replacedBy) {
+        console.log(`⏬ Member ${memberId} is being replaced by ${replacedBy}. Setting isPresent to true.`);
+        updatePayload = { isPresent: true, replacedBy: new ObjectId(replacedBy) };
+    } else {
+        console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
+        updatePayload = { isPresent, replacedBy: null };
+    }
+
 
     try {
-        const memberResult = await db.updateMember({ _id: new ObjectId(memberId) }, { isPresent });
+        const memberResult = await db.updateMember({ _id: new ObjectId(memberId) }, updatePayload as unknown as Partial<Member>);
 
         if (!memberResult.acknowledged || memberResult.matchedCount === 0) {
             console.log(

@@ -12,16 +12,29 @@ import {
   Button,
   Typography,
   Box,
-  TableSortLabel
+  TableSortLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Grid,
+  Tooltip,
+  Chip
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
+import CancelIcon from '@mui/icons-material/Cancel';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 interface MemberPresenceProps {
   allMembers: WithId<Member>[];
-  onMemberUpdate: (memberId: string, isPresent: boolean) => void;
+  onMemberUpdate: (memberId: string, isPresent: boolean, replacedBy?: string | null) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -61,7 +74,62 @@ const SortPlaceholderIcon = () => (
 );
 
 const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpdate }) => {
+  const theme = useTheme();
+  // console.log('MemberPresence rendered or re-rendered. Received allMembers:', allMembers);
+
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [isMMDialogOpen, setIsMMDialogOpen] = useState(false);
+  const [selectedMemberForMM, setSelectedMemberForMM] = useState<WithId<Member> | null>(null);
+
+  const handleOpenMMDialog = (member: WithId<Member>) => {
+    setSelectedMemberForMM(member);
+    setIsMMDialogOpen(true);
+  };
+
+  const handleCloseMMDialog = () => {
+    setSelectedMemberForMM(null);
+    setIsMMDialogOpen(false);
+  };
+
+  const handleSelectMM = (mmMember: WithId<Member>) => {
+    if (selectedMemberForMM) {
+      // The original member is now "present" via replacement, and their replacedBy is the mmMember.
+      onMemberUpdate(selectedMemberForMM._id.toString(), true, mmMember._id.toString());
+    }
+    handleCloseMMDialog();
+  };
+
+  const availableMMsForSelectedMember = useMemo(() => {
+    if (!selectedMemberForMM || !allMembers) return [];
+    return allMembers.filter(
+      member =>
+        member.isMM &&
+        member.city === selectedMemberForMM.city &&
+        member._id.toString() !== selectedMemberForMM._id.toString() && // Ensure MM is not the member themselves
+        !member.replacedBy && // Available MM should not be already replacing someone else
+        member.isPresent // Available MM must be present
+    );
+  }, [allMembers, selectedMemberForMM]);
+
+  const replacementInfo = useMemo(() => {
+    const replacements: { replaced: WithId<Member>; replacer: WithId<Member> }[] = [];
+    const membersBeingReplacedIds = new Set<string>();
+    const membersActingAsReplacersIds = new Set<string>();
+
+    allMembers.forEach(member => {
+      if (member.replacedBy) {
+        const replacer = allMembers.find(
+          m => m._id.toString() === member.replacedBy?.toString() && m.isPresent
+        );
+        if (replacer) {
+          replacements.push({ replaced: member, replacer });
+          membersBeingReplacedIds.add(member._id.toString());
+          membersActingAsReplacersIds.add(replacer._id.toString());
+        }
+      }
+    });
+    return { replacements, membersBeingReplacedIds, membersActingAsReplacersIds };
+  }, [allMembers]);
 
   const sortedMembers = useMemo(() => {
     if (!allMembers) return [];
@@ -78,8 +146,8 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
           aValue = a.isMM || false;
           bValue = b.isMM || false;
         } else {
-          aValue = a[sortConfig.key];
-          bValue = b[sortConfig.key];
+          aValue = a[sortConfig.key as keyof Member];
+          bValue = b[sortConfig.key as keyof Member];
         }
 
         if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -87,12 +155,8 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
           bValue = bValue.toLowerCase();
         }
 
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }
@@ -142,6 +206,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
       >
         ניהול נוכחות חברים
       </Typography>
+
       <TableContainer component={Paper} elevation={3}>
         <Table
           aria-label="member presence table"
@@ -149,6 +214,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
         >
           <TableHead>
             <TableRow>
+              {/* Name Header */}
               <TableCell
                 align="center"
                 sx={headerCellSx}
@@ -169,6 +235,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                   שם
                 </TableSortLabel>
               </TableCell>
+              {/* City Header */}
               <TableCell
                 align="center"
                 sx={headerCellSx}
@@ -189,6 +256,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                   עיר
                 </TableSortLabel>
               </TableCell>
+              {/* Status (isMM) Header */}
               <TableCell
                 align="center"
                 sx={headerCellSx}
@@ -209,6 +277,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                   סטטוס
                 </TableSortLabel>
               </TableCell>
+              {/* Actions Header */}
               <TableCell align="center" sx={headerCellSx}>
                 <TableSortLabel
                   active={false}
@@ -227,63 +296,208 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedMembers.map(member => (
-              <TableRow
-                key={member._id.toString()}
-                sx={{
-                  '&:nth-of-type(odd)': { backgroundColor: alpha('#000', 0.02) },
-                  '&:hover': { backgroundColor: alpha('#000', 0.04) }
-                }}
-              >
-                <TableCell align="center" sx={commonCellSx}>
-                  {member.name}
-                </TableCell>
-                <TableCell align="center" sx={commonCellSx}>
-                  {member.city}
-                </TableCell>
-                <TableCell align="center" sx={commonCellSx}>
-                  {member.isMM ? 'מ"מ' : 'נציג'}
-                </TableCell>
-                <TableCell align="center" sx={commonCellSx}>
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                    {member.isPresent ? (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => onMemberUpdate(member._id.toString(), false)}
-                        startIcon={<LogoutIcon />}
-                        sx={{ minWidth: '110px' }}
-                      >
-                        צ׳ק-אאוט
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => onMemberUpdate(member._id.toString(), true)}
-                        startIcon={<LoginIcon />}
-                        sx={{ minWidth: '110px' }}
-                      >
-                        צ׳ק-אין
-                      </Button>
-                    )}
-                    {!member.isMM && (
-                      <Button
-                        variant="outlined"
-                        // onClick={() => console.log('Choose MM for:', member.name)} // Placeholder action
-                        disabled // Placeholder - to be implemented
-                        sx={{ minWidth: '110px' }}
-                      >
-                        בחר מ"מ
-                      </Button>
-                    )}
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
+            {sortedMembers.map(member => {
+              const memberIdStr = member._id.toString();
+              const isBeingReplaced = replacementInfo.membersBeingReplacedIds.has(memberIdStr);
+              const replacerDetails = isBeingReplaced
+                ? replacementInfo.replacements.find(r => r.replaced._id.toString() === memberIdStr)
+                    ?.replacer
+                : undefined;
+              const isActingAsReplacer =
+                replacementInfo.membersActingAsReplacersIds.has(memberIdStr);
+              const replacedMemberDetails = isActingAsReplacer
+                ? replacementInfo.replacements.find(r => r.replacer._id.toString() === memberIdStr)
+                    ?.replaced
+                : undefined;
+
+              return (
+                <TableRow
+                  key={memberIdStr}
+                  sx={{
+                    transition: 'background-color 0.3s ease, opacity 0.3s ease',
+                    '&:nth-of-type(odd)': {
+                      backgroundColor: alpha(theme.palette.action.hover, 0.02)
+                    },
+                    '&:hover': { backgroundColor: alpha(theme.palette.action.hover, 0.04) },
+                    ...(isBeingReplaced && {
+                      backgroundColor: theme.palette.grey[300],
+                      opacity: 0.6,
+                      fontStyle: 'italic'
+                    }),
+                    ...(isActingAsReplacer && {
+                      backgroundColor: alpha(theme.palette.info.light, 0.25)
+                    })
+                  }}
+                >
+                  {/* Name Cell */}
+                  <TableCell align="center" sx={commonCellSx}>
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                      <Typography sx={isBeingReplaced ? { textDecoration: 'line-through' } : {}}>
+                        {member.name}
+                      </Typography>
+                      {isBeingReplaced && replacerDetails && (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: 'text.secondary', fontStyle: 'italic' }}
+                        >
+                          (מוחלף/ת ע"י {replacerDetails.name})
+                        </Typography>
+                      )}
+                      {isActingAsReplacer && replacedMemberDetails && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: theme.palette.info.dark,
+                            fontWeight: 'bold',
+                            fontStyle: 'italic'
+                          }}
+                        >
+                          (מחליף/ה את {replacedMemberDetails.name})
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  {/* City Cell */}
+                  <TableCell align="center" sx={commonCellSx}>
+                    {member.city}
+                  </TableCell>
+                  {/* Status (isMM) Cell */}
+                  <TableCell align="center" sx={commonCellSx}>
+                    {member.isMM ? 'מ"מ' : 'נציג'}
+                  </TableCell>
+                  {/* Actions Cell */}
+                  <TableCell align="center" sx={commonCellSx}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        minHeight: '36.5px'
+                      }}
+                    >
+                      {isBeingReplaced ? (
+                        <Tooltip
+                          title={`לחץ לביטול ההחלפה של ${member.name} ע"י ${replacerDetails?.name}`}
+                        >
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color="error"
+                            onClick={() => onMemberUpdate(memberIdStr, false, null)} // Pass null to clear replacedBy
+                            startIcon={<CancelIcon />}
+                          >
+                            בטל החלפה
+                          </Button>
+                        </Tooltip>
+                      ) : (
+                        <>
+                          {member.isPresent ? (
+                            <Tooltip
+                              title={
+                                isActingAsReplacer
+                                  ? `${member.name} מחליף/ה כעת את ${replacedMemberDetails?.name}, לא ניתן לבצע צ'ק-אאוט ישירות`
+                                  : "בצע צ'ק-אאוט"
+                              }
+                            >
+                              <span>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  onClick={() => onMemberUpdate(memberIdStr, false)} // Standard check-out
+                                  startIcon={<LogoutIcon />}
+                                  sx={{ minWidth: '110px' }}
+                                  disabled={isActingAsReplacer} // Cannot check out if actively replacing someone
+                                >
+                                  צ׳ק-אאוט
+                                </Button>
+                              </span>
+                            </Tooltip>
+                          ) : (
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={() => onMemberUpdate(memberIdStr, true)} // Standard check-in
+                              startIcon={<LoginIcon />}
+                              sx={{ minWidth: '110px' }}
+                            >
+                              צ׳ק-אין
+                            </Button>
+                          )}
+                          {!member.isMM && ( // Regular members can be replaced by an MM
+                            <Tooltip
+                              title={
+                                member.isPresent
+                                  ? 'חבר כבר נוכח (אולי מוחלף), בטל החלפה קודם אם נדרש'
+                                  : isActingAsReplacer
+                                  ? 'חבר זה מחליף כעת מישהו אחר'
+                                  : 'החלף חבר זה עם ממלא מקום נוכח מאותה עיר'
+                              }
+                            >
+                              <span>
+                                <Button
+                                  variant="outlined"
+                                  onClick={() => handleOpenMMDialog(member)}
+                                  disabled={member.isPresent || isActingAsReplacer} // Cannot select MM if member is present or is an active replacer
+                                  sx={{ minWidth: '110px' }}
+                                >
+                                  החלף ע"י מ"מ
+                                </Button>
+                              </span>
+                            </Tooltip>
+                          )}
+                        </>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {selectedMemberForMM && (
+        <Dialog open={isMMDialogOpen} onClose={handleCloseMMDialog} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ textAlign: 'center', fontWeight: 'medium' }}>
+            בחר ממלא מקום עבור {selectedMemberForMM.name} ({selectedMemberForMM.city})
+          </DialogTitle>
+          <DialogContent>
+            {availableMMsForSelectedMember.length > 0 ? (
+              <List>
+                {availableMMsForSelectedMember.map(mm => (
+                  <ListItem key={mm._id.toString()} disablePadding>
+                    <ListItemButton
+                      onClick={() => handleSelectMM(mm)}
+                      // disabled={!mm.isPresent} // Already filtered in availableMMsForSelectedMember
+                      sx={{
+                        borderRadius: 1,
+                        marginY: 0.5,
+                        '&:hover': { backgroundColor: 'action.hover' }
+                      }}
+                    >
+                      <ListItemText
+                        primary={mm.name}
+                        secondary={'נוכח/ת'}
+                        sx={{ textAlign: 'right' }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body1" sx={{ textAlign: 'center', padding: 2 }}>
+                לא נמצאו ממלאי מקום נוכחים פנויים מאותה עיר ({selectedMemberForMM.city}).
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ justifyContent: 'center', paddingBottom: 2 }}>
+            <Button onClick={handleCloseMMDialog} variant="outlined">
+              ביטול
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

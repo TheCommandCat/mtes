@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
@@ -39,12 +39,14 @@ import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { localizedRoles } from 'apps/frontend/localization/roles';
-import MemberPresence from '../../components/mtes/member-presence';
-import { MemberPresenceStatus } from '../../components/mtes/member-presence-status';
+import AddRoundDialog from '../../components/mtes/add-round-dialog';
+import { MemberPresenceStatus } from '../../components/mtes/member-presence-status'; // Changed to named import
+import MemberPresence from '../../components/mtes/member-presence'; // Added import
 
 interface Props {
   user: WithId<SafeUser>;
   members: WithId<Member>[];
+  mmMembers: WithId<Member>[];
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
   event: ElectionEvent;
@@ -63,9 +65,17 @@ interface VotingStandStatus {
   member: WithId<Member> | null;
 }
 
-const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, electionState, event }) => {
+const Page: NextPage<Props> = ({
+  user,
+  members: initialMembers,
+  mmMembers: initialMMMembers,
+  rounds,
+  electionState,
+  event
+}) => {
   const router = useRouter();
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
+  const [mmMembers, setMMMembers] = useState<WithId<Member>[]>(initialMMMembers); // Added state for MM Members
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
@@ -79,7 +89,13 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
 
-  const presentMembersCount = members.filter(member => member.isPresent).length;
+  const presentMembersCount = useMemo(() => {
+    const regularPresent = members.filter(m => m.isPresent).length;
+    const mmPresent = mmMembers.filter(m => m.isPresent).length;
+    return regularPresent + mmPresent;
+  }, [members, mmMembers]);
+
+  const allMembersForPresence = useMemo(() => [...members, ...mmMembers], [members, mmMembers]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -97,23 +113,38 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     }
   };
 
-  const handleMemberPresence = (memberId: string, isPresent: boolean) => {
-    const memberToUpdate = members.find(m => m._id.toString() === memberId);
+  const handleMemberPresence = (memberId: string, isPresent: boolean, replacedBy?: string) => {
+    const allMembers = [...members, ...mmMembers];
+    const memberToUpdate = allMembers.find(m => m._id.toString() === memberId);
     if (!memberToUpdate) return;
 
-    const updatedMembers = members.map(member =>
-      member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
-    );
-    setMembers(updatedMembers);
+    if (memberToUpdate.isMM) {
+      setMMMembers(prev =>
+        prev.map(m => (m._id.toString() === memberId ? { ...m, isPresent } : m))
+      );
+    } else {
+      setMembers(prev => prev.map(m => (m._id.toString() === memberId ? { ...m, isPresent } : m)));
+    }
 
     const endpoint = memberToUpdate.isMM
       ? `/api/events/mm-members/${memberId}/presence`
       : `/api/events/members/${memberId}/presence`;
 
+    // Determine the payload based on presence change and replacedBy logic
+    let payload: any = { isPresent };
+
+    if (!isPresent) {
+      // Turning from present to not present: clear replacedBy if exists
+      payload.replacedBy = null;
+    } else if (isPresent && replacedBy) {
+      // Turning from not present to present, and replacedBy is provided
+      payload.replacedBy = replacedBy;
+    }
+
     apiFetch(endpoint, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isPresent: isPresent })
+      body: JSON.stringify(payload)
     })
       .then(response => {
         if (response.ok) {
@@ -127,6 +158,11 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
         enqueueSnackbar(`שגיאה בעדכון נוכחות חבר`, { variant: 'error' });
       });
   };
+
+  useEffect(() => {
+    console.log('Members:', members);
+    console.log('MM Members:', mmMembers);
+  }, [members, mmMembers]);
 
   useEffect(() => {
     if (activeRound) {
@@ -176,6 +212,77 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       }
     }
   ]);
+
+  const handleMemberPresenceUpdate = async (
+    memberId: string,
+    isPresent: boolean,
+    replacedBy?: string | null
+  ) => {
+    const allCurrentMembers = [...members, ...mmMembers];
+    const memberToUpdate = allCurrentMembers.find(m => m._id.toString() === memberId);
+
+    if (!memberToUpdate) {
+      enqueueSnackbar('שגיאה: חבר לא נמצא', { variant: 'error' });
+      return;
+    }
+
+    const endpoint = memberToUpdate.isMM
+      ? `/api/events/mm-members/${memberId}/presence`
+      : `/api/events/members/${memberId}/presence`;
+
+    const payload: { isPresent: boolean; replacedBy?: string | null } = { isPresent };
+    if (replacedBy !== undefined) {
+      // only include replacedBy if it's explicitly passed (string or null)
+      payload.replacedBy = replacedBy;
+    }
+
+    try {
+      const response = await apiFetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'שגיאה בעדכון נוכחות' }));
+        throw new Error(errorData.message);
+      }
+
+      // Update local state immutably
+      if (memberToUpdate.isMM) {
+        setMMMembers(prevMMs =>
+          prevMMs.map(m =>
+            m._id.toString() === memberId
+              ? {
+                  ...m,
+                  isPresent,
+                  replacedBy: (payload.replacedBy !== undefined
+                    ? payload.replacedBy
+                    : m.replacedBy) as any
+                }
+              : m
+          )
+        );
+      } else {
+        setMembers(prevRegMembers =>
+          prevRegMembers.map(m =>
+            m._id.toString() === memberId
+              ? {
+                  ...m,
+                  isPresent,
+                  replacedBy: (payload.replacedBy !== undefined
+                    ? payload.replacedBy
+                    : m.replacedBy) as any
+                }
+              : m
+          )
+        );
+      }
+      enqueueSnackbar('נוכחות עודכנה בהצלחה', { variant: 'success' });
+    } catch (error: any) {
+      enqueueSnackbar(error.message || 'שגיאה בעדכון נוכחות', { variant: 'error' });
+    }
+  };
 
   const handleSendMember = (
     member: WithId<Member>,
@@ -513,10 +620,12 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               </Typography>
             </Paper>
             <Paper elevation={2} sx={{ p: 4 }}>
-              {presentMembersCount / members.length >= 0.66 ? null : (
+              {' '}
+              {/* This Paper should wrap the tab content */}
+              {presentMembersCount / (members.length + mmMembers.length) >= 0.66 ? null : (
                 <MemberPresenceStatus
                   presentCount={presentMembersCount}
-                  totalCount={members.length}
+                  totalCount={members.length + mmMembers.length} // Corrected total count
                 />
               )}
               <Box
@@ -528,21 +637,22 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                   mb: 3
                 }}
               >
-                {presentMembersCount / members.length >= 0.66 && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      left: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                  >
-                    <MemberPresenceStatus
-                      presentCount={presentMembersCount}
-                      totalCount={members.length}
-                    />
-                  </Box>
-                )}
+                {members.length + mmMembers.length > 0 &&
+                  presentMembersCount / (members.length + mmMembers.length) >= 0.66 && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                    >
+                      <MemberPresenceStatus
+                        presentCount={presentMembersCount}
+                        totalCount={members.length + mmMembers.length} // Corrected total count
+                      />
+                    </Box>
+                  )}
 
                 <Tabs
                   value={currentTab}
@@ -656,12 +766,15 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                 </>
               )}
               {currentTab === 1 && (
-                <Box sx={{ p: 3 }}>
-                  <MemberPresence allMembers={members} onMemberUpdate={handleMemberPresence} />
+                <Box sx={{ mt: 3 }}>
+                  <MemberPresence
+                    allMembers={allMembersForPresence}
+                    onMemberUpdate={handleMemberPresenceUpdate}
+                  />
                 </Box>
               )}
-            </Paper>
-
+            </Paper>{' '}
+            {/* This closes the Paper from line 605 */}
             <Dialog
               open={roundToDelete !== null}
               onClose={() => setRoundToDelete(null)}
@@ -709,13 +822,7 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
       ctx
     );
 
-    // Combine regular members and MM members
-    const allMembers = [
-      ...(data.members || []),
-      ...(data.mmMembers || []).map((mm: WithId<Member>) => ({ ...mm, isMM: true })) // Mark MM members and type mm
-    ];
-
-    return { props: { user, ...data, members: allMembers } }; // Pass combined list as members
+    return { props: { user, ...data } }; // Pass combined list as members
   } catch {
     return { redirect: { destination: '/login', permanent: false } };
   }
