@@ -367,7 +367,7 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     if (!shouldLock) return;
 
     try {
-      const res = await apiFetch(`/api/events/lockRound/${activeRound._id}`, {
+      const res = await apiFetch(`/api/events/rounds/lock/${activeRound._id}`, {
         method: 'POST'
       });
 
