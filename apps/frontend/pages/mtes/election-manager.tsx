@@ -89,11 +89,7 @@ const Page: NextPage<Props> = ({
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
 
-  const presentMembersCount = useMemo(() => {
-    const regularPresent = members.filter(m => m.isPresent).length;
-    const mmPresent = mmMembers.filter(m => m.isPresent).length;
-    return regularPresent + mmPresent;
-  }, [members, mmMembers]);
+  const presentMembersCount = useMemo(() => members.filter(m => m.isPresent).length, [members]);
 
   const allMembersForPresence = useMemo(() => [...members, ...mmMembers], [members, mmMembers]);
 
@@ -625,7 +621,7 @@ const Page: NextPage<Props> = ({
               {presentMembersCount / (members.length + mmMembers.length) >= 0.66 ? null : (
                 <MemberPresenceStatus
                   presentCount={presentMembersCount}
-                  totalCount={members.length + mmMembers.length} // Corrected total count
+                  totalCount={members.length}
                 />
               )}
               <Box
@@ -649,7 +645,7 @@ const Page: NextPage<Props> = ({
                     >
                       <MemberPresenceStatus
                         presentCount={presentMembersCount}
-                        totalCount={members.length + mmMembers.length} // Corrected total count
+                        totalCount={members.length}
                       />
                     </Box>
                   )}
