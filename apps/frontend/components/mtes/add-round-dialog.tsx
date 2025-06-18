@@ -45,25 +45,38 @@ import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { apiFetch } from '../../lib/utils/fetch';
 import { WithId } from 'mongodb';
-const RoleSchema = z.object({
-  role: z
-    .string({
-      required_error: 'Position is required',
-      invalid_type_error: 'Invalid position selected'
-    })
-    .min(1, 'Position is required'),
-  contestants: z
-    .array(z.string(), { required_error: 'Contestants are required' })
-    .min(2, 'At least 2 contestants is required'),
-  maxVotes: z
-    .number({
-      required_error: 'Max votes is required',
-      invalid_type_error: 'Max votes must be a number'
-    })
-    .int()
-    .min(1, 'Must be at least 1'),
-  whiteVote: z.boolean().default(false)
-});
+const RoleSchema = z
+  .object({
+    role: z
+      .string({
+        required_error: 'Position is required',
+        invalid_type_error: 'Invalid position selected'
+      })
+      .min(1, 'Position is required'),
+    contestants: z
+      .array(z.string(), { required_error: 'Contestants are required' })
+      .min(1, 'At least 1 contestant is required'),
+    maxVotes: z
+      .number({
+        required_error: 'Max votes is required',
+        invalid_type_error: 'Max votes must be a number'
+      })
+      .int()
+      .min(1, 'Must be at least 1'),
+    whiteVote: z.boolean().default(false)
+  })
+  .refine(
+    data => {
+      if (data.contestants.length === 1) {
+        return data.whiteVote;
+      }
+      return true;
+    },
+    {
+      message: 'A white vote is required when there is only one contestant.',
+      path: ['whiteVote']
+    }
+  );
 
 const FormSchema = z.object({
   roundName: z.string().min(1, 'Round name is required'),
@@ -168,14 +181,16 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
       return {
         roundName: initialRound.name,
         allowedMembers: initialRound.allowedMembers.map(member => member._id.toString()),
-        roles: initialRound.roles.map(role =>
-          createNewRole({
+        roles: initialRound.roles.map(role => {
+          const contestants = role.contestants.map(c =>
+            typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()
+          );
+          return createNewRole({
             ...role,
-            contestants: role.contestants.map(c =>
-              typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()
-            )
-          })
-        )
+            contestants,
+            whiteVote: contestants.length === 1 ? true : role.whiteVote
+          });
+        })
       };
     }
     return {
@@ -491,6 +506,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                   const roleErrors = getIn(errors, prefix);
                                   const showRoleErrors =
                                     Object.keys(roleTouched || {}).length > 0 || submitCount > 0;
+                                  const isWhiteVoteDisabled =
+                                    isSubmitting || role.contestants.length === 1;
 
                                   return (
                                     <Card
@@ -655,12 +672,18 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                               value={memberOptions.filter(opt =>
                                                 role.contestants.includes(opt._id.toString())
                                               )}
-                                              onChange={(_, selectedOptions) =>
+                                              onChange={(_, selectedOptions) => {
+                                                const contestantIds = selectedOptions.map(opt =>
+                                                  opt._id.toString()
+                                                );
                                                 setFieldValue(
                                                   `${prefix}.contestants`,
-                                                  selectedOptions.map(opt => opt._id.toString())
-                                                )
-                                              }
+                                                  contestantIds
+                                                );
+                                                if (contestantIds.length === 1) {
+                                                  setFieldValue(`${prefix}.whiteVote`, true);
+                                                }
+                                              }}
                                               renderInput={params => (
                                                 <TextField
                                                   {...params}
@@ -704,7 +727,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                                   name={`${prefix}.whiteVote`}
                                                   checked={role.whiteVote}
                                                   onChange={handleChange}
-                                                  disabled={isSubmitting}
+                                                  disabled={isWhiteVoteDisabled}
                                                   color="secondary"
                                                   sx={{ p: 1.5, mr: 0.5 }}
                                                 />
@@ -714,7 +737,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                                   אפשר הצבעת "פתק לבן" (אופציונלי)
                                                 </Typography>
                                               }
-                                              disabled={isSubmitting}
+                                              disabled={isWhiteVoteDisabled}
                                             />
                                           </Grid>
                                         </Grid>
