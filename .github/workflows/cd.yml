@@ -21,4 +21,4 @@ jobs:
             docker compose rm -f
             git reset --hard origin/main
             git pull origin main
-            docker compose up -d
+            docker compose up --build -d
