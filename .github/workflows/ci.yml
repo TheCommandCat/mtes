@@ -1,0 +1,43 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Create backend .env
+        run: |
+          cat <<EOF > apps/backend/.env
+          JWT_SECRET="${{ secrets.JWT_SECRET }}"
+          NODE_ENV=development
+          HOST=0.0.0.0
+          PORT=3333
+          MONGODB_URI=mongodb://localhost:27017
+          EOF
+
+      - name: Create frontend .env
+        run: |
+          cat <<EOF > apps/frontend/.env
+          NEXT_PUBLIC_API_URL=http://localhost:3333
+          NEXT_PUBLIC_WS_URL=ws://localhost:3333
+          EOF
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend & backend
+        run: npx nx build backend frontend
