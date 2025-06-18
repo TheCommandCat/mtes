@@ -42,7 +42,6 @@ router.post(
             }
             res.status(500).json({ error: 'Failed to add city due to an internal error' });
         }
-        res.status(500).json({ error: 'Failed to add city due to an internal error' });
     })
 );
 
