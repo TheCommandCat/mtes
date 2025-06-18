@@ -150,7 +150,20 @@ export const RoundPreview = ({ round, members }: RoundPreviewProps) => {
             <Chip
               key={member._id.toString()}
               avatar={<Avatar>{member.name.charAt(0)}</Avatar>}
-              label={`${member.name} - ${member.city}`}
+              label={
+                member.replacedBy ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body2" sx={{ textDecoration: 'line-through' }}>
+                      {`${member.name} - ${member.city}`}
+                    </Typography>
+                    <Typography variant="body2" color="primary">
+                      מוחלף ע"י: {member.replacedBy.name}
+                    </Typography>
+                  </Box>
+                ) : (
+                  `${member.name} - ${member.city}`
+                )
+              }
               variant="outlined"
               sx={{
                 height: 'auto',
