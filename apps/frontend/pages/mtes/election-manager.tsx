@@ -109,57 +109,6 @@ const Page: NextPage<Props> = ({
     }
   };
 
-  const handleMemberPresence = (memberId: string, isPresent: boolean, replacedBy?: string) => {
-    const allMembers = [...members, ...mmMembers];
-    const memberToUpdate = allMembers.find(m => m._id.toString() === memberId);
-    if (!memberToUpdate) return;
-
-    if (memberToUpdate.isMM) {
-      setMMMembers(prev =>
-        prev.map(m => (m._id.toString() === memberId ? { ...m, isPresent } : m))
-      );
-    } else {
-      setMembers(prev => prev.map(m => (m._id.toString() === memberId ? { ...m, isPresent } : m)));
-    }
-
-    const endpoint = memberToUpdate.isMM
-      ? `/api/events/mm-members/${memberId}/presence`
-      : `/api/events/members/${memberId}/presence`;
-
-    // Determine the payload based on presence change and replacedBy logic
-    let payload: any = { isPresent };
-
-    if (!isPresent) {
-      // Turning from present to not present: clear replacedBy if exists
-      payload.replacedBy = null;
-    } else if (isPresent && replacedBy) {
-      // Turning from not present to present, and replacedBy is provided
-      payload.replacedBy = replacedBy;
-    }
-
-    apiFetch(endpoint, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-      .then(response => {
-        if (response.ok) {
-          enqueueSnackbar(`נוכחות חבר עודכנה בהצלחה`, { variant: 'success' });
-        } else {
-          enqueueSnackbar(`נכשל עדכון נוכחות חבר`, { variant: 'error' });
-        }
-      })
-      .catch(error => {
-        console.error('Error updating member presence:', error);
-        enqueueSnackbar(`שגיאה בעדכון נוכחות חבר`, { variant: 'error' });
-      });
-  };
-
-  useEffect(() => {
-    console.log('Members:', members);
-    console.log('MM Members:', mmMembers);
-  }, [members, mmMembers]);
-
   useEffect(() => {
     if (activeRound) {
       refreshVotedMembers(activeRound._id.toString());
@@ -212,7 +161,7 @@ const Page: NextPage<Props> = ({
   const handleMemberPresenceUpdate = async (
     memberId: string,
     isPresent: boolean,
-    replacedBy?: string | null
+    replacedBy?: WithId<Member> | null
   ) => {
     const allCurrentMembers = [...members, ...mmMembers];
     const memberToUpdate = allCurrentMembers.find(m => m._id.toString() === memberId);
@@ -226,9 +175,8 @@ const Page: NextPage<Props> = ({
       ? `/api/events/mm-members/${memberId}/presence`
       : `/api/events/members/${memberId}/presence`;
 
-    const payload: { isPresent: boolean; replacedBy?: string | null } = { isPresent };
+    const payload: { isPresent: boolean; replacedBy?: WithId<Member> | null } = { isPresent };
     if (replacedBy !== undefined) {
-      // only include replacedBy if it's explicitly passed (string or null)
       payload.replacedBy = replacedBy;
     }
 
@@ -244,7 +192,6 @@ const Page: NextPage<Props> = ({
         throw new Error(errorData.message);
       }
 
-      // Update local state immutably
       if (memberToUpdate.isMM) {
         setMMMembers(prevMMs =>
           prevMMs.map(m =>

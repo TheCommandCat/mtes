@@ -129,6 +129,32 @@ export const MemberCard = ({
               <Typography variant="body2" color="text.secondary">
                 {member.city}
               </Typography>
+              {member.replacedBy && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    mt: 0.5,
+                    fontStyle: 'italic',
+                    color: 'text.secondary'
+                  }}
+                >
+                  <span role="img" aria-label="replaced">
+                    🔄
+                  </span>
+                  מוחלפ.ת על ידי:{' '}
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    fontWeight="bold"
+                    color="text.primary"
+                  >
+                    {member.replacedBy.name}
+                  </Typography>
+                </Typography>
+              )}
               {hasVoted && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                   <Typography variant="body2" color="success.dark">

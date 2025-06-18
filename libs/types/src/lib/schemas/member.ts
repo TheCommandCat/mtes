@@ -4,6 +4,6 @@ export interface Member {
   name: string;
   city: Cities | 'אין אמון באף אחד';
   isPresent: boolean;
-  replacedBy?: ObjectId | null;
+  replacedBy?: WithId<Member> | null;
   isMM: boolean;
 }

@@ -34,7 +34,11 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 interface MemberPresenceProps {
   allMembers: WithId<Member>[];
-  onMemberUpdate: (memberId: string, isPresent: boolean, replacedBy?: string | null) => void;
+  onMemberUpdate: (
+    memberId: string,
+    isPresent: boolean,
+    replacedBy?: WithId<Member> | null
+  ) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -94,7 +98,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
   const handleSelectMM = (mmMember: WithId<Member>) => {
     if (selectedMemberForMM) {
       // The original member is now "present" via replacement, and their replacedBy is the mmMember.
-      onMemberUpdate(selectedMemberForMM._id.toString(), true, mmMember._id.toString());
+      onMemberUpdate(selectedMemberForMM._id.toString(), true, mmMember);
     }
     handleCloseMMDialog();
   };

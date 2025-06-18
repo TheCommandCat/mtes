@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 import * as db from '@mtes/database';
 import { Member } from '@mtes/types';
 
@@ -41,7 +41,7 @@ router.put('/', async (req: Request, res: Response) => {
 
 router.put('/:memberId/presence', async (req: Request, res: Response) => {
     const { memberId } = req.params;
-    const { isPresent, replacedBy } = req.body as { isPresent: boolean; replacedBy?: string };
+    const { isPresent, replacedBy } = req.body as { isPresent: boolean; replacedBy?: WithId<Member> };
 
     if (!memberId) {
         console.log('❌ Member ID is null or undefined');
@@ -53,18 +53,18 @@ router.put('/:memberId/presence', async (req: Request, res: Response) => {
         return res.status(400).json({ ok: false, message: 'isPresent field (boolean) or replacedBy field (string) is required' });
     }
 
-    if (replacedBy && typeof replacedBy !== 'string') {
-        console.log('❌ replacedBy is not a string');
-        return res.status(400).json({ ok: false, message: 'replacedBy field must be a string (ObjectId)' });
+    if (replacedBy && (typeof replacedBy !== 'object')) {
+        console.log('❌ replacedBy is not a WithId<Member>');
+        return res.status(400).json({ ok: false, message: 'replacedBy field must be a WithId<Member>' });
     }
 
-    let updatePayload: { isPresent: boolean; replacedBy: ObjectId | null } = { isPresent, replacedBy: null };
+    let updatePayload: { isPresent: boolean; replacedBy: WithId<Member> | null } = { isPresent, replacedBy: null };
 
 
 
     if (replacedBy) {
         console.log(`⏬ Member ${memberId} is being replaced by ${replacedBy}. Setting isPresent to true.`);
-        updatePayload = { isPresent: true, replacedBy: new ObjectId(replacedBy) };
+        updatePayload = { isPresent: true, replacedBy: replacedBy as WithId<Member> };
     } else {
         console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
         updatePayload = { isPresent, replacedBy: null };
