@@ -61,9 +61,8 @@ router.put('/:memberId/presence', async (req: Request, res: Response) => {
     let updatePayload: { isPresent: boolean; replacedBy: WithId<Member> | null } = { isPresent, replacedBy: null };
 
 
-
     if (replacedBy) {
-        console.log(`⏬ Member ${memberId} is being replaced by ${replacedBy}. Setting isPresent to true.`);
+        console.log(`⏬ Member ${memberId} is being replaced by ${replacedBy._id}. Setting isPresent to true.`);
         updatePayload = { isPresent: true, replacedBy: replacedBy as WithId<Member> };
     } else {
         console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
