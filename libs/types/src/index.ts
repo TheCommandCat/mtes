@@ -9,6 +9,7 @@ export * from './lib/schemas/division';
 export * from './lib/schemas/election-state';
 export * from './lib/schemas/member';
 export * from './lib/schemas/round';
+export * from './lib/schemas/city'; // Added City schema export
 export * from './lib/positions';
 export * from './lib/schemas/vote';
 export * from './lib/voting-states'

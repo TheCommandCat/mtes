@@ -1,227 +1,245 @@
+import { useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
+import type { GetServerSidePropsContext } from 'next';
 import { useRouter } from 'next/router';
-import {
-  Paper,
-  Typography,
-  Stack,
-  Button,
-  Box,
-  TextField,
-  IconButton,
-  Tabs,
-  Tab
-} from '@mui/material';
-import type { WithId } from 'mongodb';
-import type { ElectionEvent, Member, User } from '@mtes/types';
-import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
-import Layout from '../../components/layout';
-import { useState, useEffect } from 'react';
-import { Formik, Form, FormikHelpers } from 'formik';
-import FormikTextField from '../../components/general/forms/formik-text-field';
-import Grid from '@mui/material/Grid2';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import { Paper, Typography, Stack, Button, Box, Tabs, Tab } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
+import { enqueueSnackbar } from 'notistack';
+import { Formik, Form, FormikHelpers, getIn } from 'formik';
 import { z } from 'zod';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import type { GetServerSidePropsContext } from 'next';
-import UsersTable from 'apps/frontend/components/admin/users-table';
-import { enqueueSnackbar } from 'notistack';
 
-export const validationSchema = z.object({
-  name: z.string().min(1, 'שם האירוע הוא שדה חובה'),
-  votingStands: z.coerce
-    .number({ required_error: 'מספר עמדות הצבעה הוא שדה חובה' })
-    .min(1, 'לפחות עמדת הצבעה אחת נדרשת'),
-  electionThreshold: z.coerce
-    .number({ required_error: 'אחוז הכשירות הוא שדה חובה' })
-    .min(0, 'אחוז הכשירות חייב להיות לפחות 0')
-    .max(100, 'אחוז הכשירות לא יכול להיות יותר מ-100')
+import type { WithId } from 'mongodb';
+import type { ElectionEvent, Member, User, City } from '@mtes/types';
+
+import { apiFetch, serverSideGetRequests } from '../../lib/utils/fetch';
+import Layout from '../../components/layout';
+import UsersTable from '../../components/admin/users-table';
+import EventDetailsForm from '../../components/admin/EventDetailsForm';
+import MembersManagementForm from '../../components/admin/MembersManagementForm';
+import CitiesManagementForm from '../../components/admin/CitiesManagementForm';
+
+const memberFormSchema = z.object({
+  _id: z.string().optional(),
+  name: z.string().min(1, 'שם החבר הוא שדה חובה'),
+  city: z.string().min(1, 'יש לבחור עיר לחבר'),
+  isPresent: z.boolean().optional().default(false)
 });
 
-export type ValidationSchema = z.infer<typeof validationSchema>;
+const createValidationSchema = (isNewEvent: boolean) =>
+  z
+    .object({
+      name: z.string().min(1, 'שם האירוע הוא שדה חובה'),
+      votingStands: z.coerce
+        .number({ required_error: 'מספר עמדות הצבעה הוא שדה חובה' })
+        .min(1, 'לפחות עמדת הצבעה אחת נדרשת'),
+      electionThreshold: z.coerce
+        .number({ required_error: 'אחוז הכשירות הוא שדה חובה' })
+        .min(0, 'אחוז הכשירות חייב להיות לפחות 0')
+        .max(100, 'אחוז הכשירות לא יכול להיות יותר מ-100'),
+      cities: z.array(
+        z.object({
+          name: z.string().min(1, 'שם העיר לא יכול להיות ריק'),
+          numOfVoters: z.coerce.number().min(0, 'מספר המצביעים חייב להיות לפחות 0')
+        })
+      ),
+      regularMembers: z.array(memberFormSchema),
+      mmMembers: z.array(memberFormSchema)
+    })
+    .refine(data => !isNewEvent || data.regularMembers.length + data.mmMembers.length > 0, {
+      message: 'ליצירת אירוע חדש, יש להזין לפחות חבר אחד (נציג או מ"מ)',
+      path: ['regularMembers'] // Or a general path
+    })
+    .refine(
+      data => {
+        const allMembers = [...data.regularMembers, ...data.mmMembers];
+        return allMembers.every(member => data.cities.some(city => city.name === member.city));
+      },
+      {
+        message: 'חבר אחד או יותר משויך לעיר שאינה קיימת ברשימה',
+        path: ['regularMembers'] // Or a general path
+      }
+    )
+    .refine(
+      data => {
+        const cityConfigs = data.cities.reduce((acc, city) => {
+          acc[city.name] = city.numOfVoters;
+          return acc;
+        }, {} as Record<string, number>);
+
+        for (const city of data.cities) {
+          const regularMembersInCityCount = data.regularMembers.filter(
+            m => m.city === city.name
+          ).length;
+          if (regularMembersInCityCount > (cityConfigs[city.name] || 0)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      {
+        message:
+          'מספר הנציגים בעיר אינו יכול לעלות על מספר המצביעים שהוגדר לאותה עיר. יש להעביר חברים עודפים לרשימת ממלאי מקום.',
+        path: ['regularMembers']
+      }
+    );
+
+export type FormValues = z.infer<ReturnType<typeof createValidationSchema>>;
 
 export interface PageProps {
   user: WithId<User>;
-  event?: WithId<ElectionEvent & { members?: Array<{ name: string; city: string }> }>;
-  initMembers?: Member[];
-  credentials?: User[];
+  event?: WithId<ElectionEvent>;
+  initMembers: WithId<Member>[]; // These are regular members (isMM: false or undefined)
+  initMMMembers: WithId<Member>[]; // These are MM members (isMM: true)
+  initCities: City[];
+  credentials: User[];
 }
 
-export interface FormValues extends ValidationSchema {}
-
-const Page: NextPage<PageProps> = ({ user, event, initMembers, credentials }) => {
+const Page: NextPage<PageProps> = ({
+  user,
+  event,
+  initMembers,
+  initMMMembers,
+  initCities,
+  credentials
+}) => {
   const router = useRouter();
-  const [members, setMembers] = useState<Member[]>(Array.isArray(initMembers) ? initMembers : []);
   const [currentTab, setCurrentTab] = useState(0);
-  const [hasErrors, setHasErrors] = useState<{ event: boolean; members: boolean }>({
-    event: false,
-    members: false
-  });
 
-  const isValidMember = (member: Member) => member.name.trim() !== '' && member.city.trim() !== '';
-  const validateMembers = (memberList: Member[]) => {
-    if (!Array.isArray(memberList)) return false;
-    if (!event && memberList.length === 0) return false;
-    return memberList.every(isValidMember);
-  };
+  const isNewEvent = !event;
+  const validationSchema = createValidationSchema(isNewEvent);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) =>
-    setCurrentTab(newValue);
-
-  const handleDelete = async () => {
-    try {
-      const res = await apiFetch('/api/admin/events/data', { method: 'DELETE' });
-      if (!res.ok) throw new Error('http-error');
-      await res.json();
-      enqueueSnackbar('האירוע נמחק בהצלחה', { variant: 'success' });
-      router.reload();
-    } catch {
-      enqueueSnackbar('אופס, לא הצלחנו למחוק את האירוע.', { variant: 'error' });
-    }
+  const initialValues: FormValues = {
+    name: event?.name || '',
+    votingStands: event?.votingStands || 1,
+    electionThreshold: event?.electionThreshold || 50,
+    regularMembers: Array.isArray(initMembers)
+      ? initMembers
+          .filter(m => !m.isMM) // Ensure only non-MM members (isMM is false or undefined)
+          .map(m => ({
+            _id: m._id.toString(),
+            name: m.name,
+            city: m.city,
+            isPresent: m.isPresent || false
+          }))
+      : [],
+    mmMembers: Array.isArray(initMMMembers)
+      ? initMMMembers
+          .filter(m => m.isMM === true) // Ensure only explicitly MM members
+          .map(m => ({
+            _id: m._id.toString(),
+            name: m.name,
+            city: m.city,
+            isPresent: m.isPresent || false
+          }))
+      : [],
+    cities: Array.isArray(initCities) ? initCities : []
   };
 
   const handleSubmit = async (values: FormValues, { setSubmitting }: FormikHelpers<FormValues>) => {
     setSubmitting(true);
-    if (!event && !validateMembers(members)) {
-      setHasErrors(prev => ({ ...prev, members: true }));
-      enqueueSnackbar('יש להזין לפחות חבר אחד עם שם ועיר', { variant: 'error' });
-      setCurrentTab(1);
-      setSubmitting(false);
-      return;
-    }
-    const basePayload = {
-      name: values.name,
-      eventUsers: { 'election-manager': true, 'voting-stand': true },
-      votingStands: values.votingStands,
-      electionThreshold: values.electionThreshold,
-      startDate: new Date(),
-      endDate: new Date()
-    };
-    let finalPayload;
-    if (event) {
-      finalPayload = { ...basePayload, hasState: event.hasState };
-    } else {
-      finalPayload = { ...basePayload, hasState: true, members: members };
-    }
-    try {
-      const res = await apiFetch('/api/admin/events', {
-        method: event ? 'PUT' : 'POST',
+
+    const updateEndpoint = async (
+      endpoint: string,
+      method: 'POST' | 'PUT',
+      body: unknown,
+      entityName: string
+    ) => {
+      const res = await apiFetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalPayload)
+        body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error('http-error');
-      await res.json();
-      enqueueSnackbar(event ? 'האירוע עודכן בהצלחה' : 'האירוע נוצר בהצלחה', { variant: 'success' });
-      router.reload();
-    } catch {
-      enqueueSnackbar(
-        event ? 'אופס, לא הצלחנו לעדכן את האירוע.' : 'אופס, לא הצלחנו ליצור את האירוע.',
-        { variant: 'error' }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || `An error occurred while updating ${entityName}.`);
+      }
+      return res.json();
+    };
+
+    try {
+      const eventDetailsPayload = {
+        name: values.name,
+        votingStands: values.votingStands,
+        electionThreshold: values.electionThreshold
+      };
+      await updateEndpoint(
+        '/api/admin/events',
+        event ? 'PUT' : 'POST',
+        eventDetailsPayload,
+        'event details'
       );
+
+      const regularMembersPayload = values.regularMembers.map(m => ({
+        ...m,
+        isMM: false,
+        isPresent: m.isPresent || false
+      }));
+      const mmMembersPayload = values.mmMembers.map(m => ({
+        ...m,
+        isMM: true,
+        isPresent: m.isPresent || false
+      }));
+
+      await updateEndpoint(
+        '/api/events/members',
+        'PUT',
+        { members: regularMembersPayload },
+        'members'
+      );
+
+      // Send MM members to a different endpoint
+      if (mmMembersPayload.length > 0 || event) {
+        // Always send MM members if event exists, even if empty to clear them
+        await updateEndpoint(
+          '/api/events/mm-members',
+          'PUT',
+          { mmMembers: mmMembersPayload },
+          'MM members'
+        );
+      }
+
+      await updateEndpoint(
+        '/api/admin/events/cities',
+        'PUT',
+        { cities: values.cities as City[] },
+        'cities'
+      );
+
+      enqueueSnackbar('האירוע נשמר בהצלחה', { variant: 'success' });
+      router.reload();
+    } catch (error: any) {
+      enqueueSnackbar(error.message || 'אופס, אירעה שגיאה בלתי צפויה.', {
+        variant: 'error'
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleUpdateMembers = async (updatedMembers: Member[]) => {
-    if (!validateMembers(updatedMembers)) {
-      enqueueSnackbar('יש להזין שם ועיר לכל החברים', { variant: 'error' });
-      return;
-    }
+  const handleDelete = async () => {
+    if (!event?._id) return;
+
+    const confirmed = confirm('האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה ניתנת לביטול.');
+    if (!confirmed) return;
+
     try {
-      const res = await apiFetch('/api/events/members', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ members: updatedMembers })
+      const res = await apiFetch(`/api/admin/events/data`, {
+        method: 'DELETE'
       });
-      if (!res.ok) throw new Error('http-error');
-      await res.json();
-      setMembers(updatedMembers);
-      setHasErrors(prev => ({ ...prev, members: false }));
-      enqueueSnackbar('החברים עודכנו בהצלחה', { variant: 'success' });
-    } catch {
-      enqueueSnackbar('אופס, לא הצלחנו לעדכן את החברים.', { variant: 'error' });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || 'An error occurred while deleting the event.');
+      }
+
+      enqueueSnackbar('האירוע נמחק בהצלחה', { variant: 'success' });
+      router.push('/admin');
+    } catch (error: any) {
+      enqueueSnackbar(error.message || 'אופס, אירעה שגיאה בלתי צפויה.', { variant: 'error' });
     }
   };
-
-  const addMember = () => setMembers([...members, { name: '', city: 'תל אביב יפו' }]);
-  const removeMember = (index: number) => {
-    const newMembers = members.filter((_, i) => i !== index);
-    setMembers(newMembers);
-    setHasErrors(prev => ({ ...prev, members: !validateMembers(newMembers) }));
-  };
-  const updateMember = (index: number, field: keyof Member, value: string) => {
-    const newMembers = [...members];
-    newMembers[index] = { ...newMembers[index], [field]: value };
-    setMembers(newMembers);
-    setHasErrors(prev => ({ ...prev, members: !validateMembers(newMembers) }));
-  };
-  const getInitialValues = (): FormValues => ({
-    name: event?.name || '',
-    votingStands: event?.votingStands || 1,
-    electionThreshold: event?.electionThreshold || 50
-  });
-
-  const renderMemberFields = () => (
-    <Box sx={{ mt: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        רשימת חברים
-      </Typography>
-      <Stack spacing={2}>
-        {members.map((member, index) => (
-          <Grid container spacing={2} key={index} alignItems="center">
-            <Grid size={{ xs: 12, sm: 5 }}>
-              <TextField
-                fullWidth
-                label="שם"
-                value={member.name}
-                onChange={e => updateMember(index, 'name', e.target.value)}
-                required
-                error={member.name.trim() === ''}
-                helperText={member.name.trim() === '' ? 'שדה חובה' : ''}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 5 }}>
-              <TextField
-                fullWidth
-                label="רשות"
-                value={member.city}
-                onChange={e => updateMember(index, 'city', e.target.value)}
-                required
-                error={member.city.trim() === ''}
-                helperText={member.city.trim() === '' ? 'שדה חובה' : ''}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 2 }} sx={{ textAlign: { xs: 'right', sm: 'center' } }}>
-              <IconButton onClick={() => removeMember(index)} color="error">
-                <DeleteIcon />
-              </IconButton>
-            </Grid>
-          </Grid>
-        ))}
-        <Button
-          startIcon={<AddIcon />}
-          onClick={addMember}
-          variant="outlined"
-          sx={{ alignSelf: 'flex-start' }}
-        >
-          הוסף חבר
-        </Button>
-      </Stack>
-      {event && (
-        <Button
-          variant="contained"
-          onClick={() => handleUpdateMembers(members)}
-          disabled={!validateMembers(members)}
-          sx={{ mt: 3 }}
-          fullWidth
-        >
-          שמור שינויי חברים
-        </Button>
-      )}
-    </Box>
-  );
 
   const TabLabel = ({ label, hasError }: { label: string; hasError: boolean }) => (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -231,149 +249,112 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, credentials }) =>
   );
 
   return (
-    <Layout maxWidth="sm" title="ממשק ניהול">
+    <Layout maxWidth="md" title="ממשק ניהול">
       <Paper sx={{ p: { xs: 2, sm: 4 }, mt: 4 }}>
         <Typography variant="h5" gutterBottom sx={{ mb: 3, textAlign: 'center' }}>
           {event ? 'עריכת אירוע' : 'יצירת אירוע חדש'}
         </Typography>
         <Formik
-          initialValues={getInitialValues()}
-          onSubmit={handleSubmit}
+          initialValues={initialValues}
           validationSchema={toFormikValidationSchema(validationSchema)}
-          validateOnMount
+          onSubmit={handleSubmit}
+          enableReinitialize
         >
           {({ values, errors, touched, isSubmitting, setFieldValue }) => {
-            useEffect(() => {
-              setHasErrors(prev => ({
-                ...prev,
-                event: Object.keys(errors).length > 0
-              }));
-              if (Object.keys(errors).length > 0) {
-                enqueueSnackbar('יש שגיאות בטופס. אנא בדוק את השדות שסומנו.', { variant: 'error' });
-              }
-            }, [errors]);
-            useEffect(() => {
-              if (!event) {
-                setHasErrors(prev => ({ ...prev, members: !validateMembers(members) }));
-              }
-            }, [members, event]);
+            const hasEventDetailsError = !!(
+              (errors.name && touched.name) ||
+              (errors.votingStands && touched.votingStands) ||
+              (errors.electionThreshold && touched.electionThreshold)
+            );
+            const hasMembersError = !!(
+              (getIn(errors, 'regularMembers') && getIn(touched, 'regularMembers')) ||
+              (getIn(errors, 'mmMembers') && getIn(touched, 'mmMembers'))
+            );
+            const hasCitiesError = !!(errors.cities && touched.cities);
+
+            const renderActionButtons = () => (
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="center"
+                sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}
+              >
+                <Button type="submit" variant="contained" disabled={isSubmitting}>
+                  {event ? 'עדכן אירוע' : 'צור אירוע חדש'}
+                </Button>
+                {event && (
+                  <Button
+                    onClick={handleDelete}
+                    variant="outlined"
+                    color="error"
+                    disabled={isSubmitting}
+                  >
+                    מחק אירוע
+                  </Button>
+                )}
+              </Stack>
+            );
+
             return (
               <Form>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                  <Tabs value={currentTab} onChange={handleTabChange} centered variant="fullWidth">
-                    <Tab label={<TabLabel label="פרטי אירוע" hasError={hasErrors.event} />} />
-                    <Tab
-                      label={
-                        <TabLabel label="רשימת חברים" hasError={hasErrors.members && !event} />
-                      }
-                    />
-                    {event && <Tab label={<TabLabel label="ניהול משתמשים" hasError={false} />} />}
+                  <Tabs
+                    value={currentTab}
+                    onChange={(_e, val) => setCurrentTab(val)}
+                    centered
+                    sx={{ mb: 2 }}
+                  >
+                    <Tab label={<TabLabel label="פרטי אירוע" hasError={hasEventDetailsError} />} />
+                    <Tab label={<TabLabel label="ניהול חברים" hasError={hasMembersError} />} />
+                    <Tab label={<TabLabel label="ניהול ערים" hasError={hasCitiesError} />} />
+                    <Tab label="ניהול משתמשים" />
                   </Tabs>
                 </Box>
-                {currentTab === 0 && (
-                  <Box sx={{ mb: 4 }}>
-                    <Grid container spacing={3}>
-                      <Grid size={{ xs: 12, sm: 8 }}>
-                        <FormikTextField
-                          variant="outlined"
-                          type="text"
-                          name="name"
-                          label="שם אירוע"
-                          fullWidth
-                          required
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 4 }}>
-                        <FormikTextField
-                          variant="outlined"
-                          type="number"
-                          name="votingStands"
-                          label="מספר עמדות"
-                          fullWidth
-                          required
-                          inputProps={{ min: 1 }}
-                        />
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <FormikTextField
-                          variant="outlined"
-                          type="number"
-                          name="electionThreshold"
-                          label="אחוז הכשירות לניצחון (%)"
-                          fullWidth
-                          required
-                          inputProps={{ min: 0, max: 100, step: 0.1 }}
-                          helperText="אחוז מינימלי של קולות הנדרש לקביעת מנצח"
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
+
+                {currentTab === 0 && <EventDetailsForm renderActionButtons={renderActionButtons} />}
+
+                {currentTab === 1 && (
+                  <Stack spacing={3}>
+                    <MembersManagementForm
+                      title="ניהול נציגים"
+                      membersFieldName="regularMembers"
+                      values={values}
+                      errors={errors}
+                      setFieldValue={setFieldValue}
+                      renderActionButtons={null} // Buttons rendered once below
+                      isMMList={false}
+                    />
+                    <MembersManagementForm
+                      title="ניהול ממלאי מקום"
+                      membersFieldName="mmMembers"
+                      values={values}
+                      errors={errors}
+                      setFieldValue={setFieldValue}
+                      renderActionButtons={null} // Buttons rendered once below
+                      isMMList={true}
+                    />
+                    {/* Render action buttons once after both member forms */}
+                    {renderActionButtons()}
+                  </Stack>
                 )}
-                {currentTab === 1 && <Box sx={{ mt: 2 }}>{renderMemberFields()}</Box>}
-                {currentTab === 2 && event && (
-                  <Box sx={{ mt: 3 }}>
-                    {!credentials || credentials.length === 0 ? (
-                      <Box
-                        display="flex"
-                        justifyContent="center"
-                        alignItems="center"
-                        minHeight="200px"
-                      >
-                        <Paper sx={{ p: 3, textAlign: 'center', width: '100%', maxWidth: 'sm' }}>
-                          <Typography variant="h6" color="text.secondary">
-                            אין משתמשים להצגה.
-                          </Typography>
-                        </Paper>
-                      </Box>
-                    ) : (
-                      <UsersTable users={credentials} />
-                    )}
-                  </Box>
+
+                {currentTab === 2 && (
+                  <CitiesManagementForm
+                    values={values}
+                    setFieldValue={setFieldValue}
+                    renderActionButtons={renderActionButtons}
+                    isNewEvent={isNewEvent}
+                    initCities={initCities}
+                  />
                 )}
-                {!event && (
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    fullWidth
-                    sx={{ mt: 4 }}
-                    disabled={isSubmitting || hasErrors.event || hasErrors.members}
-                  >
-                    {isSubmitting ? 'יוצר אירוע...' : 'צור אירוע'}
-                  </Button>
-                )}
-                {event && currentTab === 0 && (
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    fullWidth
-                    sx={{ mt: 3 }}
-                    disabled={isSubmitting || hasErrors.event}
-                  >
-                    {isSubmitting ? 'מעדכן אירוע...' : 'עדכן פרטי אירוע'}
-                  </Button>
-                )}
-                {event && (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: { xs: 2, sm: 3 },
-                      mt: 4,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 1
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
-                    >
-                      פעולות נוספות
+
+                {currentTab === 3 && (
+                  <Paper elevation={3} sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      ניהול משתמשים
                     </Typography>
-                    <Stack justifyContent="center" direction={{ xs: 'column', sm: 'row' }} gap={2}>
-                      <Button variant="outlined" color="error" onClick={handleDelete} fullWidth>
-                        מחק אירוע
-                      </Button>
-                    </Stack>
+                    <UsersTable users={credentials} />
+                    {renderActionButtons()}
                   </Paper>
                 )}
               </Form>
@@ -385,17 +366,31 @@ const Page: NextPage<PageProps> = ({ user, event, initMembers, credentials }) =>
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  ctx: GetServerSidePropsContext
+) => {
   const data = await serverSideGetRequests(
     {
       user: '/api/me',
       event: '/public/event',
-      initMembers: '/api/events/members',
+      initMembers: '/api/events/members', // Fetches non-MM members
+      initMMMembers: '/api/events/mm-members', // Fetches MM members
+      initCities: '/api/admin/events/cities',
       credentials: '/api/admin/events/users/credentials'
     },
     ctx
   );
-  return { props: data };
+
+  return {
+    props: {
+      user: data.user,
+      event: data.event ?? null,
+      initMembers: data.initMembers ?? [],
+      initMMMembers: data.initMMMembers ?? [], // Ensure this is correctly populated
+      initCities: data.initCities ?? [],
+      credentials: data.credentials ?? []
+    }
+  };
 };
 
 export default Page;

@@ -1,44 +1,107 @@
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, Tooltip } from '@mui/material';
 import { Member } from '@mtes/types';
 import { WithId } from 'mongodb';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 interface MemberDisplayProps {
   member: WithId<Member>;
 }
 
 export const MemberDisplay = ({ member }: MemberDisplayProps) => {
+  const displayName = member.replacedBy ? member.replacedBy.name : member.name;
+  const displayInitial = displayName.charAt(0);
+
   return (
     <Paper
       elevation={1}
       sx={{
-        p: 3,
-        mb: 4,
+        p: { xs: 2, sm: 3 },
+        mb: 2.5,
         background: 'rgba(33, 150, 243, 0.05)',
         border: '1px solid rgba(33, 150, 243, 0.2)',
-        borderRadius: 2
+        borderRadius: 2,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: 2
+        }
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, sm: 3 } }}>
         <Box
           sx={{
-            width: 60,
-            height: 60,
+            width: { xs: 64, sm: 72 },
+            height: { xs: 64, sm: 72 },
             borderRadius: '50%',
             bgcolor: 'primary.main',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '24px'
+            fontSize: { xs: '28px', sm: '32px' },
+            flexShrink: 0,
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.05)'
+            }
           }}
         >
-          {member.name.charAt(0)}
+          {displayInitial}
         </Box>
-        <Box>
-          <Typography variant="h5" fontWeight="bold">
-            {member.name}
+        <Box sx={{ py: 0.5, flex: 1 }}>
+          <Typography
+            variant="h5"
+            fontWeight="bold"
+            sx={{
+              mb: 0.5,
+              lineHeight: 1.2
+            }}
+          >
+            {displayName}
           </Typography>
-          <Typography color="text.secondary">{member.city}</Typography>
+          <Typography
+            color="text.secondary"
+            sx={{
+              mb: member.replacedBy ? 1.5 : 0
+            }}
+          >
+            {member.city}
+          </Typography>
+          {member.replacedBy && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                py: 0.5,
+                px: 1.5,
+                bgcolor: 'rgba(33, 150, 243, 0.08)',
+                borderRadius: 1,
+                width: 'fit-content'
+              }}
+            >
+              <Tooltip title="Replacement member">
+                <SwapHorizIcon
+                  color="info"
+                  fontSize="small"
+                  sx={{
+                    opacity: 0.9,
+                    transform: 'scale(0.9)'
+                  }}
+                />
+              </Tooltip>
+              <Typography
+                variant="body2"
+                color="info.main"
+                sx={{
+                  fontWeight: 500,
+                  opacity: 0.9
+                }}
+              >
+                מחליף\ה את {member.name}
+              </Typography>
+            </Box>
+          )}
         </Box>
       </Box>
     </Paper>

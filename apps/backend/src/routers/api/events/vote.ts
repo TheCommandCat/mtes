@@ -9,7 +9,9 @@ const WHITE_VOTE_ID = '000000000000000000000000';
 const WHITE_VOTE_MEMBER: WithId<Member> = {
     _id: new ObjectId(WHITE_VOTE_ID),
     name: 'פתק לבן',
-    city: 'אין אמון באף אחד'
+    city: 'אין אמון באף אחד',
+    isPresent: true,
+    isMM: false,
 };
 
 router.post('/', async (req: Request, res: Response) => {

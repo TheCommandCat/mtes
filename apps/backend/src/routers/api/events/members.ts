@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 import * as db from '@mtes/database';
 import { Member } from '@mtes/types';
 
@@ -41,22 +41,37 @@ router.put('/', async (req: Request, res: Response) => {
 
 router.put('/:memberId/presence', async (req: Request, res: Response) => {
     const { memberId } = req.params;
-    const { isPresent } = req.body as { isPresent: boolean };
+    const { isPresent, replacedBy } = req.body as { isPresent: boolean; replacedBy?: WithId<Member> };
 
     if (!memberId) {
         console.log('❌ Member ID is null or undefined');
         return res.status(400).json({ ok: false, message: 'Member ID is missing' });
     }
 
-    if (typeof isPresent !== 'boolean') {
-        console.log('❌ isPresent is missing or not a boolean');
-        return res.status(400).json({ ok: false, message: 'isPresent field (boolean) is required' });
+    if (typeof isPresent !== 'boolean' && replacedBy === undefined) {
+        console.log('❌ isPresent is missing or not a boolean, and replacedBy is not provided');
+        return res.status(400).json({ ok: false, message: 'isPresent field (boolean) or replacedBy field (string) is required' });
     }
 
-    console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
+    if (replacedBy && (typeof replacedBy !== 'object')) {
+        console.log('❌ replacedBy is not a WithId<Member>');
+        return res.status(400).json({ ok: false, message: 'replacedBy field must be a WithId<Member>' });
+    }
+
+    let updatePayload: { isPresent: boolean; replacedBy: WithId<Member> | null } = { isPresent, replacedBy: null };
+
+
+    if (replacedBy) {
+        console.log(`⏬ Member ${memberId} is being replaced by ${replacedBy._id}. Setting isPresent to true.`);
+        updatePayload = { isPresent: true, replacedBy: replacedBy as WithId<Member> };
+    } else {
+        console.log(`⏬ Updating presence for member ${memberId} to ${isPresent}`);
+        updatePayload = { isPresent, replacedBy: null };
+    }
+
 
     try {
-        const memberResult = await db.updateMember({ _id: new ObjectId(memberId) }, { isPresent });
+        const memberResult = await db.updateMember({ _id: new ObjectId(memberId) }, updatePayload as unknown as Partial<Member>);
 
         if (!memberResult.acknowledged || memberResult.matchedCount === 0) {
             console.log(

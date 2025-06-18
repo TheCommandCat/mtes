@@ -50,7 +50,7 @@ export const MemberPresenceStatus = ({ presentCount, totalCount }: MemberPresenc
           {membersLeftForQuorum}
         </Typography>
         <Typography variant="h6" color={theme.palette.warning.dark} sx={{ mb: 2 }}>
-          חברים לנוכחות תקינה (66%)
+          נציגים לנוכחות תקינה (66%)
         </Typography>
         <Box
           sx={{
@@ -63,7 +63,7 @@ export const MemberPresenceStatus = ({ presentCount, totalCount }: MemberPresenc
           }}
         >
           <Typography variant="body1" color="text.secondary">
-            נוכחים:
+            נציגים נוכחים:
           </Typography>
           <Typography variant="body1" fontWeight="medium" color={theme.palette.warning.dark}>
             {presentCount} / {totalCount}
@@ -78,7 +78,7 @@ export const MemberPresenceStatus = ({ presentCount, totalCount }: MemberPresenc
           sx={{ mt: 1, px: 1, display: 'block' }}
         >
           לקיום בחירות תקינות נדרשת נוכחות של לפחות {requiredMembersForQuorum} מתוך {totalCount}{' '}
-          חברים.
+          נציגים.
         </Typography>
       </Paper>
     );

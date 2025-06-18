@@ -1,117 +1,129 @@
-import { Member } from '@mtes/types';
-import { WithId } from 'mongodb';
 import React, { useState, useMemo } from 'react';
+import { WithId } from 'mongodb';
+import { Member } from '@mtes/types';
 import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Button,
+  TableSortLabel,
   Typography,
-  Box,
-  TableSortLabel
+  Tooltip
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
+import { alpha, useTheme } from '@mui/material/styles';
+import {
+  Login as LoginIcon,
+  Logout as LogoutIcon,
+  PeopleOutline as PeopleOutlineIcon,
+  Cancel as CancelIcon
+} from '@mui/icons-material';
 
 interface MemberPresenceProps {
   allMembers: WithId<Member>[];
-  onMemberUpdate: (memberId: string, isPresent: boolean) => void;
+  onMemberUpdate: (
+    memberId: string,
+    isPresent: boolean,
+    replacedBy?: WithId<Member> | null
+  ) => void;
 }
-
-type SortDirection = 'asc' | 'desc';
-interface SortConfig {
-  key: keyof Member | 'status';
-  direction: SortDirection;
-}
-
-const commonCellSx = {
-  whiteSpace: 'normal',
-  wordBreak: 'break-word',
-  padding: '12px 16px',
-  borderBottom: '1px solid rgba(224, 224, 224, 1)'
-};
-
-const headerCellSx = {
-  ...commonCellSx,
-  fontWeight: 'bold',
-  backgroundColor: 'grey.100',
-  borderBottom: '2px solid rgba(224, 224, 224, 1)'
-};
-
-const SortPlaceholderIcon = () => (
-  <Box
-    component="span"
-    sx={{
-      transform: 'none !important',
-      width: '1em',
-      height: '1em',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}
-  >
-    -
-  </Box>
-);
 
 const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpdate }) => {
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  // local types
+  type SortKey = keyof Member | 'status' | 'isMM';
+  type SortConfig = { key: SortKey; dir: 'asc' | 'desc' };
 
-  const sortedMembers = useMemo(() => {
-    if (!allMembers) return [];
-    let sortableItems = [...allMembers];
-    if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+  const theme = useTheme();
+  const [sortCfg, setSortCfg] = useState<SortConfig | null>(null);
+  const [dlgOpen, setDlgOpen] = useState(false);
+  const [selected, setSelected] = useState<WithId<Member> | null>(null);
 
-        if (sortConfig.key === 'status') {
-          aValue = a.isPresent || false;
-          bValue = b.isPresent || false;
+  // prepare replacements
+  const { replacedIds, replacerIds, replacements } = useMemo(() => {
+    const rIds = new Set<string>();
+    const iIds = new Set<string>();
+    const reps: { replaced: WithId<Member>; replacer: WithId<Member> }[] = [];
+
+    allMembers.forEach(m => {
+      if (m.replacedBy && (m.replacedBy as WithId<Member>).isPresent) {
+        const replacer = m.replacedBy as WithId<Member>;
+        reps.push({ replaced: m, replacer });
+        rIds.add(m._id.toString());
+        iIds.add(replacer._id.toString());
+      }
+    });
+
+    return { replacedIds: rIds, replacerIds: iIds, replacements: reps };
+  }, [allMembers]);
+
+  // who can fill in?
+  const availableMMs = useMemo(() => {
+    if (!selected) return [];
+    return allMembers.filter(m => {
+      const id = m._id.toString();
+      return (
+        m.isMM &&
+        m.city === selected.city &&
+        m.isPresent &&
+        !m.replacedBy &&
+        !replacerIds.has(id) &&
+        id !== selected._id.toString()
+      );
+    });
+  }, [allMembers, replacerIds, selected]);
+
+  // sorting
+  const sorted = useMemo(() => {
+    const arr = [...allMembers];
+    if (sortCfg) {
+      arr.sort((a, b) => {
+        let av: any, bv: any;
+        if (sortCfg.key === 'status') {
+          av = a.isPresent;
+          bv = b.isPresent;
+        } else if (sortCfg.key === 'isMM') {
+          av = a.isMM;
+          bv = b.isMM;
         } else {
-          aValue = a[sortConfig.key];
-          bValue = b[sortConfig.key];
+          av = a[sortCfg.key];
+          bv = b[sortCfg.key];
         }
-
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          aValue = aValue.toLowerCase();
-          bValue = bValue.toLowerCase();
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
+        if (typeof av === 'string') av = av.toLowerCase();
+        if (typeof bv === 'string') bv = bv.toLowerCase();
+        if (av < bv) return sortCfg.dir === 'asc' ? -1 : 1;
+        if (av > bv) return sortCfg.dir === 'asc' ? 1 : -1;
         return 0;
       });
     }
-    return sortableItems;
-  }, [allMembers, sortConfig]);
+    return arr;
+  }, [allMembers, sortCfg]);
 
-  const requestSort = (key: keyof Member | 'status') => {
-    let direction: SortDirection = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
+  const onSort = (key: SortKey) => {
+    let dir: 'asc' | 'desc' = 'asc';
+    if (sortCfg?.key === key && sortCfg.dir === 'asc') dir = 'desc';
+    setSortCfg({ key, dir });
   };
 
-  if (!allMembers || allMembers.length === 0) {
+  if (!allMembers.length) {
     return (
       <Paper
         elevation={3}
         sx={{
-          padding: 4,
+          p: 4,
           textAlign: 'center',
-          margin: 2,
+          m: 2,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -119,7 +131,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
         }}
       >
         <PeopleOutlineIcon sx={{ fontSize: 48, color: 'grey.500' }} />
-        <Typography variant="h6" component="p" color="text.secondary">
+        <Typography variant="h6" color="text.secondary">
           לא נמצאו חברים להצגה.
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -129,125 +141,200 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
     );
   }
 
+  // column defs right here
+  const columns: { key: SortKey; label: string }[] = [
+    { key: 'name', label: 'שם' },
+    { key: 'city', label: 'עיר' },
+    { key: 'isMM', label: 'סטטוס' }
+  ];
+
   return (
-    <Box sx={{ padding: { xs: 1, sm: 2, md: 3 } }}>
-      <Typography
-        variant="h5"
-        component="h2"
-        gutterBottom
-        sx={{ textAlign: 'center', marginBottom: 3, fontWeight: 'medium' }}
-      >
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+      <Typography variant="h5" align="center" gutterBottom sx={{ mb: 3, fontWeight: 'medium' }}>
         ניהול נוכחות חברים
       </Typography>
+
       <TableContainer component={Paper} elevation={3}>
-        <Table
-          aria-label="member presence table"
-          sx={{ borderCollapse: 'separate', borderSpacing: 0 }}
-        >
+        <Table sx={{ borderCollapse: 'separate', borderSpacing: 0 }}>
           <TableHead>
             <TableRow>
-              <TableCell
-                align="center"
-                sx={headerCellSx}
-                sortDirection={sortConfig?.key === 'name' ? sortConfig.direction : false}
-              >
-                <TableSortLabel
-                  active={sortConfig?.key === 'name'}
-                  direction={sortConfig?.key === 'name' ? sortConfig.direction : 'asc'}
-                  onClick={() => requestSort('name')}
-                  IconComponent={sortConfig?.key === 'name' ? undefined : SortPlaceholderIcon}
+              {columns.map(({ key, label }) => (
+                <TableCell
+                  key={key}
+                  align="center"
                   sx={{
-                    '& .MuiTableSortLabel-icon': {
-                      color: 'rgba(0, 0, 0, 0.87) !important',
-                      opacity: 1
-                    }
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    padding: '12px 16px',
+                    borderBottom: '2px solid rgba(224,224,224,1)',
+                    fontWeight: 'bold',
+                    backgroundColor: theme.palette.grey[100]
                   }}
                 >
-                  שם
-                </TableSortLabel>
-              </TableCell>
+                  <TableSortLabel
+                    active={sortCfg?.key === key}
+                    direction={sortCfg?.key === key ? sortCfg.dir : 'asc'}
+                    onClick={() => onSort(key)}
+                  >
+                    {label}
+                  </TableSortLabel>
+                </TableCell>
+              ))}
               <TableCell
                 align="center"
-                sx={headerCellSx}
-                sortDirection={sortConfig?.key === 'city' ? sortConfig.direction : false}
+                sx={{
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  padding: '12px 16px',
+                  borderBottom: '2px solid rgba(224,224,224,1)',
+                  fontWeight: 'bold',
+                  backgroundColor: theme.palette.grey[100]
+                }}
               >
-                <TableSortLabel
-                  active={sortConfig?.key === 'city'}
-                  direction={sortConfig?.key === 'city' ? sortConfig.direction : 'asc'}
-                  onClick={() => requestSort('city')}
-                  IconComponent={sortConfig?.key === 'city' ? undefined : SortPlaceholderIcon}
-                  sx={{
-                    '& .MuiTableSortLabel-icon': {
-                      color: 'rgba(0, 0, 0, 0.87) !important',
-                      opacity: 1
-                    }
-                  }}
-                >
-                  עיר
-                </TableSortLabel>
-              </TableCell>
-
-              <TableCell
-                align="center"
-                sx={headerCellSx}
-                sortDirection={sortConfig?.key === 'status' ? sortConfig.direction : false}
-              >
-                <TableSortLabel
-                  active={sortConfig?.key === 'status'}
-                  direction={sortConfig?.key === 'status' ? sortConfig.direction : 'asc'}
-                  onClick={() => requestSort('status')}
-                  IconComponent={sortConfig?.key === 'status' ? undefined : SortPlaceholderIcon}
-                  sx={{
-                    '& .MuiTableSortLabel-icon': {
-                      color: 'rgba(0, 0, 0, 0.87) !important',
-                      opacity: 1
-                    }
-                  }}
-                >
-                  פעולות
-                </TableSortLabel>
+                פעולות
               </TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
-            {sortedMembers.map(member => {
-              const isPresent = member.isPresent || false;
+            {sorted.map(m => {
+              const id = m._id.toString();
+              const isReplaced = replacedIds.has(id);
+              const isReplacer = replacerIds.has(id);
+              const rep = replacements.find(r => r.replaced._id.toString() === id);
+              const inv = replacements.find(r => r.replacer._id.toString() === id);
+
               return (
                 <TableRow
-                  key={member._id.toString()}
-                  sx={theme => ({
-                    backgroundColor: isPresent
-                      ? alpha(theme.palette.success.main, 0.08)
-                      : alpha(theme.palette.error.main, 0.08),
-                    '&:last-child td, &:last-child th': { borderBottom: 0 },
-                    '& td, & th': {
-                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`
+                  key={id}
+                  sx={{
+                    '&:nth-of-type(odd)': {
+                      backgroundColor: alpha(theme.palette.action.hover, 0.02)
                     },
                     '&:hover': {
-                      backgroundColor: isPresent
-                        ? alpha(theme.palette.success.main, 0.16)
-                        : alpha(theme.palette.error.main, 0.16)
-                    },
-                    transition: 'background-color 0.2s ease-in-out'
-                  })}
+                      backgroundColor: alpha(theme.palette.action.hover, 0.04)
+                    }
+                  }}
                 >
-                  <TableCell component="th" scope="row" align="center" sx={commonCellSx}>
-                    {member.name}
-                  </TableCell>
-                  <TableCell align="center" sx={commonCellSx}>
-                    {member.city || '-'}
+                  {/* name */}
+                  <TableCell
+                    align="center"
+                    sx={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(224,224,224,1)'
+                    }}
+                  >
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                      <Typography sx={isReplaced ? { textDecoration: 'line-through' } : {}}>
+                        {m.name}
+                      </Typography>
+                      {isReplaced && rep && (
+                        <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                          (מוחלף/ת ע"י {rep.replacer.name})
+                        </Typography>
+                      )}
+                      {isReplacer && inv && (
+                        <Typography
+                          variant="caption"
+                          color="info.dark"
+                          fontWeight="bold"
+                          fontStyle="italic"
+                        >
+                          (מחליף/ה את {inv.replaced.name})
+                        </Typography>
+                      )}
+                    </Box>
                   </TableCell>
 
-                  <TableCell align="center" sx={commonCellSx}>
-                    <Button
-                      variant={isPresent ? 'outlined' : 'contained'}
-                      color={isPresent ? 'error' : 'primary'}
-                      onClick={() => onMemberUpdate(member._id.toString(), !isPresent)}
-                      startIcon={isPresent ? <LogoutIcon /> : <LoginIcon />}
-                      sx={{ minWidth: '120px' }}
-                    >
-                      {isPresent ? 'צ׳ק-אאוט' : 'צ׳ק-אין'}
-                    </Button>
+                  {/* city */}
+                  <TableCell
+                    align="center"
+                    sx={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(224,224,224,1)'
+                    }}
+                  >
+                    {m.city}
+                  </TableCell>
+
+                  {/* status */}
+                  <TableCell
+                    align="center"
+                    sx={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(224,224,224,1)'
+                    }}
+                  >
+                    {m.isMM ? 'מ"מ' : 'נציג'}
+                  </TableCell>
+
+                  {/* actions */}
+                  <TableCell
+                    align="center"
+                    sx={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid rgba(224,224,224,1)'
+                    }}
+                  >
+                    {isReplaced ? (
+                      <Tooltip title="בטל החלפה">
+                        <Button
+                          size="small"
+                          color="error"
+                          variant="contained"
+                          startIcon={<CancelIcon />}
+                          onClick={() => onMemberUpdate(id, false, null)}
+                        >
+                          בטל
+                        </Button>
+                      </Tooltip>
+                    ) : m.isPresent ? (
+                      <Tooltip title={isReplacer ? 'בתפקיד' : "צ'ק-אאוט"}>
+                        <span>
+                          <Button
+                            color="error"
+                            variant="outlined"
+                            startIcon={<LogoutIcon />}
+                            onClick={() => onMemberUpdate(id, false)}
+                            disabled={isReplacer}
+                          >
+                            צ׳ק-אאוט
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      <Button
+                        color="primary"
+                        variant="contained"
+                        startIcon={<LoginIcon />}
+                        onClick={() => onMemberUpdate(id, true)}
+                      >
+                        צ׳ק-אין
+                      </Button>
+                    )}
+
+                    {!m.isMM && !isReplaced && !isReplacer && (
+                      <Button
+                        sx={{ ml: 1 }}
+                        variant="outlined"
+                        onClick={() => {
+                          setSelected(m);
+                          setDlgOpen(true);
+                        }}
+                        disabled={m.isPresent}
+                        title="החלף ע״י מ״מ"
+                      >
+                        החלף מ״מ
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -255,6 +342,40 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Replacement Dialog */}
+      <Dialog open={dlgOpen} onClose={() => setDlgOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle textAlign="center">
+          בחר מ\"מ עבור {selected?.name} ({selected?.city})
+        </DialogTitle>
+        <DialogContent>
+          {availableMMs.length ? (
+            <List>
+              {availableMMs.map(mm => (
+                <ListItem key={mm._id.toString()} disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      onMemberUpdate(selected!._id.toString(), true, mm);
+                      setDlgOpen(false);
+                    }}
+                  >
+                    <ListItemText primary={mm.name} secondary="נוכח/ת" />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography align="center" p={2}>
+              אין מ\"מים פנויים ב{selected?.city}.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
+          <Button onClick={() => setDlgOpen(false)} variant="outlined">
+            ביטול
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

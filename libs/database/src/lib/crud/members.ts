@@ -15,7 +15,16 @@ export const addMember = (team: Member) => {
 };
 
 export const addMembers = (members: Array<Member>) => {
-  return db.collection<Member>('members').insertMany(members);
+  const validMembers = members.map(member => {
+    return {
+      name: member.name,
+      city: member.city,
+      isPresent: member.isPresent ?? false,
+      isMM: member.isMM ?? false
+    };
+  }
+  )
+  return db.collection<Member>('members').insertMany(validMembers);
 };
 
 export const updateMember = (

@@ -1,10 +1,20 @@
 import express, { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import divisionUsersRouter from './users';
+import citiesRouter from './cities';
 import { ElectionEvent, ElectionState, User, Member } from '@mtes/types'; // Added Member import
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 import { CreateVotingStandUsers } from 'apps/backend/src/lib/schedule/voting-stands-users';
+
+const randomString = (length: number) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 const router = express.Router({ mergeParams: true });
 
@@ -26,34 +36,11 @@ router.post(
       return;
     }
 
-    // Validate dates
-    if (!eventData.startDate || !eventData.endDate) {
-      res.status(400).json({ error: 'תאריכי התחלה וסיום הם שדות חובה' });
-      return;
-    }
+    eventData.startDate = new Date();
+    eventData.endDate = new Date();
 
-    // Validate members
-    if (
-      !eventData.members ||
-      !Array.isArray(eventData.members) ||
-      eventData.members.length === 0 ||
-      !eventData.members.every(
-        (member: Member) =>
-          member &&
-          typeof member.name === 'string' &&
-          member.name.trim() !== '' &&
-          typeof member.city === 'string' &&
-          member.city.trim() !== ''
-      )
-    ) {
-      res.status(400).json({
-        error: 'יש לספק רשימת חברים. כל חבר חייב לכלול שם ועיר מלאים, ולפחות חבר אחד נדרש.'
-      });
-      return;
-    }
+    console.log(`🔍 Validating Event data: ${JSON.stringify(eventData)}`);
 
-    eventData.startDate = new Date(eventData.startDate);
-    eventData.endDate = new Date(eventData.endDate);
 
     console.log('⏬ Creating Event...');
     const eventResult = await db.addElectionEvent(eventData as ElectionEvent);
@@ -70,12 +57,12 @@ router.post(
     }
     console.log('✅ Created division state');
 
-    console.log('👤 Creating division members');
-    const membersResult = await db.addMembers(eventData.members);
-    if (!membersResult.acknowledged) {
-      res.status(500).json({ error: 'Could not create members!' });
-      return;
-    }
+    // console.log('👤 Creating division members');
+    // const membersResult = await db.addMembers(eventData.members);
+    // if (!membersResult.acknowledged) {
+    //   res.status(500).json({ error: 'Could not create members!' });
+    //   return;
+    // }
 
     console.log('👤 Generating division users');
     const users = CreateVotingStandUsers(eventData.votingStands);
@@ -132,7 +119,7 @@ router.put(
         db.addUser({
           isAdmin: false,
           role: 'voting-stand',
-          password: 'admin',
+          password: randomString(4),
           lastPasswordSetDate: new Date(),
           roleAssociation: {
             type: 'stand',
@@ -172,5 +159,6 @@ router.delete(
 );
 
 router.use('/users', divisionUsersRouter);
+router.use('/cities', citiesRouter);
 
 export default router;

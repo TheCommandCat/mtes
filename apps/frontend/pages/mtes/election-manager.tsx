@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, NextPage } from 'next';
@@ -39,12 +39,14 @@ import { VotingStandsGrid } from '../../components/mtes/voting-stands-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { localizedRoles } from 'apps/frontend/localization/roles';
-import MemberPresence from '../../components/mtes/member-presence';
-import { MemberPresenceStatus } from '../../components/mtes/member-presence-status';
+import AddRoundDialog from '../../components/mtes/add-round-dialog';
+import { MemberPresenceStatus } from '../../components/mtes/member-presence-status'; // Changed to named import
+import MemberPresence from '../../components/mtes/member-presence'; // Added import
 
 interface Props {
   user: WithId<SafeUser>;
   members: WithId<Member>[];
+  mmMembers: WithId<Member>[];
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
   event: ElectionEvent;
@@ -63,9 +65,17 @@ interface VotingStandStatus {
   member: WithId<Member> | null;
 }
 
-const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, electionState, event }) => {
+const Page: NextPage<Props> = ({
+  user,
+  members: initialMembers,
+  mmMembers: initialMMMembers,
+  rounds,
+  electionState,
+  event
+}) => {
   const router = useRouter();
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
+  const [mmMembers, setMMMembers] = useState<WithId<Member>[]>(initialMMMembers); // Added state for MM Members
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
@@ -79,7 +89,9 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
 
-  const presentMembersCount = members.filter(member => member.isPresent).length;
+  const presentMembersCount = useMemo(() => members.filter(m => m.isPresent).length, [members]);
+
+  const allMembersForPresence = useMemo(() => [...members, ...mmMembers], [members, mmMembers]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -95,30 +107,6 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
     } else {
       console.error('Error fetching voted members:', response.statusText);
     }
-  };
-
-  const handleMemberPresence = (memberId: string, isPresent: boolean) => {
-    const updatedMembers = members.map(member =>
-      member._id.toString() === memberId ? { ...member, isPresent: isPresent } : member
-    );
-    setMembers(updatedMembers);
-
-    apiFetch(`/api/events/members/${memberId}/presence`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isPresent: isPresent })
-    })
-      .then(response => {
-        if (response.ok) {
-          enqueueSnackbar(`נוכחות חבר עודכנה בהצלחה`, { variant: 'success' });
-        } else {
-          enqueueSnackbar(`נכשל עדכון נוכחות חבר`, { variant: 'error' });
-        }
-      })
-      .catch(error => {
-        console.error('Error updating member presence:', error);
-        enqueueSnackbar(`שגיאה בעדכון נוכחות חבר`, { variant: 'error' });
-      });
   };
 
   useEffect(() => {
@@ -169,6 +157,75 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       }
     }
   ]);
+
+  const handleMemberPresenceUpdate = async (
+    memberId: string,
+    isPresent: boolean,
+    replacedBy?: WithId<Member> | null
+  ) => {
+    const allCurrentMembers = [...members, ...mmMembers];
+    const memberToUpdate = allCurrentMembers.find(m => m._id.toString() === memberId);
+
+    if (!memberToUpdate) {
+      enqueueSnackbar('שגיאה: חבר לא נמצא', { variant: 'error' });
+      return;
+    }
+
+    const endpoint = memberToUpdate.isMM
+      ? `/api/events/mm-members/${memberId}/presence`
+      : `/api/events/members/${memberId}/presence`;
+
+    const payload: { isPresent: boolean; replacedBy?: WithId<Member> | null } = { isPresent };
+    if (replacedBy !== undefined) {
+      payload.replacedBy = replacedBy;
+    }
+
+    try {
+      const response = await apiFetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'שגיאה בעדכון נוכחות' }));
+        throw new Error(errorData.message);
+      }
+
+      if (memberToUpdate.isMM) {
+        setMMMembers(prevMMs =>
+          prevMMs.map(m =>
+            m._id.toString() === memberId
+              ? {
+                  ...m,
+                  isPresent,
+                  replacedBy: (payload.replacedBy !== undefined
+                    ? payload.replacedBy
+                    : m.replacedBy) as any
+                }
+              : m
+          )
+        );
+      } else {
+        setMembers(prevRegMembers =>
+          prevRegMembers.map(m =>
+            m._id.toString() === memberId
+              ? {
+                  ...m,
+                  isPresent,
+                  replacedBy: (payload.replacedBy !== undefined
+                    ? payload.replacedBy
+                    : m.replacedBy) as any
+                }
+              : m
+          )
+        );
+      }
+      enqueueSnackbar('נוכחות עודכנה בהצלחה', { variant: 'success' });
+    } catch (error: any) {
+      enqueueSnackbar(error.message || 'שגיאה בעדכון נוכחות', { variant: 'error' });
+    }
+  };
 
   const handleSendMember = (
     member: WithId<Member>,
@@ -346,15 +403,11 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
       });
       if (!res.ok) throw new Error('Failed to delete round');
       enqueueSnackbar('Round deleted successfully', { variant: 'success' });
-      refreshData();
+      router.replace(router.asPath);
     } catch (error) {
       enqueueSnackbar('Failed to delete round', { variant: 'error' });
     }
     setRoundToDelete(null);
-  };
-
-  const refreshData = () => {
-    router.replace(router.asPath);
   };
 
   const handleLockRound = async () => {
@@ -510,7 +563,9 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
               </Typography>
             </Paper>
             <Paper elevation={2} sx={{ p: 4 }}>
-              {presentMembersCount / members.length >= 0.66 ? null : (
+              {' '}
+              {/* This Paper should wrap the tab content */}
+              {presentMembersCount / (members.length + mmMembers.length) >= 0.66 ? null : (
                 <MemberPresenceStatus
                   presentCount={presentMembersCount}
                   totalCount={members.length}
@@ -525,21 +580,22 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                   mb: 3
                 }}
               >
-                {presentMembersCount / members.length >= 0.66 && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      left: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                  >
-                    <MemberPresenceStatus
-                      presentCount={presentMembersCount}
-                      totalCount={members.length}
-                    />
-                  </Box>
-                )}
+                {members.length + mmMembers.length > 0 &&
+                  presentMembersCount / (members.length + mmMembers.length) >= 0.66 && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                    >
+                      <MemberPresenceStatus
+                        presentCount={presentMembersCount}
+                        totalCount={members.length}
+                      />
+                    </Box>
+                  )}
 
                 <Tabs
                   value={currentTab}
@@ -646,19 +702,22 @@ const Page: NextPage<Props> = ({ user, members: initialMembers, rounds, election
                         setSelectedRound={setSelectedRound}
                         handleShowResults={handleShowResults}
                         members={members}
-                        refreshData={refreshData}
+                        refreshData={() => router.replace(router.asPath)}
                       />
                     </Box>
                   )}
                 </>
               )}
               {currentTab === 1 && (
-                <Box sx={{ p: 3 }}>
-                  <MemberPresence allMembers={members} onMemberUpdate={handleMemberPresence} />
+                <Box sx={{ mt: 3 }}>
+                  <MemberPresence
+                    allMembers={allMembersForPresence}
+                    onMemberUpdate={handleMemberPresenceUpdate}
+                  />
                 </Box>
               )}
-            </Paper>
-
+            </Paper>{' '}
+            {/* This closes the Paper from line 605 */}
             <Dialog
               open={roundToDelete !== null}
               onClose={() => setRoundToDelete(null)}
@@ -700,12 +759,13 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
         rounds: '/api/events/rounds',
         electionState: '/api/events/state',
         members: '/api/events/members',
+        mmMembers: '/api/events/mm-members', // Added mmMembers endpoint
         event: '/public/event'
       },
       ctx
     );
 
-    return { props: { user, ...data } };
+    return { props: { user, ...data } }; // Pass combined list as members
   } catch {
     return { redirect: { destination: '/login', permanent: false } };
   }
