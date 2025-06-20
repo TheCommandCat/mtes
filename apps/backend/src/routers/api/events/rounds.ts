@@ -68,7 +68,7 @@ router.post('/add', async (req: Request, res: Response) => {
                         return dbContestant;
                     })
                 );
-                if (role.whiteVote) {
+                if (role.numWhiteVotes > 0) {
                     contestants.push(WHITE_VOTE_MEMBER);
                 }
                 return { ...role, contestants };

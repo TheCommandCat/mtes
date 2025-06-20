@@ -49,32 +49,38 @@ const RoleSchema = z
   .object({
     role: z
       .string({
-        required_error: 'Position is required',
-        invalid_type_error: 'Invalid position selected'
+        required_error: 'יש להזין תפקיד',
+        invalid_type_error: 'תפקיד לא תקין'
       })
-      .min(1, 'Position is required'),
+      .min(1, 'יש להזין תפקיד'),
     contestants: z
-      .array(z.string(), { required_error: 'Contestants are required' })
-      .min(1, 'At least 1 contestant is required'),
+      .array(z.string(), { required_error: 'יש להוסיף מתמודדים' })
+      .min(1, 'יש להוסיף לפחות מתמודד אחד'),
     maxVotes: z
       .number({
-        required_error: 'Max votes is required',
-        invalid_type_error: 'Max votes must be a number'
+        required_error: 'יש להזין מספר קולות מקסימלי',
+        invalid_type_error: 'מספר הקולות חייב להיות מספר'
       })
       .int()
-      .min(1, 'Must be at least 1'),
-    whiteVote: z.boolean().default(false)
+      .min(1, 'חייב להיות לפחות 1'),
+    numWhiteVotes: z
+      .number({
+        required_error: 'יש להזין מספר קולות פתק לבן',
+        invalid_type_error: 'מספר קולות פתק לבן חייב להיות מספר'
+      })
+      .int()
+      .min(0, 'חייב להיות לפחות 0')
   })
   .refine(
     data => {
       if (data.contestants.length === 1) {
-        return data.whiteVote;
+        return data.numWhiteVotes > 0;
       }
       return true;
     },
     {
-      message: 'A white vote is required when there is only one contestant.',
-      path: ['whiteVote']
+      message: 'נדרש לפחות קול פתק לבן אחד כאשר יש מתמודד יחיד',
+      path: ['numWhiteVotes']
     }
   );
 
@@ -98,7 +104,7 @@ interface ApiRound {
     role: string;
     contestants: string[];
     maxVotes: number;
-    whiteVote: boolean;
+    numWhiteVotes: number;
   }[];
   startTime: Date | null;
   endTime: Date | null;
@@ -119,7 +125,7 @@ const createNewRole = (
   role: existingData?.role || '',
   contestants: existingData?.contestants || [],
   maxVotes: existingData?.maxVotes ?? 1,
-  whiteVote: existingData?.whiteVote ?? false
+  numWhiteVotes: existingData?.numWhiteVotes ?? 0
 });
 
 const CustomStepIcon = (props: {
@@ -188,7 +194,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           return createNewRole({
             ...role,
             contestants,
-            whiteVote: contestants.length === 1 ? true : role.whiteVote
+            numWhiteVotes:
+              contestants.length === 1 && role.numWhiteVotes === 0 ? 1 : role.numWhiteVotes
           });
         })
       };
@@ -233,7 +240,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
               .map(c => (typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()))
               .sort(),
             maxVotes: r.maxVotes,
-            whiteVote: r.whiteVote
+            numWhiteVotes: r.numWhiteVotes
           }))
           .sort((a, b) => a.role.localeCompare(b.role));
         const currentComparableRoles = rolesForApi
@@ -511,8 +518,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                               const roleErrors = getIn(errors, prefix);
                               const showRoleErrors =
                                 Object.keys(roleTouched || {}).length > 0 || submitCount > 0;
-                              const isWhiteVoteDisabled =
-                                isSubmitting || role.contestants.length === 1;
+                              const isWhiteVoteInputDisabled = isSubmitting;
 
                               return (
                                 <Card
@@ -689,7 +695,9 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                             );
                                             setFieldValue(`${prefix}.contestants`, contestantIds);
                                             if (contestantIds.length === 1) {
-                                              setFieldValue(`${prefix}.whiteVote`, true);
+                                              if (role.numWhiteVotes === 0) {
+                                                setFieldValue(`${prefix}.numWhiteVotes`, 1);
+                                              }
                                             }
                                           }}
                                           renderInput={params => (
@@ -736,37 +744,52 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                       </Grid>
 
                                       <Grid item xs={12}>
-                                        <FormControlLabel
-                                          control={
-                                            <Checkbox
-                                              name={`${prefix}.whiteVote`}
-                                              checked={role.whiteVote}
-                                              onChange={handleChange}
-                                              disabled={isWhiteVoteDisabled}
-                                              color="secondary"
-                                              sx={{
-                                                p: 1.5,
-                                                mr: 0.5,
-                                                '&.Mui-checked': {
-                                                  color: theme.palette.secondary.main
-                                                }
-                                              }}
-                                            />
+                                        {' '}
+                                        <TextField
+                                          fullWidth
+                                          label="מספר קולות פתק לבן"
+                                          type="text"
+                                          inputMode="numeric"
+                                          name={`${prefix}.numWhiteVotes`}
+                                          value={role.numWhiteVotes}
+                                          onChange={e => {
+                                            const newVal = e.target.value.replace(/[^0-9]/g, '');
+                                            if (newVal === '') {
+                                              setFieldValue(`${prefix}.numWhiteVotes`, 0);
+                                            } else {
+                                              const numVal = parseInt(newVal, 10);
+                                              setFieldValue(`${prefix}.numWhiteVotes`, numVal);
+                                            }
+                                          }}
+                                          onFocus={e => e.target.select()}
+                                          error={Boolean(
+                                            showRoleErrors && getIn(roleErrors, 'numWhiteVotes')
+                                          )}
+                                          helperText={
+                                            (showRoleErrors &&
+                                              getIn(roleErrors, 'numWhiteVotes')) ||
+                                            (role.contestants.length === 1
+                                              ? 'נדרש לפחות קול פתק לבן אחד עבור מועמד בודד'
+                                              : '')
                                           }
-                                          label={
-                                            <Typography
-                                              variant="body1"
-                                              sx={{
-                                                color: isWhiteVoteDisabled
-                                                  ? 'text.disabled'
-                                                  : 'text.primary',
-                                                fontWeight: 500
-                                              }}
-                                            >
-                                              אפשר הצבעת "פתק לבן" (אופציונלי)
-                                            </Typography>
-                                          }
-                                          disabled={isWhiteVoteDisabled}
+                                          disabled={isSubmitting}
+                                          inputProps={{
+                                            min: 0,
+                                            style: { textAlign: 'right' },
+                                            pattern: '[0-9]*'
+                                          }}
+                                          variant="outlined"
+                                          InputProps={{
+                                            startAdornment: (
+                                              <InputAdornment position="start">
+                                                <HowToVoteIcon color="secondary" />
+                                              </InputAdornment>
+                                            ),
+                                            sx: {
+                                              borderRadius: 2,
+                                              backgroundColor: 'background.paper'
+                                            }
+                                          }}
                                         />
                                       </Grid>
                                     </Grid>
