@@ -300,15 +300,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
       setSubmitting(false);
     }
   };
-
-  const handleNext = () => {
-    setActiveStep(prevActiveStep => prevActiveStep + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep(prevActiveStep => prevActiveStep - 1);
-  };
-
   return (
     <>
       {isEdit ? (
@@ -350,8 +341,13 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }}
         fullWidth
         maxWidth="lg"
-        PaperProps={{ sx: { borderRadius: 4, height: '85%' } }}
-        sx={{ '& .MuiDialog-container': { alignItems: 'center' } }}
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            maxHeight: '90vh',
+            height: 'auto'
+          }
+        }}
       >
         <Formik
           initialValues={initialValues}
@@ -365,57 +361,74 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
             touched,
             handleChange,
             setFieldValue,
+            setFieldTouched,
             isSubmitting,
             submitCount
-          }) => (
-            <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <DialogTitle
-                sx={{
-                  backgroundColor: 'primary.dark',
-                  color: 'common.white',
-                  borderTopLeftRadius: theme.shape.borderRadius * 3.5,
-                  borderTopRightRadius: theme.shape.borderRadius * 3.5,
-                  py: 2.5,
-                  px: 3.5,
-                  fontSize: '1.6rem',
-                  mb: 0
-                }}
-              >
-                {isEdit ? 'עריכת סבב בחירות' : 'יצירת סבב בחירות חדש'}
-              </DialogTitle>
+          }) => {
+            const handleNext = () => {
+              if (activeStep === 0) {
+                // Check if roundName is empty
+                if (!values.roundName?.trim()) {
+                  setFieldTouched('roundName', true);
+                  return;
+                }
+              }
+              setActiveStep(prevActiveStep => prevActiveStep + 1);
+            };
 
-              <DialogContent
-                sx={{
-                  mt: 2,
-                  px: { xs: 3, sm: 4, md: 5 },
-                  flexGrow: 1,
-                  overflowY: 'hidden'
-                }}
-              >
-                <Stepper activeStep={activeStep} alternativeLabel sx={{ mt: 1 }}>
-                  {steps.map(label => (
-                    <Step key={label}>
-                      <StepLabel StepIconComponent={CustomStepIcon}>
-                        <Typography variant="h6" component="span">
-                          {label}
-                        </Typography>
-                      </StepLabel>
-                    </Step>
-                  ))}
-                </Stepper>
+            const handleBack = () => {
+              setActiveStep(prevActiveStep => prevActiveStep - 1);
+            };
 
-                <Box
+            return (
+              <Form style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <DialogTitle
                   sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: 'calc(100% - 100px)',
-                    overflowY: 'auto',
-                    pr: 1
+                    backgroundColor: 'primary.dark',
+                    color: 'common.white',
+                    borderTopLeftRadius: theme.shape.borderRadius * 3.5,
+                    borderTopRightRadius: theme.shape.borderRadius * 3.5,
+                    py: 2.5,
+                    px: 3.5,
+                    fontSize: '1.6rem'
                   }}
                 >
+                  {isEdit ? 'עריכת סבב בחירות' : 'יצירת סבב בחירות חדש'}
+                </DialogTitle>
+
+                <DialogContent
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    pt: 3,
+                    px: { xs: 3, sm: 4, md: 5 },
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': {
+                      width: '8px'
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent'
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      borderRadius: '4px'
+                    }
+                  }}
+                >
+                  <Stepper activeStep={activeStep} alternativeLabel sx={{ my: 4 }}>
+                    {steps.map(label => (
+                      <Step key={label}>
+                        <StepLabel StepIconComponent={CustomStepIcon}>
+                          <Typography variant="h6" component="span">
+                            {label}
+                          </Typography>
+                        </StepLabel>
+                      </Step>
+                    ))}
+                  </Stepper>
+
                   {activeStep === 0 && (
-                    <Stack spacing={5} sx={{ pt: 1, pb: 2, minWidth: '60%' }}>
+                    <Stack spacing={5} sx={{ width: '100%', maxWidth: '800px', mx: 'auto' }}>
                       <TextField
                         fullWidth
                         label="שם הסבב"
@@ -455,7 +468,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                           <TextField
                             {...params}
                             variant="outlined"
-                            label="בחר חברים מורשים להצביע"
+                            label="בחר נציגים מורשים להצביע"
                             error={Boolean(
                               (getIn(touched, 'allowedMembers') || submitCount > 0) &&
                                 getIn(errors, 'allowedMembers')
@@ -488,380 +501,382 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                   )}
 
                   {activeStep === 1 && (
-                    <Stack spacing={5} sx={{ pt: 1, pb: 2 }}>
+                    <Stack spacing={4} sx={{ width: '100%', maxWidth: '1000px', mx: 'auto' }}>
                       <FieldArray name="roles">
                         {(arrayHelpers: FieldArrayRenderProps) => (
-                          <>
-                            <Box
-                              sx={{
-                                overflowY: 'auto',
-                                pr: 1.5,
-                                mr: -1.5
-                              }}
-                            >
-                              <Stack spacing={4} sx={{ p: 1 }}>
-                                {values.roles.map((role, idx) => {
-                                  const prefix = `roles.${idx}`;
-                                  const roleTouched = getIn(touched, prefix);
-                                  const roleErrors = getIn(errors, prefix);
-                                  const showRoleErrors =
-                                    Object.keys(roleTouched || {}).length > 0 || submitCount > 0;
-                                  const isWhiteVoteDisabled =
-                                    isSubmitting || role.contestants.length === 1;
+                          <Stack spacing={4}>
+                            {values.roles.map((role, idx) => {
+                              const prefix = `roles.${idx}`;
+                              const roleTouched = getIn(touched, prefix);
+                              const roleErrors = getIn(errors, prefix);
+                              const showRoleErrors =
+                                Object.keys(roleTouched || {}).length > 0 || submitCount > 0;
+                              const isWhiteVoteDisabled =
+                                isSubmitting || role.contestants.length === 1;
 
-                                  return (
-                                    <Card
-                                      key={role._tempClientId}
-                                      variant="elevation"
-                                      elevation={4}
-                                      sx={{
-                                        borderRadius: 3,
-                                        transition: 'all 0.3s ease-in-out',
-                                        '&:hover': {
-                                          transform: 'translateY(-5px) scale(1.01)'
-                                        },
-                                        overflow: 'hidden'
-                                      }}
-                                    >
-                                      <CardHeader
-                                        avatar={
-                                          <Avatar
-                                            sx={{
-                                              bgcolor: theme.palette.primary.light,
-                                              color: theme.palette.primary.contrastText,
-                                              width: 48,
-                                              height: 48,
-                                              mr: 1
-                                            }}
-                                          >
-                                            <BallotIcon sx={{ fontSize: '1.8rem' }} />
-                                          </Avatar>
-                                        }
-                                        title={
-                                          <Typography
-                                            variant="h5"
-                                            component="div"
-                                            sx={{ fontWeight: 'medium' }}
-                                          >
-                                            {`תפקיד ${idx + 1}${role.role ? `: ${role.role}` : ''}`}
-                                          </Typography>
-                                        }
-                                        action={
-                                          values.roles.length > 1 && (
-                                            <IconButton
-                                              size="medium"
-                                              onClick={() => arrayHelpers.remove(idx)}
-                                              disabled={isSubmitting}
-                                              title="Remove Role"
-                                              sx={{
-                                                color: 'error.dark',
-                                                '&:hover': {
-                                                  backgroundColor: theme.palette.error.light,
-                                                  transform: 'scale(1.1)'
-                                                },
-                                                mr: 1
-                                              }}
-                                            >
-                                              <DeleteIcon fontSize="medium" />
-                                            </IconButton>
-                                          )
-                                        }
+                              return (
+                                <Card
+                                  key={role._tempClientId}
+                                  variant="outlined"
+                                  sx={{
+                                    borderRadius: 3,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      transform: 'translateY(-4px)',
+                                      boxShadow: theme.shadows[4]
+                                    }
+                                  }}
+                                >
+                                  <CardHeader
+                                    avatar={
+                                      <Avatar
                                         sx={{
-                                          backgroundColor: 'grey.100',
-                                          py: 2,
-                                          px: 3
+                                          bgcolor: 'primary.main',
+                                          color: 'primary.contrastText',
+                                          width: 48,
+                                          height: 48,
+                                          boxShadow: 1
                                         }}
-                                      />
-                                      <Divider />
-                                      <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
-                                        <Grid container spacing={3.5}>
-                                          <Grid item xs={12} md={5}>
-                                            <Autocomplete
-                                              freeSolo
-                                              options={Position}
-                                              getOptionLabel={option => option}
-                                              value={role.role}
-                                              onChange={(_, newValue) => {
-                                                setFieldValue(`${prefix}.role`, newValue ?? '');
-                                              }}
-                                              onInputChange={(_, newInputValue) => {
-                                                setFieldValue(`${prefix}.role`, newInputValue);
-                                              }}
-                                              renderInput={params => (
-                                                <TextField
-                                                  {...params}
-                                                  label="תפקיד"
-                                                  variant="outlined"
-                                                  error={Boolean(
-                                                    showRoleErrors && getIn(roleErrors, 'role')
-                                                  )}
-                                                  helperText={
-                                                    showRoleErrors && getIn(roleErrors, 'role')
-                                                  }
-                                                  disabled={isSubmitting}
-                                                  InputProps={{
-                                                    ...params.InputProps,
-                                                    startAdornment: (
-                                                      <InputAdornment position="start">
-                                                        <BadgeIcon />
-                                                      </InputAdornment>
-                                                    )
-                                                  }}
-                                                />
-                                              )}
-                                            />
-                                          </Grid>
-
-                                          <Grid item xs={12} md={7}>
+                                      >
+                                        <BallotIcon sx={{ fontSize: '1.8rem' }} />
+                                      </Avatar>
+                                    }
+                                    title={
+                                      <Typography
+                                        variant="h5"
+                                        component="div"
+                                        sx={{
+                                          fontWeight: 500,
+                                          color: 'text.primary'
+                                        }}
+                                      >
+                                        {`תפקיד ${idx + 1}${role.role ? `: ${role.role}` : ''}`}
+                                      </Typography>
+                                    }
+                                    action={
+                                      values.roles.length > 1 ? (
+                                        <IconButton
+                                          size="medium"
+                                          onClick={() => arrayHelpers.remove(idx)}
+                                          disabled={isSubmitting}
+                                          title="Remove Role"
+                                          sx={{
+                                            color: 'error.main',
+                                            '&:hover': {
+                                              backgroundColor: 'error.lighter',
+                                              transform: 'scale(1.1)'
+                                            }
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="medium" />
+                                        </IconButton>
+                                      ) : null
+                                    }
+                                    sx={{
+                                      bgcolor: 'grey.50',
+                                      py: 1.5,
+                                      px: 2
+                                    }}
+                                  />
+                                  <Divider />
+                                  <CardContent sx={{ p: 2 }}>
+                                    <Grid container spacing={3}>
+                                      <Grid item xs={12} md={5}>
+                                        <Autocomplete
+                                          freeSolo
+                                          options={Position}
+                                          getOptionLabel={option => option}
+                                          value={role.role}
+                                          onChange={(_, newValue) => {
+                                            setFieldValue(`${prefix}.role`, newValue ?? '');
+                                          }}
+                                          onInputChange={(_, newInputValue) => {
+                                            setFieldValue(`${prefix}.role`, newInputValue);
+                                          }}
+                                          renderInput={params => (
                                             <TextField
-                                              fullWidth
-                                              label="מספר הצבעות מקסימלי"
-                                              type="number"
-                                              name={`${prefix}.maxVotes`}
-                                              value={role.maxVotes}
-                                              onChange={e => {
-                                                const val = e.target.value;
-                                                setFieldValue(
-                                                  `${prefix}.maxVotes`,
-                                                  val === '' ? '' : Number(val)
-                                                );
-                                              }}
+                                              {...params}
+                                              label="תפקיד"
+                                              variant="outlined"
                                               error={Boolean(
-                                                showRoleErrors && getIn(roleErrors, 'maxVotes')
+                                                showRoleErrors && getIn(roleErrors, 'role')
                                               )}
                                               helperText={
-                                                showRoleErrors && getIn(roleErrors, 'maxVotes')
+                                                showRoleErrors && getIn(roleErrors, 'role')
                                               }
                                               disabled={isSubmitting}
-                                              inputProps={{ min: 1 }}
-                                              variant="outlined"
-                                              sx={{ borderRadius: 2 }}
                                               InputProps={{
+                                                ...params.InputProps,
                                                 startAdornment: (
-                                                  <HowToVoteIcon
-                                                    sx={{
-                                                      mr: 1.5,
-                                                      color: 'action.active'
-                                                    }}
-                                                  />
-                                                )
-                                              }}
-                                            />
-                                          </Grid>
-
-                                          <Grid item xs={12}>
-                                            <Divider sx={{ my: 2.5 }}>
-                                              <Chip
-                                                icon={<PeopleAltIcon sx={{ ml: 0.5 }} />}
-                                                label="בחירת מתמודדים"
-                                                sx={{
-                                                  fontSize: '1.05rem',
-                                                  p: 1.25,
-                                                  height: 'auto',
-                                                  borderRadius: '16px'
-                                                }}
-                                              />
-                                            </Divider>
-                                            <Autocomplete
-                                              multiple
-                                              options={memberOptions}
-                                              getOptionLabel={m => `${m.name} (${m.city})`}
-                                              isOptionEqualToValue={(option, value) =>
-                                                option._id.toString() === value._id.toString()
-                                              }
-                                              value={memberOptions.filter(opt =>
-                                                role.contestants.includes(opt._id.toString())
-                                              )}
-                                              onChange={(_, selectedOptions) => {
-                                                const contestantIds = selectedOptions.map(opt =>
-                                                  opt._id.toString()
-                                                );
-                                                setFieldValue(
-                                                  `${prefix}.contestants`,
-                                                  contestantIds
-                                                );
-                                                if (contestantIds.length === 1) {
-                                                  setFieldValue(`${prefix}.whiteVote`, true);
-                                                }
-                                              }}
-                                              renderInput={params => (
-                                                <TextField
-                                                  {...params}
-                                                  variant="outlined"
-                                                  label="הוסף מתמודדים לתפקיד זה"
-                                                  placeholder="חפש והוסף חברים..."
-                                                  error={Boolean(
-                                                    showRoleErrors &&
-                                                      getIn(roleErrors, 'contestants')
-                                                  )}
-                                                  helperText={
-                                                    showRoleErrors &&
-                                                    getIn(roleErrors, 'contestants')
-                                                  }
-                                                  disabled={isSubmitting}
-                                                  InputProps={{
-                                                    ...params.InputProps,
-                                                    sx: { borderRadius: 2 }
-                                                  }}
-                                                />
-                                              )}
-                                              disabled={isSubmitting}
-                                              ChipProps={{
+                                                  <InputAdornment position="start">
+                                                    <BadgeIcon color="primary" />
+                                                  </InputAdornment>
+                                                ),
                                                 sx: {
-                                                  backgroundColor: 'primary.light',
-                                                  color: 'primary.contrastText',
-                                                  borderRadius: 1.5,
-                                                  p: 0.75,
-                                                  height: 'auto',
-                                                  fontSize: '0.9rem'
+                                                  borderRadius: 2,
+                                                  backgroundColor: 'background.paper'
                                                 }
                                               }}
-                                              sx={{ mt: 1.5 }}
                                             />
-                                          </Grid>
+                                          )}
+                                        />
+                                      </Grid>
 
-                                          <Grid item xs={12} sx={{ mt: 1.5 }}>
-                                            <FormControlLabel
-                                              control={
-                                                <Checkbox
-                                                  name={`${prefix}.whiteVote`}
-                                                  checked={role.whiteVote}
-                                                  onChange={handleChange}
-                                                  disabled={isWhiteVoteDisabled}
-                                                  color="secondary"
-                                                  sx={{ p: 1.5, mr: 0.5 }}
-                                                />
+                                      <Grid item xs={12} md={7}>
+                                        <TextField
+                                          fullWidth
+                                          label="מספר הצבעות מקסימלי"
+                                          type="number"
+                                          name={`${prefix}.maxVotes`}
+                                          value={role.maxVotes}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setFieldValue(
+                                              `${prefix}.maxVotes`,
+                                              val === '' ? '' : Number(val)
+                                            );
+                                          }}
+                                          error={Boolean(
+                                            showRoleErrors && getIn(roleErrors, 'maxVotes')
+                                          )}
+                                          helperText={
+                                            showRoleErrors && getIn(roleErrors, 'maxVotes')
+                                          }
+                                          disabled={isSubmitting}
+                                          inputProps={{ min: 1 }}
+                                          variant="outlined"
+                                          InputProps={{
+                                            startAdornment: (
+                                              <InputAdornment position="start">
+                                                <HowToVoteIcon color="primary" />
+                                              </InputAdornment>
+                                            ),
+                                            sx: {
+                                              borderRadius: 2,
+                                              backgroundColor: 'background.paper'
+                                            }
+                                          }}
+                                        />
+                                      </Grid>
+
+                                      <Grid item xs={12}>
+                                        <Divider sx={{ my: 2 }}>
+                                          <Chip
+                                            icon={<PeopleAltIcon />}
+                                            label="בחירת מתמודדים"
+                                            color="primary"
+                                            sx={{
+                                              fontSize: '1rem',
+                                              p: 1.5,
+                                              height: 'auto',
+                                              borderRadius: '16px'
+                                            }}
+                                          />
+                                        </Divider>
+                                        <Autocomplete
+                                          multiple
+                                          options={memberOptions}
+                                          getOptionLabel={m => `${m.name} (${m.city})`}
+                                          isOptionEqualToValue={(option, value) =>
+                                            option._id.toString() === value._id.toString()
+                                          }
+                                          value={memberOptions.filter(opt =>
+                                            role.contestants.includes(opt._id.toString())
+                                          )}
+                                          onChange={(_, selectedOptions) => {
+                                            const contestantIds = selectedOptions.map(opt =>
+                                              opt._id.toString()
+                                            );
+                                            setFieldValue(`${prefix}.contestants`, contestantIds);
+                                            if (contestantIds.length === 1) {
+                                              setFieldValue(`${prefix}.whiteVote`, true);
+                                            }
+                                          }}
+                                          renderInput={params => (
+                                            <TextField
+                                              {...params}
+                                              variant="outlined"
+                                              label="הוסף מתמודדים לתפקיד זה"
+                                              placeholder="חפש והוסף נציגים..."
+                                              error={Boolean(
+                                                showRoleErrors && getIn(roleErrors, 'contestants')
+                                              )}
+                                              helperText={
+                                                showRoleErrors && getIn(roleErrors, 'contestants')
                                               }
-                                              label={
-                                                <Typography variant="body1">
-                                                  אפשר הצבעת "פתק לבן" (אופציונלי)
-                                                </Typography>
-                                              }
-                                              disabled={isWhiteVoteDisabled}
+                                              disabled={isSubmitting}
+                                              InputProps={{
+                                                ...params.InputProps,
+                                                sx: {
+                                                  borderRadius: 2,
+                                                  backgroundColor: 'background.paper'
+                                                }
+                                              }}
                                             />
-                                          </Grid>
-                                        </Grid>
-                                      </CardContent>
-                                    </Card>
-                                  );
-                                })}
-                              </Stack>
-                            </Box>
+                                          )}
+                                          disabled={isSubmitting}
+                                          ChipProps={{
+                                            sx: {
+                                              backgroundColor: 'primary.lighter',
+                                              color: 'primary.dark',
+                                              borderRadius: 2,
+                                              p: 0.75,
+                                              height: 'auto',
+                                              fontSize: '0.95rem',
+                                              fontWeight: 500,
+                                              border: '1px solid',
+                                              borderColor: 'primary.light',
+                                              '&:hover': {
+                                                backgroundColor: 'primary.light',
+                                                color: 'primary.contrastText'
+                                              }
+                                            }
+                                          }}
+                                        />
+                                      </Grid>
+
+                                      <Grid item xs={12}>
+                                        <FormControlLabel
+                                          control={
+                                            <Checkbox
+                                              name={`${prefix}.whiteVote`}
+                                              checked={role.whiteVote}
+                                              onChange={handleChange}
+                                              disabled={isWhiteVoteDisabled}
+                                              color="secondary"
+                                              sx={{
+                                                p: 1.5,
+                                                mr: 0.5,
+                                                '&.Mui-checked': {
+                                                  color: theme.palette.secondary.main
+                                                }
+                                              }}
+                                            />
+                                          }
+                                          label={
+                                            <Typography
+                                              variant="body1"
+                                              sx={{
+                                                color: isWhiteVoteDisabled
+                                                  ? 'text.disabled'
+                                                  : 'text.primary',
+                                                fontWeight: 500
+                                              }}
+                                            >
+                                              אפשר הצבעת "פתק לבן" (אופציונלי)
+                                            </Typography>
+                                          }
+                                          disabled={isWhiteVoteDisabled}
+                                        />
+                                      </Grid>
+                                    </Grid>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
                             <Button
                               onClick={() => arrayHelpers.push(createNewRole())}
-                              startIcon={<AddCircleOutlineIcon sx={{ mr: 0.5 }} />}
+                              startIcon={<AddCircleOutlineIcon />}
                               disabled={isSubmitting}
                               variant="contained"
                               color="secondary"
                               sx={{
-                                mt: 2.5,
                                 alignSelf: 'center',
-                                py: 1.5,
-                                px: 3.5,
-                                fontSize: '1.05rem',
-                                borderRadius: 2.5,
-                                boxShadow: theme.shadows[3],
+                                py: 1.75,
+                                px: 4,
+                                fontSize: '1.1rem',
+                                borderRadius: 3,
+                                boxShadow: theme.shadows[2],
+                                transition: 'all 0.2s ease-in-out',
                                 '&:hover': {
-                                  boxShadow: theme.shadows[5],
-                                  transform: 'scale(1.03)'
+                                  transform: 'scale(1.05)',
+                                  boxShadow: theme.shadows[4]
                                 }
                               }}
                             >
                               הוסף תפקיד חדש
                             </Button>
-                            {(getIn(touched, 'roles') || submitCount > 0) &&
-                              typeof errors.roles === 'string' && (
-                                <FormHelperText
-                                  error
-                                  sx={{
-                                    mt: 1.5,
-                                    textAlign: 'center',
-                                    fontSize: '0.9rem'
-                                  }}
-                                >
-                                  {errors.roles}
-                                </FormHelperText>
-                              )}
-                          </>
+                          </Stack>
                         )}
                       </FieldArray>
                     </Stack>
                   )}
-                </Box>
-              </DialogContent>
+                </DialogContent>
 
-              <Divider sx={{ mt: 'auto' }} />
-              <DialogActions
-                sx={{
-                  p: { xs: 2, sm: 3 },
-                  backgroundColor: 'grey.100',
-                  borderBottomLeftRadius: theme.shape.borderRadius * 3.5,
-                  borderBottomRightRadius: theme.shape.borderRadius * 3.5
-                }}
-              >
-                <Button
-                  onClick={() => handleClose(isSubmitting)}
-                  disabled={isSubmitting}
-                  color="inherit"
-                  variant="text"
-                  sx={{ borderRadius: 2, fontSize: '0.95rem', mr: 1 }}
+                <DialogActions
+                  sx={{
+                    p: { xs: 2, sm: 3 },
+                    backgroundColor: 'grey.100',
+                    borderBottomLeftRadius: theme.shape.borderRadius * 3.5,
+                    borderBottomRightRadius: theme.shape.borderRadius * 3.5,
+                    borderTop: 1,
+                    borderColor: 'divider'
+                  }}
                 >
-                  ביטול
-                </Button>
-                <Box sx={{ flexGrow: 1 }} />
-                {activeStep > 0 && (
                   <Button
-                    onClick={handleBack}
+                    onClick={() => handleClose(isSubmitting)}
                     disabled={isSubmitting}
-                    variant="outlined"
-                    sx={{ borderRadius: 2, fontSize: '0.95rem', mr: 1.5 }}
+                    color="inherit"
+                    variant="text"
+                    sx={{ borderRadius: 2, fontSize: '0.95rem', mr: 1 }}
                   >
-                    הקודם
+                    ביטול
                   </Button>
-                )}
-                {activeStep < steps.length - 1 && (
-                  <Button
-                    onClick={handleNext}
-                    variant="contained"
-                    disabled={isSubmitting}
-                    sx={{
-                      borderRadius: 2,
-                      px: 3.5,
-                      py: 1.25,
-                      fontSize: '0.95rem'
-                    }}
-                  >
-                    הבא
-                  </Button>
-                )}
-                {activeStep === steps.length - 1 && (
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    disabled={isSubmitting}
-                    sx={{
-                      minWidth: 160,
-                      borderRadius: 2,
-                      px: 3.5,
-                      py: 1.25,
-                      fontSize: '1rem',
-                      boxShadow: theme.shadows[2],
-                      '&:hover': { boxShadow: theme.shadows[4] }
-                    }}
-                  >
-                    {isEdit
-                      ? isSubmitting
-                        ? 'מעדכן...'
-                        : 'עדכן סבב'
-                      : isSubmitting
-                      ? 'יוצר...'
-                      : 'צור סבב'}
-                  </Button>
-                )}
-              </DialogActions>
-            </Form>
-          )}
+                  <Box sx={{ flexGrow: 1 }} />
+                  {activeStep > 0 && (
+                    <Button
+                      onClick={handleBack}
+                      disabled={isSubmitting}
+                      variant="outlined"
+                      sx={{ borderRadius: 2, fontSize: '0.95rem', mr: 1.5 }}
+                    >
+                      הקודם
+                    </Button>
+                  )}
+                  {activeStep < steps.length - 1 && (
+                    <Button
+                      onClick={handleNext}
+                      variant="contained"
+                      disabled={isSubmitting}
+                      sx={{
+                        borderRadius: 2,
+                        px: 3.5,
+                        py: 1.25,
+                        fontSize: '0.95rem'
+                      }}
+                    >
+                      הבא
+                    </Button>
+                  )}
+                  {activeStep === steps.length - 1 && (
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      disabled={isSubmitting}
+                      sx={{
+                        minWidth: 160,
+                        borderRadius: 2,
+                        px: 3.5,
+                        py: 1.25,
+                        fontSize: '1rem',
+                        boxShadow: theme.shadows[2],
+                        '&:hover': { boxShadow: theme.shadows[4] }
+                      }}
+                    >
+                      {isEdit
+                        ? isSubmitting
+                          ? 'מעדכן...'
+                          : 'עדכן סבב'
+                        : isSubmitting
+                        ? 'יוצר...'
+                        : 'צור סבב'}
+                    </Button>
+                  )}
+                </DialogActions>
+              </Form>
+            );
+          }}
         </Formik>
       </Dialog>
     </>
