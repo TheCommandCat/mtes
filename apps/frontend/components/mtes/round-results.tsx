@@ -15,13 +15,44 @@ interface RoundResultsProps {
   electionThreshold?: number;
 }
 
+const processResults = (results: Record<string, RoleResult[]>): Record<string, RoleResult[]> => {
+  const combineAndSort = (roleResults: RoleResult[]): RoleResult[] => {
+    const whiteVotes = roleResults.filter(result => result.contestant.name.includes('פתק לבן'));
+    const nonWhiteVotes = roleResults.filter(result => !result.contestant.name.includes('פתק לבן'));
+
+    let processedResults = nonWhiteVotes;
+    if (whiteVotes.length > 0) {
+      const totalWhiteVotes = whiteVotes.reduce((sum, result) => sum + result.votes, 0);
+      const combinedWhiteVote: RoleResult = {
+        contestant: {
+          _id: whiteVotes[0].contestant._id,
+          name: 'פתק לבן',
+          city: 'אין אמון באף אחד',
+          isPresent: true,
+          isMM: false
+        },
+        votes: totalWhiteVotes
+      };
+      processedResults = [...nonWhiteVotes, combinedWhiteVote];
+    }
+
+    return processedResults.sort((a, b) => b.votes - a.votes);
+  };
+
+  return Object.fromEntries(
+    Object.entries(results).map(([role, roleResults]) => [role, combineAndSort(roleResults)])
+  );
+};
+
 export const RoundResults = ({
   round,
-  results,
+  results: initialResults,
   votedMembers,
   totalMembers,
   electionThreshold = 50
 }: RoundResultsProps) => {
+  const results = processResults(initialResults);
+
   if (!round || !results || !votedMembers || totalMembers <= 0) {
     return (
       <Paper
