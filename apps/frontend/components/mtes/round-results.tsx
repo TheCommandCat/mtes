@@ -146,10 +146,14 @@ export const RoundResults = ({
             ) : hasThresholdWinner ? (
               <Typography
                 variant="subtitle1"
-                color="success.main"
+                color={
+                  potentialWinners[0].contestant.name === 'פתק לבן' ? 'error.main' : 'success.main'
+                }
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                🎉 יש מנצח שעבר את אחוז הכשירות!
+                {potentialWinners[0].contestant.name === 'פתק לבן'
+                  ? '😢 פתק לבן ניצח'
+                  : '🎉 יש מנצח שעבר את אחוז הכשירות!'}
               </Typography>
             ) : null}
 
