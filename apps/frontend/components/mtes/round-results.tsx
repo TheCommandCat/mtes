@@ -145,7 +145,7 @@ export const RoundResults = ({
                   ? 'תיקו עם פתק לבן!'
                   : 'תיקו בין המתמודדים המובילים!'}
               </Typography>
-            ) : potentialWinners[0].contestant.name === 'פתק לבן' ? (
+            ) : potentialWinners.length > 0 && potentialWinners[0].contestant.name === 'פתק לבן' ? (
               <Typography
                 variant="subtitle1"
                 color="error.main"
