@@ -15,13 +15,44 @@ interface RoundResultsProps {
   electionThreshold?: number;
 }
 
+const processResults = (results: Record<string, RoleResult[]>): Record<string, RoleResult[]> => {
+  const combineAndSort = (roleResults: RoleResult[]): RoleResult[] => {
+    const whiteVotes = roleResults.filter(result => result.contestant.name.includes('פתק לבן'));
+    const nonWhiteVotes = roleResults.filter(result => !result.contestant.name.includes('פתק לבן'));
+
+    let processedResults = nonWhiteVotes;
+    if (whiteVotes.length > 0) {
+      const totalWhiteVotes = whiteVotes.reduce((sum, result) => sum + result.votes, 0);
+      const combinedWhiteVote: RoleResult = {
+        contestant: {
+          _id: whiteVotes[0].contestant._id,
+          name: 'פתק לבן',
+          city: 'אין אמון באף אחד',
+          isPresent: true,
+          isMM: false
+        },
+        votes: totalWhiteVotes
+      };
+      processedResults = [...nonWhiteVotes, combinedWhiteVote];
+    }
+
+    return processedResults.sort((a, b) => b.votes - a.votes);
+  };
+
+  return Object.fromEntries(
+    Object.entries(results).map(([role, roleResults]) => [role, combineAndSort(roleResults)])
+  );
+};
+
 export const RoundResults = ({
   round,
-  results,
+  results: initialResults,
   votedMembers,
   totalMembers,
   electionThreshold = 50
 }: RoundResultsProps) => {
+  const results = processResults(initialResults);
+
   if (!round || !results || !votedMembers || totalMembers <= 0) {
     return (
       <Paper
@@ -96,15 +127,7 @@ export const RoundResults = ({
             >
               {role.role}
             </Typography>
-            {isDrawForRole ? (
-              <Typography
-                variant="subtitle1"
-                color="warning.main"
-                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
-              >
-                תיקו בין המתמודדים המובילים!
-              </Typography>
-            ) : !hasThresholdWinner ? (
+            {!hasThresholdWinner ? (
               <Typography
                 variant="subtitle1"
                 color="error.main"
@@ -112,7 +135,25 @@ export const RoundResults = ({
               >
                 אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}% + 1)
               </Typography>
-            ) : hasThresholdWinner ? (
+            ) : isDrawForRole ? (
+              <Typography
+                variant="subtitle1"
+                color="warning.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                {potentialWinners.some(winner => winner.contestant.name === 'פתק לבן')
+                  ? 'תיקו עם פתק לבן!'
+                  : 'תיקו בין המתמודדים המובילים!'}
+              </Typography>
+            ) : potentialWinners.length > 0 && potentialWinners[0].contestant.name === 'פתק לבן' ? (
+              <Typography
+                variant="subtitle1"
+                color="error.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                😢 פתק לבן ניצח
+              </Typography>
+            ) : (
               <Typography
                 variant="subtitle1"
                 color="success.main"
@@ -120,8 +161,7 @@ export const RoundResults = ({
               >
                 🎉 יש מנצח שעבר את אחוז הכשירות!
               </Typography>
-            ) : null}
-
+            )}
             <Box sx={{ px: 2 }}>
               {roleResults.map((result: RoleResult) => {
                 const isContestantPartOfDraw = isDrawForRole && result.votes === maxVotes;

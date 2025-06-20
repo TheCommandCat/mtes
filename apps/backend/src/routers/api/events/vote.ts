@@ -5,14 +5,15 @@ import { Member, Positions } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
-const WHITE_VOTE_ID = '000000000000000000000000';
-const WHITE_VOTE_MEMBER: WithId<Member> = {
-    _id: new ObjectId(WHITE_VOTE_ID),
-    name: 'פתק לבן',
-    city: 'אין אמון באף אחד',
-    isPresent: true,
-    isMM: false,
-};
+const getWhiteVoteMember = (id: string): WithId<Member> => {
+    return {
+        _id: new ObjectId(id),
+        name: `פתק לבן ${Number(id)}`,
+        city: 'אין אמון באף אחד',
+        isPresent: true,
+        isMM: false,
+    };
+}
 
 router.post('/', async (req: Request, res: Response) => {
     const { roundId, memberId, votes, votingStandId, signature } = req.body;
@@ -57,13 +58,12 @@ router.post('/', async (req: Request, res: Response) => {
                         console.log(`⏬ Processing vote for role ${role} and contestant ID ${contestantId}`);
 
                         const contestant =
-                            contestantId === WHITE_VOTE_ID
-                                ? WHITE_VOTE_MEMBER
+                            contestantId.startsWith('00000000000000000000') // 20 times '0' for white vote as a white vote id is 24(last 4 characters are for id)
+                                ? getWhiteVoteMember(contestantId)
                                 : await db.getMember({ _id: new ObjectId(contestantId) });
 
                         if (!contestant) {
                             console.log(`❌ Contestant with ID ${contestantId} not found`);
-                            // Consider how to handle this: maybe collect errors and return a summary
                             return null;
                         }
 
