@@ -5,15 +5,21 @@ import { Member, Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
-const WHITE_VOTE_ID = '000000000000000000000000';
-const WHITE_VOTE_MEMBER: WithId<Member> = {
-    _id: new ObjectId(WHITE_VOTE_ID),
-    name: 'פתק לבן',
-    city: 'אין אמון באף אחד',
-    isPresent: true,
-    isMM: false,
-};
-
+const genrateWhireVoteMembers = (numWhiteVotes: number): WithId<Member>[] => {
+    const whiteVotes: WithId<Member>[] = [];
+    for (let i = 0; i < numWhiteVotes; i++) {
+        whiteVotes.push(
+            {
+                _id: new ObjectId(`00000000000000000000000${i + 1}`),
+                name: `פתק לבן ${i + 1}`,
+                city: 'אין אמון באף אחד',
+                isPresent: true,
+                isMM: false,
+            }
+        );
+    }
+    return whiteVotes;
+}
 router.get('/', async (req: Request, res: Response) => {
     console.log('⏬ Getting rounds...');
     return res.json(await db.getRounds({}));
@@ -69,7 +75,7 @@ router.post('/add', async (req: Request, res: Response) => {
                     })
                 );
                 if (role.numWhiteVotes > 0) {
-                    contestants.push(WHITE_VOTE_MEMBER);
+                    contestants.push(...genrateWhireVoteMembers(role.numWhiteVotes));
                 }
                 return { ...role, contestants };
             })
