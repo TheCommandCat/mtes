@@ -127,15 +127,7 @@ export const RoundResults = ({
             >
               {role.role}
             </Typography>
-            {isDrawForRole ? (
-              <Typography
-                variant="subtitle1"
-                color="warning.main"
-                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
-              >
-                תיקו בין המתמודדים המובילים!
-              </Typography>
-            ) : !hasThresholdWinner ? (
+            {!hasThresholdWinner ? (
               <Typography
                 variant="subtitle1"
                 color="error.main"
@@ -143,20 +135,33 @@ export const RoundResults = ({
               >
                 אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}% + 1)
               </Typography>
-            ) : hasThresholdWinner ? (
+            ) : isDrawForRole ? (
               <Typography
                 variant="subtitle1"
-                color={
-                  potentialWinners[0].contestant.name === 'פתק לבן' ? 'error.main' : 'success.main'
-                }
+                color="warning.main"
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                {potentialWinners[0].contestant.name === 'פתק לבן'
-                  ? '😢 פתק לבן ניצח'
-                  : '🎉 יש מנצח שעבר את אחוז הכשירות!'}
+                {potentialWinners.some(winner => winner.contestant.name === 'פתק לבן')
+                  ? 'תיקו עם פתק לבן!'
+                  : 'תיקו בין המתמודדים המובילים!'}
               </Typography>
-            ) : null}
-
+            ) : potentialWinners[0].contestant.name === 'פתק לבן' ? (
+              <Typography
+                variant="subtitle1"
+                color="error.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                😢 פתק לבן ניצח
+              </Typography>
+            ) : (
+              <Typography
+                variant="subtitle1"
+                color="success.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                🎉 יש מנצח שעבר את אחוז הכשירות!
+              </Typography>
+            )}
             <Box sx={{ px: 2 }}>
               {roleResults.map((result: RoleResult) => {
                 const isContestantPartOfDraw = isDrawForRole && result.votes === maxVotes;
