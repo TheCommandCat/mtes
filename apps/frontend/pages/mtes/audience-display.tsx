@@ -26,6 +26,31 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
       handler: (newRound: WithId<Round>) => {
         setActiveRound(newRound);
       }
+    },
+    {
+      name: 'memberPresenceUpdated',
+      handler: (
+        memberId: string,
+        isMM: boolean,
+        isPresent: boolean,
+        replacedBy: WithId<Member> | null
+      ) => {
+        setMembers(prevMembers =>
+          prevMembers.map(member =>
+            member._id.toString() === memberId ? { ...member, isMM, isPresent, replacedBy } : member
+          )
+        );
+      }
+    },
+    {
+      name: 'votingMemberLoaded',
+      handler: (member: WithId<Member>, votingStand: number) => {
+        setMembers(prevMembers =>
+          prevMembers.map(m =>
+            m._id.toString() === member._id.toString() ? { ...m, votingStand } : m
+          )
+        );
+      }
     }
   ]);
 
