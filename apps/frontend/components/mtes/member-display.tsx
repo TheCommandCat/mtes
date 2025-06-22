@@ -14,15 +14,13 @@ export const MemberDisplay = ({ member }: MemberDisplayProps) => {
 
   return (
     <Paper
-      elevation={1}
+      variant="outlined"
       sx={{
-        p: { xs: 2, sm: 3 },
-        mb: 2.5,
-        background: isPresent ? 'rgba(33, 150, 243, 0.05)' : 'rgba(243, 33, 33, 0.05)',
-        border: `1px solid ${isPresent ? 'rgba(33, 150, 243, 0.2)' : 'rgba(243, 33, 33, 0.2)'}`,
-        borderRadius: 2,
+        p: 2,
         transition: 'all 0.2s ease-in-out',
         opacity: isPresent ? 1 : 0.7,
+        borderColor: isPresent ? 'primary.light' : 'error.light',
+        background: isPresent ? 'rgba(33, 150, 243, 0.05)' : 'rgba(243, 33, 33, 0.05)',
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: 2
