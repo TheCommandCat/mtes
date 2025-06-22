@@ -1,18 +1,13 @@
-import { useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
-import { useRouter } from 'next/router';
 import { WithId } from 'mongodb';
-import { enqueueSnackbar } from 'notistack';
-import { User, ElectionEvent, Member, Round, ElectionState, VotingState } from '@mtes/types';
-import { ActiveRound } from 'apps/frontend/components/mtes/active-round';
-import AudienceDisplayContainer from 'apps/frontend/components/mtes/audience/audience-display-container';
-import { RoundPreview } from 'apps/frontend/components/mtes/round-preview';
-import { RoundResults } from 'apps/frontend/components/mtes/round-results';
+import { User, ElectionEvent, Member, Round, ElectionState } from '@mtes/types';
 import { WaitingState } from 'apps/frontend/components/mtes/waiting-state';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
 import { getUserAndDivision, serverSideGetRequests } from 'apps/frontend/lib/utils/fetch';
-import { Box, Typography } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import Layout from '../../components/layout';
+import { MemberDisplay } from '../../components/mtes/member-display';
 
 interface Props {
   user: WithId<User>;
@@ -21,26 +16,15 @@ interface Props {
   initialMembers: WithId<Member>[];
 }
 
-const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) => {
-  const router = useRouter();
-
+const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound);
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
-  const [votingState, setVotingState] = useState<VotingState>('pending');
 
   useWebsocket([
     {
       name: 'roundLoaded',
       handler: (newRound: WithId<Round>) => {
         setActiveRound(newRound);
-      }
-    },
-    {
-      name: 'votingMemberLoaded',
-      handler: (updatedMember: WithId<Member>) => {
-        setMembers(currentMembers =>
-          currentMembers.map(m => (m._id === updatedMember._id ? updatedMember : m))
-        );
       }
     }
   ]);
@@ -78,11 +62,11 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
         }}
       >
         <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
-          {electionState.activeRound.name}
+          {activeRound.name}
         </Typography>
 
         <Typography variant="h5" sx={{ color: 'text.secondary' }}>
-          Roles: {electionState.activeRound.roles.map(role => role.role).join(' • ')}
+          Roles: {activeRound.roles.map(role => role.role).join(' • ')}
         </Typography>
 
         <Box sx={{ mt: 2 }}>
@@ -97,6 +81,18 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
             </Typography>
           )}
         </Box>
+        <Box sx={{ width: '100%', mt: 4 }}>
+          <Grid container spacing={2}>
+            {members
+              .slice()
+              .sort((a, b) => (a.isPresent === b.isPresent ? 0 : a.isPresent ? -1 : 1))
+              .map(member => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={member._id.toString()}>
+                  <MemberDisplay member={member} />
+                </Grid>
+              ))}
+          </Grid>
+        </Box>
       </Box>
     </Layout>
   );
@@ -110,12 +106,10 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
       {
         event: `/public/event`,
         electionState: `/api/events/state`,
-        initialMembers: `/api/members/event-members`
+        initialMembers: `/api/events/members`
       },
       ctx
     );
-
-    console.log(data);
 
     if (!data.event) {
       return { notFound: true };
