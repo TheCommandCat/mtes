@@ -41,17 +41,17 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
           )
         );
       }
-    },
-    {
-      name: 'votingMemberLoaded',
-      handler: (member: WithId<Member>, votingStand: number) => {
-        setMembers(prevMembers =>
-          prevMembers.map(m =>
-            m._id.toString() === member._id.toString() ? { ...m, votingStand } : m
-          )
-        );
-      }
     }
+    // {
+    //   name: 'votingMemberLoaded',
+    //   handler: (member: WithId<Member>, votingStand: number) => {
+    //     setMembers(prevMembers =>
+    //       prevMembers.map(m =>
+    //         m._id.toString() === member._id.toString() ? { ...m, votingStand } : m
+    //       )
+    //     );
+    //   }
+    // }
   ]);
 
   if (!activeRound) {
