@@ -6,6 +6,12 @@ import { Member } from './schemas/member';
 export interface WSServerEmittedEvents {
   votingMemberLoaded: (member: WithId<Member>, votingStand: number) => void;
   roundLoaded: (roundId: string) => void;
+  memberPresenceUpdated: (
+    memberId: string,
+    isMM: boolean,
+    isPresent: boolean,
+    replacedBy: WithId<Member> | null
+  ) => void;
 }
 
 export interface WSClientEmittedEvents {
@@ -17,6 +23,14 @@ export interface WSClientEmittedEvents {
 
   loadRound: (
     roundId: string,
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) => void;
+
+  updateMemberPresence: (
+    memberId: string,
+    isMM: boolean,
+    isPresent: boolean,
+    replacedBy: WithId<Member> | null,
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 

@@ -4,7 +4,7 @@ import {
   WSClientEmittedEvents,
   WSInterServerEvents,
 } from '@mtes/types';
-import { handleLoadRound, handleLoadVotingMember, handleVoteProcessed, handleVoteSubmitted } from './handlers';
+import { handleLoadRound, handleLoadVotingMember, handleUpdateMemberPresence, handleVoteProcessed, handleVoteSubmitted } from './handlers';
 
 const websocket = (
   socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents>
@@ -16,6 +16,10 @@ const websocket = (
     callback({ ok: true });
   });
 
+  socket.on('updateMemberPresence', (...args) => {
+    handleUpdateMemberPresence(namespace, ...args);
+  })
+
   socket.on('loadVotingMember', (...args) => handleLoadVotingMember(namespace, ...args));
 
   socket.on('loadRound', (...args) => handleLoadRound(namespace, ...args));
@@ -25,8 +29,7 @@ const websocket = (
   }));
 
   socket.on('voteProcessed', ((...args) => {
-    handleVoteProcessed(namespace,...args);
-  
+    handleVoteProcessed(namespace, ...args);
   }));
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);

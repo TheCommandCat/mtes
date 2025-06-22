@@ -70,3 +70,71 @@ export const handleVoteProcessed = async (
     callback({ ok: true });
   }
 };
+
+export const handleUpdateMemberPresence = async (
+  namespace: any,
+  memberId: string,
+  isMM: boolean,
+  isPresent: boolean,
+  replacedBy: WithId<Member> | null,
+  callback: ((response: { ok: boolean; error?: string }) => void) | undefined
+) => {
+
+  if (!memberId) {
+    console.log('❌ Member ID is null or undefined');
+    if (typeof callback === 'function') {
+      callback({ ok: false, error: 'Member ID is missing' });
+    }
+    return;
+  }
+
+  console.log(`🔌 WS: Update member presence for ${memberId}`);
+  console.log('WS Status: ', namespace.connected);
+
+  const updatePayload: Partial<Member> = {
+    isPresent,
+    replacedBy: replacedBy ? replacedBy as WithId<Member> : null
+  };
+
+  try {
+    if (isMM) {
+      const result = await db.updateMmMember(
+        { _id: new ObjectId(memberId) },
+        updatePayload as unknown as Partial<Member>
+      );
+      if (!result.acknowledged || result.matchedCount === 0) {
+        console.log(`❌ Could not update presence for member ${memberId}. Member not found or update failed.`);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: 'Member not found or update failed' });
+        }
+        return;
+      }
+      console.log(`✅ Presence updated for MM member ${memberId}`);
+    } else {
+      const result = await db.updateMember(
+        { _id: new ObjectId(memberId) },
+        updatePayload as unknown as Partial<Member>
+      );
+      if (!result.acknowledged || result.matchedCount === 0) {
+        console.log(`❌ Could not update presence for member ${memberId}. Member not found or update failed.`);
+        if (typeof callback === 'function') {
+          callback({ ok: false, error: 'Member not found or update failed' });
+        }
+        return;
+      }
+      console.log(`✅ Presence updated for member ${memberId}`);
+    }
+    namespace.emit('memberPresenceUpdated',
+      memberId,
+      isMM,
+      isPresent,
+      replacedBy
+    );
+
+  } catch (error) {
+    console.error('❌ Error updating member presence:', error);
+    if (typeof callback === 'function') {
+      callback({ ok: false, error: 'Internal server error while updating member presence' });
+    }
+  }
+}

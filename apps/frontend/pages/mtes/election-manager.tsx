@@ -155,6 +155,39 @@ const Page: NextPage<Props> = ({
         }));
         refreshVotedMembers(activeRound?._id.toString() || '');
       }
+    },
+    {
+      name: 'memberPresenceUpdated',
+      handler: (
+        memberId: string,
+        isMM: boolean,
+        isPresent: boolean,
+        replacedBy: WithId<Member> | null
+      ) => {
+        console.log(
+          `Member presence updated: ${memberId}, isMM: ${isMM}, isPresent: ${isPresent}, replacedBy: ${replacedBy}`
+        );
+
+        const allCurrentMembers = [...members, ...mmMembers];
+        const memberToUpdate = allCurrentMembers.find(m => m._id.toString() === memberId);
+
+        if (!memberToUpdate) {
+          enqueueSnackbar('שגיאה: חבר לא נמצא', { variant: 'error' });
+          return;
+        }
+
+        const updatedMembers = allCurrentMembers.map(m =>
+          m._id.toString() === memberId ? { ...m, isPresent, replacedBy: replacedBy || null } : m
+        );
+
+        if (isMM) {
+          setMMMembers(updatedMembers.filter(m => m.isMM));
+        } else {
+          setMembers(updatedMembers.filter(m => !m.isMM));
+        }
+
+        enqueueSnackbar('נוכחות עודכנה', { variant: 'success' });
+      }
     }
   ]);
 
@@ -171,57 +204,24 @@ const Page: NextPage<Props> = ({
       return;
     }
 
-    const endpoint = memberToUpdate.isMM
-      ? `/api/events/mm-members/${memberId}/presence`
-      : `/api/events/members/${memberId}/presence`;
-
     const payload: { isPresent: boolean; replacedBy?: WithId<Member> | null } = { isPresent };
     if (replacedBy !== undefined) {
       payload.replacedBy = replacedBy;
     }
 
     try {
-      const response = await apiFetch(endpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'שגיאה בעדכון נוכחות' }));
-        throw new Error(errorData.message);
-      }
-
-      if (memberToUpdate.isMM) {
-        setMMMembers(prevMMs =>
-          prevMMs.map(m =>
-            m._id.toString() === memberId
-              ? {
-                  ...m,
-                  isPresent,
-                  replacedBy: (payload.replacedBy !== undefined
-                    ? payload.replacedBy
-                    : m.replacedBy) as any
-                }
-              : m
-          )
-        );
-      } else {
-        setMembers(prevRegMembers =>
-          prevRegMembers.map(m =>
-            m._id.toString() === memberId
-              ? {
-                  ...m,
-                  isPresent,
-                  replacedBy: (payload.replacedBy !== undefined
-                    ? payload.replacedBy
-                    : m.replacedBy) as any
-                }
-              : m
-          )
-        );
-      }
-      enqueueSnackbar('נוכחות עודכנה בהצלחה', { variant: 'success' });
+      socket.emit(
+        'updateMemberPresence',
+        memberId,
+        memberToUpdate.isMM,
+        isPresent,
+        replacedBy || null,
+        (response: { ok: boolean; error?: string }) => {
+          if (!response.ok) {
+            throw new Error(response.error || 'שגיאה בעדכון נוכחות');
+          }
+        }
+      );
     } catch (error: any) {
       enqueueSnackbar(error.message || 'שגיאה בעדכון נוכחות', { variant: 'error' });
     }
