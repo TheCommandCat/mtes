@@ -297,19 +297,15 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
                         </Button>
                       </Tooltip>
                     ) : m.isPresent ? (
-                      <Tooltip title={isReplacer ? 'בתפקיד' : "צ'ק-אאוט"}>
-                        <span>
-                          <Button
-                            color="error"
-                            variant="outlined"
-                            startIcon={<LogoutIcon />}
-                            onClick={() => onMemberUpdate(id, false)}
-                            disabled={isReplacer}
-                          >
-                            צ׳ק-אאוט
-                          </Button>
-                        </span>
-                      </Tooltip>
+                      <Button
+                        color="error"
+                        variant="outlined"
+                        startIcon={<LogoutIcon />}
+                        onClick={() => onMemberUpdate(id, false)}
+                        disabled={isReplacer}
+                      >
+                        צ׳ק-אאוט
+                      </Button>
                     ) : (
                       <Button
                         color="primary"
