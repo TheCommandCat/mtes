@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
 import {
@@ -7,14 +7,19 @@ import {
   Member,
   Round,
   ElectionState,
-  AudienceDisplayScreen
+  AudienceDisplayScreen,
+  VotingStandStatus,
+  VotingStates,
+  VotingStatus
 } from '@mtes/types';
 import { WaitingState } from 'apps/frontend/components/mtes/waiting-state';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
-import { getUserAndDivision, serverSideGetRequests } from 'apps/frontend/lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from 'apps/frontend/lib/utils/fetch';
 import { Box, Typography, Grid, Paper, Container, Avatar } from '@mui/material';
 import Layout from '../../components/layout';
 import { AudiencePresence } from 'apps/frontend/components/mtes/audience/audience-presence';
+import { AudienceVotingDisplay } from 'apps/frontend/components/mtes/audience/audience-voting-display';
+import { enqueueSnackbar } from 'notistack';
 
 interface Props {
   user: WithId<User>;
@@ -23,12 +28,42 @@ interface Props {
   initialMembers: WithId<Member>[];
 }
 
+const initialRoundStatuses = (
+  numofStands: number,
+  status: VotingStates
+): Record<number, VotingStandStatus> =>
+  Object.fromEntries(
+    Array.from({ length: numofStands }, (_, i) => [i + 1, { status: status, member: null }])
+  ) as Record<number, VotingStandStatus>;
+
 const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
   const [currentDisplay, setCurrentDisplay] = useState<AudienceDisplayScreen>(
     (electionState.audienceDisplay as AudienceDisplayScreen) || 'round'
   );
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound);
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
+  const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
+  const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
+    initialRoundStatuses(event.votingStands, event == null ? 'NotStarted' : 'Empty')
+  );
+
+  const refreshVotedMembers = async (roundId: string) => {
+    const response = await apiFetch(`/api/events/rounds/votedMembers/${roundId}`, {
+      method: 'GET'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setVotedMembers(data.votedMembers);
+    } else {
+      console.error('Error fetching voted members:', response.statusText);
+    }
+  };
+
+  useEffect(() => {
+    if (activeRound) {
+      refreshVotedMembers(activeRound._id.toString());
+    }
+  }, [activeRound]);
 
   useWebsocket([
     {
@@ -56,6 +91,28 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
       name: 'audienceDisplayUpdated',
       handler: (view: 'round' | 'presence' | 'voting') => {
         setCurrentDisplay(view);
+      }
+    },
+    {
+      name: 'votingMemberLoaded',
+      handler: (member: WithId<Member>, stand: number) => {
+        setStandStatuses(prevStatuses => ({
+          ...prevStatuses,
+          [stand]: { status: 'Voting', member }
+        }));
+      }
+    },
+    {
+      name: 'voteProcessed',
+      handler: (votingMember: WithId<Member>, standId: number) => {
+        enqueueSnackbar(`הצבעת ${votingMember.name} עובדה בהצלחה בעמדה ${standId}`, {
+          variant: 'success'
+        });
+        setStandStatuses(prev => ({
+          ...prev,
+          [standId]: { status: 'Empty', member: null }
+        }));
+        refreshVotedMembers(activeRound?._id.toString() || '');
       }
     }
   ]);
@@ -203,6 +260,12 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
               ))}
             </Grid>
           </Paper>
+        ) : currentDisplay === 'voting' ? (
+          <AudienceVotingDisplay
+            standStatuses={standStatuses}
+            members={members}
+            votedMembers={votedMembers}
+          />
         ) : (
           <Box sx={{ width: '100%' }}>
             <Typography variant="h4" gutterBottom>
