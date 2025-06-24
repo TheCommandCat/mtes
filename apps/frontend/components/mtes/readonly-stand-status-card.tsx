@@ -13,17 +13,26 @@ export const ReadOnlyStandStatusCard = ({
   status,
   member
 }: ReadOnlyStandStatusCardProps) => {
+  const isOccupied = !!member;
+
   return (
     <Card
       sx={{
+        height: '100%',
+        bgcolor: isOccupied ? 'grey.50' : 'grey.100',
+        boxShadow: 3,
         border: '1px solid',
-        borderColor: 'divider',
-        height: '100%'
+        borderColor: isOccupied ? 'primary.light' : 'divider',
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          borderColor: 'primary.main',
+          boxShadow: 6
+        }
       }}
     >
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          עמדה {standId + 1}
+      <CardContent sx={{ textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom fontWeight="bold" color="text.secondary">
+          עמדה {standId}
         </Typography>
         <Box
           sx={{
@@ -31,16 +40,20 @@ export const ReadOnlyStandStatusCard = ({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: 100
+            minHeight: 120
           }}
         >
           {member ? (
             <>
-              <Typography variant="h5">{member.name}</Typography>
+              <Typography variant="h5" fontWeight="medium" color="text.primary">
+                {member.name}
+              </Typography>
               <Typography color="text.secondary">{member.city}</Typography>
             </>
           ) : (
-            <Typography color="text.secondary">עמדה פנויה</Typography>
+            <Typography color="text.secondary" variant="h6">
+              פנויה
+            </Typography>
           )}
         </Box>
       </CardContent>

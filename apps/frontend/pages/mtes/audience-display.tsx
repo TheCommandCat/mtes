@@ -20,6 +20,7 @@ import Layout from '../../components/layout';
 import { AudiencePresence } from 'apps/frontend/components/mtes/audience/audience-presence';
 import { AudienceVotingDisplay } from 'apps/frontend/components/mtes/audience/audience-voting-display';
 import { enqueueSnackbar } from 'notistack';
+import AudienceDisplayContainer from 'apps/frontend/components/mtes/audience/audience-display-container';
 
 interface Props {
   user: WithId<User>;
@@ -127,7 +128,7 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
     );
   }
   return (
-    <Layout title={event.name}>
+    <AudienceDisplayContainer>
       <Box
         sx={{
           display: 'flex',
@@ -274,7 +275,7 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
           </Box>
         )}
       </Box>
-    </Layout>
+    </AudienceDisplayContainer>
   );
 };
 

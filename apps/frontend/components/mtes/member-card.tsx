@@ -24,6 +24,7 @@ interface MemberCardProps {
   currentStandId?: number | null;
   isDisplayedInStand?: boolean;
   signatureData?: Record<number, number[][]>;
+  audianceDisplay?: boolean;
 }
 
 export const MemberCard = ({
@@ -32,7 +33,8 @@ export const MemberCard = ({
   isCurrentlyVoting,
   currentStandId,
   isDisplayedInStand,
-  signatureData
+  signatureData,
+  audianceDisplay = false
 }: MemberCardProps) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.MEMBER,
@@ -160,7 +162,7 @@ export const MemberCard = ({
                   <Typography variant="body2" color="success.dark">
                     הצביע
                   </Typography>
-                  {signatureData && signatureData && (
+                  {signatureData && signatureData && !audianceDisplay && (
                     <Button
                       variant="outlined"
                       size="small"

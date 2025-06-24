@@ -21,24 +21,51 @@ export const AudienceVotingDisplay = ({
   return (
     <DndProvider backend={HTML5Backend}>
       <Box sx={{ width: '100%', p: { xs: 2, sm: 4 } }}>
-        <Typography variant="h3" component="h1" gutterBottom textAlign="center" color="primary">
-          הצבעה
+        <Typography
+          variant="h2"
+          gutterBottom
+          textAlign="center"
+          color="primary"
+          sx={{ fontWeight: 'bold', mb: 4 }}
+        >
+          מעקב הצבעה
         </Typography>
-        <ReadOnlyVotingStandsGrid standStatuses={standStatuses} />
-        <MembersGrid
-          members={members}
-          votedMembers={votedMembers}
-          standStatuses={standStatuses}
-          filterType="waitingToVote"
-          onDropMemberBackToBank={() => {}}
-        />
-        <MembersGrid
-          members={members}
-          votedMembers={votedMembers}
-          standStatuses={standStatuses}
-          filterType="voted"
-          onDropMemberBackToBank={() => {}}
-        />
+
+        <Box sx={{ mb: 5 }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            textAlign="center"
+            color="text.primary"
+            sx={{ mb: 2 }}
+          >
+            עמדות הצבעה
+          </Typography>
+          <ReadOnlyVotingStandsGrid standStatuses={standStatuses} />
+        </Box>
+
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={6}>
+            <MembersGrid
+              members={members}
+              votedMembers={votedMembers}
+              standStatuses={standStatuses}
+              filterType="waitingToVote"
+              onDropMemberBackToBank={() => {}}
+              audianceDisplay={true}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <MembersGrid
+              members={members}
+              votedMembers={votedMembers}
+              standStatuses={standStatuses}
+              filterType="voted"
+              onDropMemberBackToBank={() => {}}
+              audianceDisplay={true}
+            />
+          </Grid>
+        </Grid>
       </Box>
     </DndProvider>
   );

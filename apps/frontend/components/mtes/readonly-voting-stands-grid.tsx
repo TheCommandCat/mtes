@@ -11,13 +11,9 @@ export const ReadOnlyVotingStandsGrid = ({ standStatuses }: ReadOnlyVotingStands
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '1fr',
-        gridAutoFlow: 'column',
-        overflowX: 'auto',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
         gap: 3,
-        mb: 5,
         p: 2,
-        backgroundColor: '#f5f5f5',
         borderRadius: 2
       }}
     >
@@ -25,10 +21,8 @@ export const ReadOnlyVotingStandsGrid = ({ standStatuses }: ReadOnlyVotingStands
         <Box
           key={standId}
           sx={{
-            transform: 'translateY(0)',
-            transition: 'transform 0.2s',
-            minWidth: '300px',
-            '&:hover': { transform: 'translateY(-4px)' }
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': { transform: 'translateY(-5px)' }
           }}
         >
           <ReadOnlyStandStatusCard
