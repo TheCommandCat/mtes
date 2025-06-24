@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 
-export const RoleTypes = ['election-manager', 'voting-stand'] as const;
+export const RoleTypes = ['election-manager', 'voting-stand', 'audience-display'] as const;
 export type Role = (typeof RoleTypes)[number];
 
 export const RoleAssociationTypes = ['room', 'table', 'category', 'section'] as const;
