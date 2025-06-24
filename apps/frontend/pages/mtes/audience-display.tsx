@@ -43,6 +43,8 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
   const [currentDisplay, setCurrentDisplay] = useState<AudienceDisplayScreen>(
     (electionState.audienceDisplay as AudienceDisplayScreen) || 'round'
   );
+  // static info screen - currentDisplay remains fixed from server
+
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound);
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
@@ -132,6 +134,16 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
       }}
     >
       <AudienceDisplayContainer>
+        {/* Header with event title */}
+        <Box
+          sx={{ py: 2, textAlign: 'center', background: theme => theme.palette.background.paper }}
+        >
+          <Typography variant="h4" fontWeight="bold">
+            {event.name}
+          </Typography>
+        </Box>
+
+        {/* main content area */}
         <Box
           sx={{
             display: 'flex',
@@ -139,7 +151,7 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
             alignItems: 'center',
             p: { xs: 2, sm: 4 },
             gap: 3,
-            background: 'linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%)',
+            background: theme => theme.palette.background.default,
             minHeight: '100vh'
           }}
         >
