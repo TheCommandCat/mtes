@@ -10,7 +10,7 @@ import {
   MenuItem,
   SelectChangeEvent
 } from '@mui/material';
-import { locoalizedAudienceDisplayScreens } from 'apps/frontend/localization/displays';
+import { localizedAudienceDisplayScreens } from 'apps/frontend/localization/displays';
 import React, { useState } from 'react';
 
 interface AudienceControlProps {
@@ -46,7 +46,7 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({ socket, defaul
           >
             {AudienceDisplayScreenTypes.map(type => (
               <MenuItem key={type} value={type}>
-                {locoalizedAudienceDisplayScreens[type] || type}
+                {localizedAudienceDisplayScreens[type] || type}
               </MenuItem>
             ))}
           </Select>
