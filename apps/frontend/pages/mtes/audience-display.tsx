@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { WithId } from 'mongodb';
-import { User, ElectionEvent, Member, Round, ElectionState } from '@mtes/types';
+import {
+  User,
+  ElectionEvent,
+  Member,
+  Round,
+  ElectionState,
+  AudienceDisplayScreen
+} from '@mtes/types';
 import { WaitingState } from 'apps/frontend/components/mtes/waiting-state';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
 import { getUserAndDivision, serverSideGetRequests } from 'apps/frontend/lib/utils/fetch';
@@ -17,7 +24,9 @@ interface Props {
 }
 
 const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
-  const [currentDisplay, setCurrentDisplay] = useState<'round' | 'presence' | 'voting'>('round');
+  const [currentDisplay, setCurrentDisplay] = useState<AudienceDisplayScreen>(
+    (electionState.audienceDisplay as AudienceDisplayScreen) || 'round'
+  );
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound);
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
 

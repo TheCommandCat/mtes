@@ -148,6 +148,7 @@ export const handleUpdateAudienceDisplay = async (
   console.log('WS Status: ', namespace.connected);
 
   try {
+    db.updateElectionState({ audienceDisplay: view });
     namespace.emit('audienceDisplayUpdated', view);
     if (typeof callback === 'function') {
       callback({ ok: true });

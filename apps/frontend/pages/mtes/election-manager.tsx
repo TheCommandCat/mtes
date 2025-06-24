@@ -51,6 +51,7 @@ interface Props {
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
   event: ElectionEvent;
+  eventState: WithId<ElectionState>;
 }
 
 const initialRoundStatuses = (
@@ -72,7 +73,8 @@ const Page: NextPage<Props> = ({
   mmMembers: initialMMMembers,
   rounds,
   electionState,
-  event
+  event,
+  eventState
 }) => {
   const router = useRouter();
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
@@ -720,7 +722,7 @@ const Page: NextPage<Props> = ({
               )}
               {currentTab === 2 && (
                 <Box sx={{ mt: 3 }}>
-                  <AudienceControl socket={socket} />
+                  <AudienceControl socket={socket} defaultDisplay={eventState.audienceDisplay} />
                 </Box>
               )}
             </Paper>
@@ -767,7 +769,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
         electionState: '/api/events/state',
         members: '/api/events/members',
         mmMembers: '/api/events/mm-members', // Added mmMembers endpoint
-        event: '/public/event'
+        event: '/public/event',
+        eventState: '/api/events/state'
       },
       ctx
     );
