@@ -24,6 +24,7 @@ import { enqueueSnackbar } from 'notistack';
 import AudienceDisplayContainer from 'apps/frontend/components/mtes/audience/audience-display-container';
 import { RoleAuthorizer } from 'apps/frontend/components/role-authorizer';
 import { useRouter } from 'next/router';
+import useKeyboardShortcut from 'apps/frontend/hooks/use-keyboard-shortcut';
 
 interface Props {
   user: WithId<User>;
@@ -123,6 +124,11 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
       }
     }
   ]);
+
+  useKeyboardShortcut(
+    () => apiFetch('/auth/logout', { method: 'POST' }).then(() => router.push('/')),
+    { code: 'KeyL', ctrlKey: true, shiftKey: true }
+  );
 
   return (
     <RoleAuthorizer
