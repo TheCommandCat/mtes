@@ -138,3 +138,24 @@ export const handleUpdateMemberPresence = async (
     }
   }
 }
+
+export const handleUpdateAudienceDisplay = async (
+  namespace: any,
+  view: 'round' | 'presence' | 'voting',
+  callback: ((response: { ok: boolean; error?: string }) => void) | undefined
+) => {
+  console.log(`🔌 WS: Update audience display to ${view}`);
+  console.log('WS Status: ', namespace.connected);
+
+  try {
+    namespace.emit('audienceDisplayUpdated', view);
+    if (typeof callback === 'function') {
+      callback({ ok: true });
+    }
+  } catch (error) {
+    console.error('❌ Error updating audience display:', error);
+    if (typeof callback === 'function') {
+      callback({ ok: false, error: 'Failed to update audience display' });
+    }
+  }
+}

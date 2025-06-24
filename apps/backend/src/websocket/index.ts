@@ -1,10 +1,10 @@
-import { Socket } from 'socket.io';
+import { Namespace, Socket } from 'socket.io';
 import {
   WSServerEmittedEvents,
   WSClientEmittedEvents,
   WSInterServerEvents,
 } from '@mtes/types';
-import { handleLoadRound, handleLoadVotingMember, handleUpdateMemberPresence, handleVoteProcessed, handleVoteSubmitted } from './handlers';
+import { handleLoadRound, handleLoadVotingMember, handleUpdateAudienceDisplay, handleUpdateMemberPresence, handleVoteProcessed, handleVoteSubmitted } from './handlers';
 
 const websocket = (
   socket: Socket<WSClientEmittedEvents, WSServerEmittedEvents, WSInterServerEvents>
@@ -24,6 +24,10 @@ const websocket = (
 
   socket.on('loadRound', (...args) => handleLoadRound(namespace, ...args));
 
+  socket.on('updateAudienceDisplay', (view, callback) => {
+    handleUpdateAudienceDisplay(namespace, view, callback);
+  });
+
   socket.on('voteSubmitted', ((...args) => {
     handleVoteSubmitted(namespace, ...args);
   }));
@@ -31,9 +35,11 @@ const websocket = (
   socket.on('voteProcessed', ((...args) => {
     handleVoteProcessed(namespace, ...args);
   }));
+
   socket.on('disconnect', () => {
     console.log(`❌ WS: Disconnection`);
   });
 };
 
 export default websocket;
+

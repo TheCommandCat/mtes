@@ -42,6 +42,7 @@ import { localizedRoles } from 'apps/frontend/localization/roles';
 import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import { MemberPresenceStatus } from '../../components/mtes/member-presence-status'; // Changed to named import
 import MemberPresence from '../../components/mtes/member-presence'; // Added import
+import { AudienceControl } from '../../components/mtes/audience/audience-control';
 
 interface Props {
   user: WithId<SafeUser>;
@@ -606,6 +607,7 @@ const Page: NextPage<Props> = ({
                 >
                   <Tab label="ניהול סבב" />
                   <Tab label="ניהול משתתפים" />
+                  <Tab label="בקרת קהל" />
                 </Tabs>
               </Box>
               {currentTab === 0 && (
@@ -716,7 +718,12 @@ const Page: NextPage<Props> = ({
                   />
                 </Box>
               )}
-            </Paper>{' '}
+              {currentTab === 2 && (
+                <Box sx={{ mt: 3 }}>
+                  <AudienceControl socket={socket} />
+                </Box>
+              )}
+            </Paper>
             {/* This closes the Paper from line 605 */}
             <Dialog
               open={roundToDelete !== null}

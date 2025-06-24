@@ -12,6 +12,9 @@ export interface WSServerEmittedEvents {
     isPresent: boolean,
     replacedBy: WithId<Member> | null
   ) => void;
+  audienceDisplayUpdated: (
+    view: 'round' | 'presence' | 'voting'
+  ) => void;
 }
 
 export interface WSClientEmittedEvents {
@@ -45,6 +48,11 @@ export interface WSClientEmittedEvents {
   voteProcessed: (
     member: WithId<Member>,
     votingStand: number,
+    callback: (response: { ok: boolean; error?: string }) => void
+  ) => void;
+
+  updateAudienceDisplay: (
+    view: 'round' | 'presence' | 'voting',
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

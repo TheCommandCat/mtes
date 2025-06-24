@@ -17,7 +17,7 @@ interface Props {
 }
 
 const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
-  const [currentDisplay, setCurrentDisplay] = useState<'audience' | 'round' | 'presence'>('round');
+  const [currentDisplay, setCurrentDisplay] = useState<'round' | 'presence' | 'voting'>('round');
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound);
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
 
@@ -42,17 +42,13 @@ const Page: NextPage<Props> = ({ event, electionState, initialMembers }) => {
           )
         );
       }
+    },
+    {
+      name: 'audienceDisplayUpdated',
+      handler: (view: 'round' | 'presence' | 'voting') => {
+        setCurrentDisplay(view);
+      }
     }
-    // {
-    //   name: 'votingMemberLoaded',
-    //   handler: (member: WithId<Member>, votingStand: number) => {
-    //     setMembers(prevMembers =>
-    //       prevMembers.map(m =>
-    //         m._id.toString() === member._id.toString() ? { ...m, votingStand } : m
-    //       )
-    //     );
-    //   }
-    // }
   ]);
 
   if (!activeRound) {
