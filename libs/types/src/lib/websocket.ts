@@ -13,7 +13,7 @@ export interface WSServerEmittedEvents {
     replacedBy: WithId<Member> | null
   ) => void;
   audienceDisplayUpdated: (
-    view: 'round' | 'presence' | 'voting'
+    view: { display: 'round' | 'presence' | 'voting'; roundId?: string }
   ) => void;
 }
 
