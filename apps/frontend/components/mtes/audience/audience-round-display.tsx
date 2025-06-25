@@ -1,7 +1,8 @@
 import React from 'react';
-import { WithId, Round } from '@mtes/types';
+import { Round } from '@mtes/types';
 import { Container, Typography, Grid, Paper, Avatar, Box } from '@mui/material';
 import { WaitingState } from 'apps/frontend/components/mtes/waiting-state';
+import { WithId } from 'mongodb';
 
 interface AudienceRoundDisplayProps {
   activeRound: WithId<Round> | null;
