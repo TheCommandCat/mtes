@@ -11,32 +11,36 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 router.put('/', async (req: Request, res: Response) => {
-    const { mmMembers } = req.body as { mmMembers: Member[] };
-
-    if (!mmMembers || mmMembers.length === 0) {
-        console.log('❌ mmMembers array is empty');
-        res.status(400).json({ ok: false, message: 'No mm-members provided' });
-        return;
-    }
+    const { mmMembers } = req.body as { mmMembers: Member[] } || { mmMembers: [] };
 
     console.log('⏬ Updating mm-members...');
 
-    const deleteRes = await db.deleteMmMembers({});
-    if (!deleteRes.acknowledged) {
-        console.log('❌ Could not delete mm-members');
-        res.status(500).json({ ok: false, message: 'Could not delete mm-members' });
-        return;
+    if (!Array.isArray(mmMembers)) {
+        console.log('❌ Invalid mmMembers format: not an array');
+        return res.status(400).json({ ok: false, message: 'mmMembers must be an array' });
     }
 
-    const addRes = await db.addMmMembers(mmMembers.map(member => ({ ...member, _id: undefined })));
-    if (!addRes.acknowledged) {
-        console.log('❌ Could not add mm-members');
-        res.status(500).json({ ok: false, message: 'Could not add mm-members' });
-        return;
-    }
+    try {
+        const deleteRes = await db.deleteMmMembers({});
+        if (!deleteRes.acknowledged) {
+            console.log('❌ Could not delete mm-members');
+            return res.status(500).json({ ok: false, message: 'Could not delete mm-members' });
+        }
 
-    console.log('⏬ mm-members updated!');
-    res.json({ ok: true });
+        if (mmMembers.length > 0) {
+            const addRes = await db.addMmMembers(mmMembers.map(member => ({ ...member, _id: undefined })));
+            if (!addRes.acknowledged) {
+                console.log('❌ Could not add mm-members');
+                return res.status(500).json({ ok: false, message: 'Could not add mm-members' });
+            }
+        }
+
+        console.log(`✅ Successfully updated mm-members (${mmMembers.length} members)`);
+        return res.json({ ok: true });
+    } catch (error) {
+        console.error('❌ Error updating mm-members:', error);
+        return res.status(500).json({ ok: false, message: 'Internal server error while updating mm-members' });
+    }
 });
 
 router.put('/:mmMemberId/presence', async (req: Request, res: Response) => {
