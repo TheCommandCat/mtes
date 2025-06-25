@@ -13,6 +13,7 @@ import {
 import { localizedAudienceDisplayScreens } from 'apps/frontend/localization/displays';
 import { WithId } from 'mongodb';
 import React, { useState } from 'react';
+import { useSnackbar } from 'notistack';
 
 interface AudienceControlProps {
   socket: any;
@@ -27,18 +28,26 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
 }) => {
   const [display, setDisplay] = useState(defaultDisplay);
   const [selectedRound, setSelectedRound] = useState<string>('');
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleDisplayChange = (event: SelectChangeEvent<string>) => {
     const newDisplay = event.target.value as AudienceDisplayScreen;
     setDisplay(newDisplay);
     setSelectedRound('');
   };
-
   const handleSend = () => {
     const payload: Record<string, any> = { display };
     if (display === 'round') payload.roundId = selectedRound;
     console.log('Sending audience display update:', payload);
-    socket.emit('updateAudienceDisplay', payload);
+    socket.emit('updateAudienceDisplay', payload, (response: { ok: boolean; error?: string }) => {
+      if (response.ok) {
+        enqueueSnackbar('תצוגת הקהל עודכנה בהצלחה', { variant: 'success' });
+      } else {
+        enqueueSnackbar(`שגיאה בעדכון תצוגת הקהל: ${response.error || 'שגיאה לא ידועה'}`, {
+          variant: 'error'
+        });
+      }
+    });
   };
 
   return (
