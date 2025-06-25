@@ -1,4 +1,14 @@
-import { Box, Grid, Typography, Paper, Chip, Divider, Card, CardContent, Avatar } from '@mui/material';
+import {
+  Box,
+  Grid,
+  Typography,
+  Paper,
+  Chip,
+  Divider,
+  Card,
+  CardContent,
+  Avatar
+} from '@mui/material';
 import { WithId } from 'mongodb';
 import { Cities, Member, VotingStandStatus, VotingStates, VotingStatus, Round } from '@mtes/types';
 import { MembersColumn } from '../members-column';
@@ -6,6 +16,7 @@ import { ReadOnlyVotingStandsGrid } from '../readonly-voting-stands-grid';
 import { DndContext, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { MembersGrid } from '../members-grid';
+import { CityGroupedMembersGrid } from '../city-grouped-members-grid';
 import PersonIcon from '@mui/icons-material/Person';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
@@ -24,17 +35,19 @@ export const AudienceVotingDisplay = ({
 }: AudienceVotingDisplayProps) => {
   return (
     <DndProvider backend={HTML5Backend}>
-      <Box sx={{ 
-        width: '100vw',
-        height: '100vh',
-        maxWidth: '1920px',
-        maxHeight: '1080px',
-        overflow: 'hidden',
-        p: 2,
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <Box
+        sx={{
+          width: '100vw',
+          height: '100vh',
+          maxWidth: '1920px',
+          maxHeight: '1080px',
+          overflow: 'hidden',
+          p: 2,
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         {/* Main Header */}
         <Paper
           elevation={6}
@@ -51,8 +64,8 @@ export const AudienceVotingDisplay = ({
         >
           <Typography
             variant="h3"
-            sx={{ 
-              fontWeight: 'bold', 
+            sx={{
+              fontWeight: 'bold',
               textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
               lineHeight: 1.2
             }}
@@ -62,7 +75,7 @@ export const AudienceVotingDisplay = ({
               <Typography
                 component="span"
                 variant="h4"
-                sx={{ 
+                sx={{
                   fontWeight: 'medium',
                   opacity: 0.9,
                   display: 'block',
@@ -104,15 +117,17 @@ export const AudienceVotingDisplay = ({
                 >
                   תפקידים ומתמודדים
                 </Typography>
-                
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  gap: 1,
-                  maxHeight: 'calc(100% - 60px)',
-                  overflow: 'auto',
-                  pr: 1
-                }}>
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                    maxHeight: 'calc(100% - 60px)',
+                    overflow: 'auto',
+                    pr: 1
+                  }}
+                >
                   {activeRound.roles.map((roleConfig, index) => (
                     <Card
                       key={index}
@@ -125,10 +140,7 @@ export const AudienceVotingDisplay = ({
                     >
                       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <HowToVoteIcon 
-                            color="primary" 
-                            sx={{ mr: 1, fontSize: '1.2rem' }} 
-                          />
+                          <HowToVoteIcon color="primary" sx={{ mr: 1, fontSize: '1.2rem' }} />
                           <Typography
                             variant="h6"
                             component="h3"
@@ -138,7 +150,7 @@ export const AudienceVotingDisplay = ({
                             {roleConfig.role}
                           </Typography>
                         </Box>
-                        
+
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                           {roleConfig.contestants.map((contestant, idx) => (
                             <Chip
@@ -146,8 +158,8 @@ export const AudienceVotingDisplay = ({
                               label={contestant.name}
                               size="small"
                               sx={{
-                                backgroundColor: contestant.name.includes('פתק לבן') 
-                                  ? 'grey.200' 
+                                backgroundColor: contestant.name.includes('פתק לבן')
+                                  ? 'grey.200'
                                   : 'primary.100',
                                 color: contestant.name.includes('פתק לבן')
                                   ? 'text.secondary'
@@ -158,7 +170,7 @@ export const AudienceVotingDisplay = ({
                             />
                           ))}
                         </Box>
-                        
+
                         <Typography
                           variant="caption"
                           color="text.secondary"
@@ -186,7 +198,7 @@ export const AudienceVotingDisplay = ({
                   variant="h6"
                   textAlign="center"
                   color="primary"
-                  sx={{ 
+                  sx={{
                     mb: 1,
                     fontWeight: 'bold'
                   }}
@@ -199,12 +211,14 @@ export const AudienceVotingDisplay = ({
           )}
 
           {/* Right Column - Members Grid */}
-          <Box sx={{ 
-            flex: activeRound ? '0 0 60%' : '1', 
-            display: 'flex', 
-            flexDirection: 'column',
-            gap: 1.5 
-          }}>
+          <Box
+            sx={{
+              flex: activeRound ? '0 0 60%' : '1',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5
+            }}
+          >
             {!activeRound && (
               <Paper
                 elevation={4}
@@ -219,7 +233,7 @@ export const AudienceVotingDisplay = ({
                   variant="h6"
                   textAlign="center"
                   color="primary"
-                  sx={{ 
+                  sx={{
                     mb: 1,
                     fontWeight: 'bold'
                   }}
@@ -243,13 +257,13 @@ export const AudienceVotingDisplay = ({
                     flexDirection: 'column'
                   }}
                 >
-                  <MembersGrid
+                  <CityGroupedMembersGrid
                     members={members}
                     votedMembers={votedMembers}
                     standStatuses={standStatuses}
                     filterType="waitingToVote"
-                    onDropMemberBackToBank={() => {}}
-                    audianceDisplay={true}
+                    title="ממתינים להצבעה"
+                    titleColor="primary.main"
                   />
                 </Paper>
               </Grid>
@@ -265,13 +279,13 @@ export const AudienceVotingDisplay = ({
                     flexDirection: 'column'
                   }}
                 >
-                  <MembersGrid
+                  <CityGroupedMembersGrid
                     members={members}
                     votedMembers={votedMembers}
                     standStatuses={standStatuses}
                     filterType="voted"
-                    onDropMemberBackToBank={() => {}}
-                    audianceDisplay={true}
+                    title="הצביעו"
+                    titleColor="success.main"
                   />
                 </Paper>
               </Grid>
