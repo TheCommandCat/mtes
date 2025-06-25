@@ -31,6 +31,7 @@ interface Props {
   event: WithId<ElectionEvent>;
   electionState: WithId<ElectionState>;
   initialMembers: WithId<Member>[];
+  rounds: WithId<Round>[];
 }
 
 const initialRoundStatuses = (
@@ -41,12 +42,15 @@ const initialRoundStatuses = (
     Array.from({ length: numofStands }, (_, i) => [i + 1, { status: status, member: null }])
   ) as Record<number, VotingStandStatus>;
 
-const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) => {
+const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rounds }) => {
   const [currentDisplay, setCurrentDisplay] = useState<AudienceDisplayScreen>(
     (electionState.audienceDisplay as AudienceDisplayScreen) || 'round'
   );
 
-  const [activeRound, setActiveRound] = useState<WithId<Round> | null>(electionState.activeRound);
+  const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
+  const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
+    electionState.activeRound || null
+  );
   const [members, setMembers] = useState<WithId<Member>[]>(initialMembers);
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [standStatuses, setStandStatuses] = useState<Record<number, VotingStandStatus>>(
@@ -68,10 +72,10 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
   };
 
   useEffect(() => {
-    if (activeRound) {
-      refreshVotedMembers(activeRound._id.toString());
+    if (selectedRound) {
+      refreshVotedMembers(selectedRound._id.toString());
     }
-  }, [activeRound]);
+  }, [selectedRound]);
 
   useWebsocket([
     {
@@ -97,8 +101,12 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
     },
     {
       name: 'audienceDisplayUpdated',
-      handler: (view: 'round' | 'presence' | 'voting') => {
-        setCurrentDisplay(view);
+      handler: (view: { display: string; roundId?: string }) => {
+        if (view.roundId) {
+          const round = rounds.find(r => r._id.toString() === view.roundId);
+          if (round) setSelectedRound(round);
+        }
+        setCurrentDisplay(view.display as AudienceDisplayScreen);
       }
     },
     {
@@ -120,7 +128,7 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
           ...prev,
           [standId]: { status: 'Empty', member: null }
         }));
-        refreshVotedMembers(activeRound?._id.toString() || '');
+        refreshVotedMembers(selectedRound?._id.toString() || '');
       }
     }
   ]);
@@ -169,13 +177,18 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers }) =
               errorMessage="טעינת החברים נכשלה"
             />
           ) : currentDisplay === 'round' ? (
-            <AudienceRoundDisplay activeRound={activeRound} />
+            <AudienceRoundDisplay activeRound={selectedRound} />
           ) : currentDisplay === 'voting' ? (
-            <AudienceVotingDisplay
-              standStatuses={standStatuses}
-              members={members}
-              votedMembers={votedMembers}
-            />
+            activeRound ? (
+              <AudienceVotingDisplay
+                standStatuses={standStatuses}
+                members={members}
+                votedMembers={votedMembers}
+                activeRound={activeRound}
+              />
+            ) : (
+              <WaitingState title="הצבעה טרם החלה" subtitle="מתחילים בקרוב" />
+            )
           ) : (
             <Box sx={{ width: '100%' }}>
               <Typography variant="h4" gutterBottom>
@@ -197,7 +210,8 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
       {
         event: `/public/event`,
         electionState: `/api/events/state`,
-        initialMembers: `/api/events/members`
+        initialMembers: `/api/events/members`,
+        rounds: '/api/events/rounds'
       },
       ctx
     );

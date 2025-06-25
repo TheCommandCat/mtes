@@ -722,7 +722,7 @@ const Page: NextPage<Props> = ({
               )}
               {currentTab === 2 && (
                 <Box sx={{ mt: 3 }}>
-                  <AudienceControl socket={socket} defaultDisplay={eventState.audienceDisplay} />
+                  <AudienceControl socket={socket} defaultDisplay={eventState.audienceDisplay} rounds={rounds} />
                 </Box>
               )}
             </Paper>
