@@ -141,14 +141,14 @@ export const handleUpdateMemberPresence = async (
 
 export const handleUpdateAudienceDisplay = async (
   namespace: any,
-  view: 'round' | 'presence' | 'voting',
+  view: { display: 'round' | 'presence' | 'voting'; roundId?: string },
   callback: ((response: { ok: boolean; error?: string }) => void) | undefined
 ) => {
   console.log(`🔌 WS: Update audience display to ${view}`);
   console.log('WS Status: ', namespace.connected);
 
   try {
-    db.updateElectionState({ audienceDisplay: view });
+    db.updateElectionState({ audienceDisplay: { display: view.display, roundId: view.roundId } });
     namespace.emit('audienceDisplayUpdated', view);
     if (typeof callback === 'function') {
       callback({ ok: true });

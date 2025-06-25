@@ -52,7 +52,7 @@ export interface WSClientEmittedEvents {
   ) => void;
 
   updateAudienceDisplay: (
-    view: 'round' | 'presence' | 'voting',
+    view: { display: 'round' | 'presence' | 'voting'; roundId?: string },
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

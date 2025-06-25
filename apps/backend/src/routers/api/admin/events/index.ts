@@ -22,7 +22,9 @@ function getInitialDivisionState(): ElectionState {
   return {
     activeRound: null,
     completed: false,
-    audienceDisplay: 'round',
+    audienceDisplay: {
+      display: 'round',
+    },
   };
 }
 
