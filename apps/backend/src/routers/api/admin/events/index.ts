@@ -21,7 +21,10 @@ const router = express.Router({ mergeParams: true });
 function getInitialDivisionState(): ElectionState {
   return {
     activeRound: null,
-    completed: false
+    completed: false,
+    audienceDisplay: {
+      display: 'round',
+    },
   };
 }
 

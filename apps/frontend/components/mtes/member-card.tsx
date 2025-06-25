@@ -24,6 +24,7 @@ interface MemberCardProps {
   currentStandId?: number | null;
   isDisplayedInStand?: boolean;
   signatureData?: Record<number, number[][]>;
+  audianceDisplay?: boolean;
 }
 
 export const MemberCard = ({
@@ -32,7 +33,8 @@ export const MemberCard = ({
   isCurrentlyVoting,
   currentStandId,
   isDisplayedInStand,
-  signatureData
+  signatureData,
+  audianceDisplay = false
 }: MemberCardProps) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.MEMBER,
@@ -130,37 +132,48 @@ export const MemberCard = ({
                 {member.city}
               </Typography>
               {member.replacedBy && (
-                <Typography
-                  variant="caption"
+                <Box
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 0.5,
                     mt: 0.5,
                     fontStyle: 'italic',
-                    color: 'text.secondary'
+                    color: 'text.secondary',
+                    flexWrap: 'wrap',
+                    maxWidth: '100%'
                   }}
                 >
-                  <span role="img" aria-label="replaced">
-                    🔄
-                  </span>
-                  מוחלפ.ת על ידי:{' '}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <span role="img" aria-label="replaced">
+                      🔄
+                    </span>
+                    <Typography component="span" variant="caption" sx={{ whiteSpace: 'nowrap' }}>
+                      מוחלף.ת על ידי:
+                    </Typography>
+                  </Box>
                   <Typography
                     component="span"
                     variant="caption"
                     fontWeight="bold"
                     color="text.primary"
+                    sx={{
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      minWidth: 0,
+                      flex: '1 1 auto'
+                    }}
                   >
                     {member.replacedBy.name}
                   </Typography>
-                </Typography>
+                </Box>
               )}
               {hasVoted && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                   <Typography variant="body2" color="success.dark">
                     הצביע
                   </Typography>
-                  {signatureData && signatureData && (
+                  {signatureData && signatureData && !audianceDisplay && (
                     <Button
                       variant="outlined"
                       size="small"

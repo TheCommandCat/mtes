@@ -88,14 +88,8 @@ export const TicketTypes = ['general', 'schedule', 'utilities', 'incident'] as c
 export type TicketType = (typeof TicketTypes)[number];
 
 export const AudienceDisplayScreenTypes = [
-  'blank',
-  'logo',
-  'attendance',
-  'speeches',
-  'voting',
-  'winneres',
-  'message'
-];
+  'round', 'presence', 'voting'
+] as const;
 export type AudienceDisplayScreen = (typeof AudienceDisplayScreenTypes)[number];
 
 export const RANKING_ANOMALY_THRESHOLD = 3;

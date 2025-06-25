@@ -31,5 +31,14 @@ export const CreateVotingStandUsers = (numOfStands: number): User[] => {
       }
     });
   }
+
+  users.push({
+    isAdmin: false,
+    role: 'audience-display',
+    password: randomString(4),
+    lastPasswordSetDate: new Date(),
+  });
+
+
   return users;
 };

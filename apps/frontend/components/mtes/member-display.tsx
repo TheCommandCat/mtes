@@ -10,17 +10,17 @@ interface MemberDisplayProps {
 export const MemberDisplay = ({ member }: MemberDisplayProps) => {
   const displayName = member.replacedBy ? member.replacedBy.name : member.name;
   const displayInitial = displayName.charAt(0);
+  const isPresent = member.isPresent;
 
   return (
     <Paper
-      elevation={1}
+      variant="outlined"
       sx={{
-        p: { xs: 2, sm: 3 },
-        mb: 2.5,
-        background: 'rgba(33, 150, 243, 0.05)',
-        border: '1px solid rgba(33, 150, 243, 0.2)',
-        borderRadius: 2,
+        p: 2,
         transition: 'all 0.2s ease-in-out',
+        opacity: isPresent ? 1 : 0.7,
+        borderColor: isPresent ? 'primary.light' : 'error.light',
+        background: isPresent ? 'rgba(33, 150, 243, 0.05)' : 'rgba(243, 33, 33, 0.05)',
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: 2
@@ -33,7 +33,7 @@ export const MemberDisplay = ({ member }: MemberDisplayProps) => {
             width: { xs: 64, sm: 72 },
             height: { xs: 64, sm: 72 },
             borderRadius: '50%',
-            bgcolor: 'primary.main',
+            bgcolor: isPresent ? 'primary.main' : 'error.main',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
