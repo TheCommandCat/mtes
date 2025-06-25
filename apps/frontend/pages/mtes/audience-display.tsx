@@ -44,7 +44,7 @@ const initialRoundStatuses = (
 
 const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rounds }) => {
   const [currentDisplay, setCurrentDisplay] = useState<AudienceDisplayScreen>(
-    (electionState.audienceDisplay as AudienceDisplayScreen) || 'round'
+    (electionState.audienceDisplay.display as AudienceDisplayScreen) || 'round'
   );
 
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);

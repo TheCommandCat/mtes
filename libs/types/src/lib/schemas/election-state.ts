@@ -4,6 +4,6 @@ import { Round } from './round';
 
 export interface ElectionState {
   activeRound: WithId<Round>;
-  audienceDisplay: AudienceDisplayScreen;
+  audienceDisplay: { display: AudienceDisplayScreen; roundId?: string };
   completed: boolean;
 }
