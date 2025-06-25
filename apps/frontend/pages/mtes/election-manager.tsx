@@ -221,7 +221,7 @@ const Page: NextPage<Props> = ({
         replacedBy || null,
         (response: { ok: boolean; error?: string }) => {
           if (!response.ok) {
-            throw new Error(response.error || 'שגיאה בעדכון נוכחות');
+            enqueueSnackbar(response.error || 'שגיאה בעדכון נוכחות', { variant: 'error' });
           }
         }
       );
