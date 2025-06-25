@@ -27,17 +27,17 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
   rounds
 }) => {
   const [display, setDisplay] = useState(defaultDisplay);
-  const [selectedRound, setSelectedRound] = useState<string>('');
+  const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const { enqueueSnackbar } = useSnackbar();
 
   const handleDisplayChange = (event: SelectChangeEvent<string>) => {
     const newDisplay = event.target.value as AudienceDisplayScreen;
     setDisplay(newDisplay);
-    setSelectedRound('');
+    setSelectedRound(null);
   };
   const handleSend = () => {
     const payload: Record<string, any> = { display };
-    if (display === 'round') payload.roundId = selectedRound;
+    if (display === 'round') payload.round = selectedRound;
     console.log('Sending audience display update:', payload);
     socket.emit('updateAudienceDisplay', payload, (response: { ok: boolean; error?: string }) => {
       if (response.ok) {
@@ -81,9 +81,11 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
             <Select
               labelId="round-select-label"
               id="round-select"
-              value={selectedRound}
+              value={selectedRound?._id.toString() || ''}
               label="Round"
-              onChange={e => setSelectedRound(e.target.value as string)}
+              onChange={e =>
+                setSelectedRound(rounds.find(r => r._id.toString() === e.target.value) || null)
+              }
             >
               {rounds.map(r => (
                 <MenuItem key={r._id.toString()} value={r._id.toString()}>

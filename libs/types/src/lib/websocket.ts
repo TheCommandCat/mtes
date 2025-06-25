@@ -1,6 +1,7 @@
 import { WithId } from 'mongodb';
 import { AwardNames, TicketType } from './constants';
 import { Member } from './schemas/member';
+import { Round } from './schemas/round';
 
 
 export interface WSServerEmittedEvents {
@@ -52,7 +53,7 @@ export interface WSClientEmittedEvents {
   ) => void;
 
   updateAudienceDisplay: (
-    view: { display: 'round' | 'presence' | 'voting'; roundId?: string },
+    view: { display: 'round' | 'presence' | 'voting'; round?: WithId<Round> },
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

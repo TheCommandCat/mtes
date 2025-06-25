@@ -101,9 +101,9 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
     },
     {
       name: 'audienceDisplayUpdated',
-      handler: (view: { display: string; roundId?: string }) => {
-        if (view.roundId) {
-          const round = rounds.find(r => r._id.toString() === view.roundId);
+      handler: (view: { display: string; round?: WithId<Round> }) => {
+        if (view.round) {
+          const round = view.round;
           if (round) setSelectedRound(round);
         }
         setCurrentDisplay(view.display as AudienceDisplayScreen);

@@ -1,4 +1,4 @@
-import { Member } from '@mtes/types';
+import { Member, Round } from '@mtes/types';
 import * as db from '@mtes/database';
 import { ObjectId, WithId } from 'mongodb';
 
@@ -141,14 +141,14 @@ export const handleUpdateMemberPresence = async (
 
 export const handleUpdateAudienceDisplay = async (
   namespace: any,
-  view: { display: 'round' | 'presence' | 'voting'; roundId?: string },
+  view: { display: 'round' | 'presence' | 'voting'; round?: WithId<Round> },
   callback: ((response: { ok: boolean; error?: string }) => void) | undefined
 ) => {
   console.log(`🔌 WS: Update audience display to ${view}`);
   console.log('WS Status: ', namespace.connected);
 
   try {
-    await db.updateElectionState({ audienceDisplay: { display: view.display, roundId: view.roundId } });
+    await db.updateElectionState({ audienceDisplay: { display: view.display, round: view.round } });
     namespace.emit('audienceDisplayUpdated', view);
     if (typeof callback === 'function') {
       callback({ ok: true });
