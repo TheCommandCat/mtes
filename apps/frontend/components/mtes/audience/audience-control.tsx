@@ -17,17 +17,19 @@ import { useSnackbar } from 'notistack';
 
 interface AudienceControlProps {
   socket: any;
-  defaultDisplay: AudienceDisplayScreen;
+  audienceDisplayState: { display: AudienceDisplayScreen; round?: WithId<Round> | null };
   rounds: WithId<Round>[]; // available rounds
 }
 
 export const AudienceControl: React.FC<AudienceControlProps> = ({
   socket,
-  defaultDisplay,
+  audienceDisplayState: eventState,
   rounds
 }) => {
-  const [display, setDisplay] = useState(defaultDisplay);
-  const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
+  const [display, setDisplay] = useState(eventState.display);
+  const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(
+    eventState.round || null
+  );
   const { enqueueSnackbar } = useSnackbar();
 
   const handleDisplayChange = (event: SelectChangeEvent<string>) => {
@@ -77,12 +79,12 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
       {display === 'round' && (
         <Box sx={{ mt: 2 }}>
           <FormControl fullWidth>
-            <InputLabel id="round-select-label">Round</InputLabel>
+            <InputLabel id="round-select-label">סבב</InputLabel>
             <Select
               labelId="round-select-label"
               id="round-select"
               value={selectedRound?._id.toString() || ''}
-              label="Round"
+              label="סבב"
               onChange={e =>
                 setSelectedRound(rounds.find(r => r._id.toString() === e.target.value) || null)
               }
@@ -98,7 +100,7 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
       )}
       <Box sx={{ mt: 3 }}>
         <Button variant="contained" onClick={handleSend} fullWidth>
-          Send
+          שליחה
         </Button>
       </Box>
     </Paper>

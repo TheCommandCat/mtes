@@ -724,7 +724,7 @@ const Page: NextPage<Props> = ({
                 <Box sx={{ mt: 3 }}>
                   <AudienceControl
                     socket={socket}
-                    defaultDisplay={eventState.audienceDisplay.display}
+                    audienceDisplayState={eventState.audienceDisplay}
                     rounds={rounds}
                   />
                 </Box>
