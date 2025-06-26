@@ -22,7 +22,7 @@ import CitiesManagementForm from '../../components/admin/CitiesManagementForm';
 const memberFormSchema = z.object({
   _id: z.string().optional(),
   name: z.string().min(1, 'שם החבר הוא שדה חובה'),
-  city: z.string().min(1, 'יש לבחור עיר לחבר'),
+  city: z.string().min(1, 'יש לבחור מוסד שולח לחבר'),
   isPresent: z.boolean().optional().default(false)
 });
 
@@ -39,7 +39,7 @@ const createValidationSchema = (isNewEvent: boolean) =>
         .max(100, 'אחוז הכשירות לא יכול להיות יותר מ-100'),
       cities: z.array(
         z.object({
-          name: z.string().min(1, 'שם העיר לא יכול להיות ריק'),
+          name: z.string().min(1, 'שם המוסד השולח לא יכול להיות ריק'),
           numOfVoters: z.coerce.number().min(0, 'מספר המצביעים חייב להיות לפחות 0')
         })
       ),
@@ -56,7 +56,7 @@ const createValidationSchema = (isNewEvent: boolean) =>
         return allMembers.every(member => data.cities.some(city => city.name === member.city));
       },
       {
-        message: 'חבר אחד או יותר משויך לעיר שאינה קיימת ברשימה',
+        message: 'חבר אחד או יותר משויך למוסד שולח שאינה קיימת ברשימה',
         path: ['regularMembers'] // Or a general path
       }
     )
@@ -79,7 +79,7 @@ const createValidationSchema = (isNewEvent: boolean) =>
       },
       {
         message:
-          'מספר הנציגים בעיר אינו יכול לעלות על מספר המצביעים שהוגדר לאותה עיר. יש להעביר חברים עודפים לרשימת ממלאי מקום.',
+          'מספר הנציגים במוסד השולח אינו יכול לעלות על מספר המצביעים שהוגדר לאותה מוסד שולח. יש להעביר חברים עודפים לרשימת ממלאי מקום.',
         path: ['regularMembers']
       }
     );

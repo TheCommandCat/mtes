@@ -144,7 +144,7 @@ const MemberPresence: React.FC<MemberPresenceProps> = ({ allMembers, onMemberUpd
   // column defs right here
   const columns: { key: SortKey; label: string }[] = [
     { key: 'name', label: 'שם' },
-    { key: 'city', label: 'עיר' },
+    { key: 'city', label: 'מוסד שולח' },
     { key: 'isMM', label: 'סטטוס' }
   ];
 

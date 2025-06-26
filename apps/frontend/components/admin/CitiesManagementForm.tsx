@@ -31,11 +31,11 @@ const CitiesManagementForm: React.FC<CitiesManagementFormProps> = ({
       setFieldValue('cities', [...values.cities, { name: trimmedName, numOfVoters: 0 }]);
       setNewCityName('');
     } else if (!trimmedName) {
-      enqueueSnackbar('שם העיר אינו יכול להיות ריק.', {
+      enqueueSnackbar('שם המוסד השולח אינו יכול להיות ריק.', {
         variant: 'warning'
       });
     } else {
-      enqueueSnackbar('עיר עם שם זה כבר קיימת.', {
+      enqueueSnackbar('מוסד שולח עם שם זה כבר קיים.', {
         variant: 'info'
       });
     }
@@ -48,7 +48,7 @@ const CitiesManagementForm: React.FC<CitiesManagementFormProps> = ({
       </Typography>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <TextField
-          label="שם עיר חדשה"
+          label="שם מוסד שולח חדשה"
           value={newCityName}
           onChange={e => setNewCityName(e.target.value)}
           onKeyPress={e => {
@@ -59,7 +59,7 @@ const CitiesManagementForm: React.FC<CitiesManagementFormProps> = ({
           }}
         />
         <Button onClick={handleAddCity} variant="contained" startIcon={<AddIcon />}>
-          הוסף עיר
+          הוסף מוסד שולח
         </Button>
       </Stack>
       <FieldArray name="cities">
@@ -71,7 +71,7 @@ const CitiesManagementForm: React.FC<CitiesManagementFormProps> = ({
                   <Grid item xs={12} sm={5}>
                     <FormikTextField
                       name={`cities[${index}].name`}
-                      label="שם עיר"
+                      label="שם מוסד שולח"
                       fullWidth
                       disabled={!isNewEvent && initCities.some(c => c.name === city.name)}
                     />

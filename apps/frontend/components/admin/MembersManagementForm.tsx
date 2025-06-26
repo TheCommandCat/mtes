@@ -86,13 +86,13 @@ const MembersManagementForm: React.FC<MembersManagementFormProps> = ({
                 <Grid item xs={12} sm={3}>
                   <FormControl fullWidth>
                     <InputLabel id={`city-select-label-${membersFieldName}-${index}`}>
-                      עיר
+                      מוסד שולח
                     </InputLabel>
                     <Field
                       as={Select}
                       name={`${membersFieldName}[${index}].city`}
                       labelId={`city-select-label-${membersFieldName}-${index}`}
-                      label="עיר"
+                      label="מוסד שולח"
                       required
                     >
                       {values.cities.map(city => (
