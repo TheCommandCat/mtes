@@ -73,6 +73,15 @@ export const MembersGrid = ({
     }
   });
 
+  // Group by city for waitingToVote
+  let groupedByCity: Record<string, typeof filteredMembers> = {};
+  if (filterType === 'waitingToVote') {
+    filteredMembers.forEach(member => {
+      if (!groupedByCity[member.city]) groupedByCity[member.city] = [];
+      groupedByCity[member.city].push(member);
+    });
+  }
+
   useEffect(() => {
     if (audianceDisplay && gridRef.current && containerRef.current) {
       const hasOverflow = gridRef.current.scrollHeight > containerRef.current.clientHeight;
@@ -147,46 +156,98 @@ export const MembersGrid = ({
           }}
           ref={gridRef}
         >
-          <Box sx={gridStyles}>
-            {filteredMembers.map(member => {
-              const hasVoted = votedMembers.some(
-                vm => vm.memberId.toString() === member._id.toString()
-              );
-              const currentStandStatus = Object.values(standStatuses).find(
-                s => s.member?._id.toString() === member._id.toString()
-              );
-              const isCurrentlyVoting = !!currentStandStatus;
-              const currentStandId = currentStandStatus
-                ? Object.keys(standStatuses).find(
-                    key => standStatuses[parseInt(key)] === currentStandStatus
-                  )
-                : null;
-
-              const votingStatusEntry = votedMembers.find(
-                vm => vm.memberId.toString() === member._id.toString()
-              );
-              const signaturePoints = votingStatusEntry?.signature as
-                | Record<string, number[][]>
-                | undefined;
-
-              return (
-                <MemberCard
-                  key={member._id.toString()}
-                  member={member}
-                  hasVoted={hasVoted}
-                  isCurrentlyVoting={isCurrentlyVoting}
-                  signatureData={hasVoted && signaturePoints ? signaturePoints : undefined}
-                  currentStandId={currentStandId ? parseInt(currentStandId) : undefined}
-                  audianceDisplay={audianceDisplay}
-                />
-              );
-            })}
-            {filterType === 'waitingToVote' && filteredMembers.length === 0 && canDrop && (
-              <Box sx={{ p: 2, textAlign: 'center', gridColumn: '1 / -1' }}>
-                <Typography color="text.secondary">גרור לכאן להחזרה לבנק</Typography>
+          {/* Group by city for waitingToVote, else flat list */}
+          {filterType === 'waitingToVote' ? (
+            Object.keys(groupedByCity).length === 0 ? (
+              <Box sx={{ p: 2, textAlign: 'center' }}>
+                <Typography color="text.secondary">אין חברים זמינים</Typography>
               </Box>
-            )}
-          </Box>
+            ) : (
+              Object.entries(groupedByCity).map(([city, cityMembers]) => (
+                <Box key={city} sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" color="primary" sx={{ mb: 1, fontWeight: 700 }}>
+                    {city}
+                  </Typography>
+                  <Box sx={gridStyles}>
+                    {cityMembers.map(member => {
+                      const hasVoted = votedMembers.some(
+                        vm => vm.memberId.toString() === member._id.toString()
+                      );
+                      const currentStandStatus = Object.values(standStatuses).find(
+                        s => s.member?._id.toString() === member._id.toString()
+                      );
+                      const isCurrentlyVoting = !!currentStandStatus;
+                      const currentStandId = currentStandStatus
+                        ? Object.keys(standStatuses).find(
+                            key => standStatuses[parseInt(key)] === currentStandStatus
+                          )
+                        : null;
+
+                      const votingStatusEntry = votedMembers.find(
+                        vm => vm.memberId.toString() === member._id.toString()
+                      );
+                      const signaturePoints = votingStatusEntry?.signature as
+                        | Record<string, number[][]>
+                        | undefined;
+
+                      return (
+                        <MemberCard
+                          key={member._id.toString()}
+                          member={member}
+                          hasVoted={hasVoted}
+                          isCurrentlyVoting={isCurrentlyVoting}
+                          signatureData={hasVoted && signaturePoints ? signaturePoints : undefined}
+                          currentStandId={currentStandId ? parseInt(currentStandId) : undefined}
+                          audianceDisplay={audianceDisplay}
+                        />
+                      );
+                    })}
+                  </Box>
+                </Box>
+              ))
+            )
+          ) : (
+            <Box sx={gridStyles}>
+              {filteredMembers.map(member => {
+                const hasVoted = votedMembers.some(
+                  vm => vm.memberId.toString() === member._id.toString()
+                );
+                const currentStandStatus = Object.values(standStatuses).find(
+                  s => s.member?._id.toString() === member._id.toString()
+                );
+                const isCurrentlyVoting = !!currentStandStatus;
+                const currentStandId = currentStandStatus
+                  ? Object.keys(standStatuses).find(
+                      key => standStatuses[parseInt(key)] === currentStandStatus
+                    )
+                  : null;
+
+                const votingStatusEntry = votedMembers.find(
+                  vm => vm.memberId.toString() === member._id.toString()
+                );
+                const signaturePoints = votingStatusEntry?.signature as
+                  | Record<string, number[][]>
+                  | undefined;
+
+                return (
+                  <MemberCard
+                    key={member._id.toString()}
+                    member={member}
+                    hasVoted={hasVoted}
+                    isCurrentlyVoting={isCurrentlyVoting}
+                    signatureData={hasVoted && signaturePoints ? signaturePoints : undefined}
+                    currentStandId={currentStandId ? parseInt(currentStandId) : undefined}
+                    audianceDisplay={audianceDisplay}
+                  />
+                );
+              })}
+              {filteredMembers.length === 0 && canDrop && (
+                <Box sx={{ p: 2, textAlign: 'center', gridColumn: '1 / -1' }}>
+                  <Typography color="text.secondary">גרור לכאן להחזרה לבנק</Typography>
+                </Box>
+              )}
+            </Box>
+          )}
 
           {/* Duplicate content for seamless loop when animating */}
           {audianceDisplay && shouldAnimate && (
