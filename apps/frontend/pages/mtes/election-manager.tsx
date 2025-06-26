@@ -14,7 +14,10 @@ import {
   DialogActions,
   Button,
   Tabs,
-  Tab
+  Tab,
+  List,
+  ListItem,
+  ListSubheader
 } from '@mui/material';
 import {
   ElectionEvent,
@@ -43,6 +46,7 @@ import AddRoundDialog from '../../components/mtes/add-round-dialog';
 import { MemberPresenceStatus } from '../../components/mtes/member-presence-status'; // Changed to named import
 import MemberPresence from '../../components/mtes/member-presence'; // Added import
 import { AudienceControl } from '../../components/mtes/audience/audience-control';
+import { MemberCard } from '../../components/mtes/member-card'; // Import MemberCard component
 
 interface Props {
   user: WithId<SafeUser>;
@@ -91,10 +95,27 @@ const Page: NextPage<Props> = ({
   const [votedMembers, setVotedMembers] = useState<WithId<VotingStatus>[]>([]);
   const [roundToDelete, setRoundToDelete] = useState<WithId<Round> | null>(null);
   const [currentTab, setCurrentTab] = useState(0);
+  const [selectStandId, setSelectStandId] = useState<number | null>(null);
+  const [memberSelectDialogOpen, setMemberSelectDialogOpen] = useState(false);
 
   const presentMembersCount = useMemo(() => members.filter(m => m.isPresent).length, [members]);
 
   const allMembersForPresence = useMemo(() => [...members, ...mmMembers], [members, mmMembers]);
+
+  const membersByCity = useMemo(() => {
+    const grouped: Record<string, WithId<Member>[]> = {};
+    members.forEach(m => {
+      if (!grouped[m.city]) grouped[m.city] = [];
+      if (
+        m.isPresent &&
+        !votedMembers.some(vm => String(vm.memberId) === String(m._id)) &&
+        !Object.values(standStatuses).some(s => s.member && String(s.member._id) === String(m._id))
+      ) {
+        grouped[m.city].push(m);
+      }
+    });
+    return grouped;
+  }, [members, votedMembers, standStatuses]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -536,6 +557,21 @@ const Page: NextPage<Props> = ({
     setVotedMembers([]);
   };
 
+  // Handler for clicking an empty stand
+  const handleEmptyStandClick = (standId: number) => {
+    setSelectStandId(standId);
+    setMemberSelectDialogOpen(true);
+  };
+
+  // Handler for selecting a member from dialog
+  const handleSelectMemberForStand = (member: WithId<Member>) => {
+    if (selectStandId != null) {
+      handleSendMember(member, selectStandId);
+    }
+    setMemberSelectDialogOpen(false);
+    setSelectStandId(null);
+  };
+
   return (
     <RoleAuthorizer
       user={user}
@@ -634,6 +670,7 @@ const Page: NextPage<Props> = ({
                             standStatuses={standStatuses}
                             onCancel={handleCancelMember}
                             onDropMember={handleSendMember}
+                            onEmptyStandClick={handleEmptyStandClick} // <-- pass new prop
                           />
                         </>
                       )}
@@ -754,6 +791,41 @@ const Page: NextPage<Props> = ({
                 >
                   Delete
                 </Button>
+              </DialogActions>
+            </Dialog>
+            <Dialog open={memberSelectDialogOpen} onClose={() => setMemberSelectDialogOpen(false)}>
+              <DialogTitle>בחר חבר לשיבוץ לעמדה</DialogTitle>
+              <DialogContent
+                dividers
+                sx={{ minWidth: 350, minHeight: 200, bgcolor: 'background.default' }}
+              >
+                {Object.keys(membersByCity).length === 0 && <div>אין חברים זמינים לשיבוץ</div>}
+                {Object.entries(membersByCity).map(([city, cityMembers]) => (
+                  <Box key={city} sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="primary" sx={{ mb: 1, fontWeight: 700 }}>
+                      {city}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      {cityMembers.map(member => (
+                        <Box
+                          key={member._id.toString()}
+                          sx={{
+                            cursor: 'pointer',
+                            minWidth: 220,
+                            maxWidth: 260,
+                            flex: '1 1 220px'
+                          }}
+                          onClick={() => handleSelectMemberForStand(member)}
+                        >
+                          <MemberCard member={member} />
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                ))}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setMemberSelectDialogOpen(false)}>ביטול</Button>
               </DialogActions>
             </Dialog>
           </Box>

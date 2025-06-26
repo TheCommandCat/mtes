@@ -3,14 +3,15 @@ import { Box, Typography, Button } from '@mui/material';
 import { useDrop } from 'react-dnd';
 import { ItemTypes } from '../../lib/dnd-types';
 import { MemberCard } from './member-card';
-import { WithId } from 'mongodb'; // Import WithId
+import { WithId } from 'mongodb';
 
 interface StandStatusCardProps {
   standId: number;
   status: VotingStates;
-  member?: WithId<Member> | null; // Ensure member is WithId<Member>
+  member?: WithId<Member> | null;
   onCancel: (standId: number) => void;
   onDropMember: (member: WithId<Member>, standId: number, previousStandId?: number | null) => void;
+  onEmptyStandClick?: (standId: number) => void;
 }
 
 export const StandStatusCard: React.FC<StandStatusCardProps> = ({
@@ -18,18 +19,17 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
   status,
   member,
   onCancel,
-  onDropMember
+  onDropMember,
+  onEmptyStandClick
 }) => {
   const [{ isOver, canDrop }, drop] = useDrop(
     () => ({
       accept: ItemTypes.MEMBER,
       drop: (item: WithId<Member> & { currentStandId?: number | null }) => {
-        // Ensure item is WithId<Member>
         if (item.currentStandId === standId) return;
         onDropMember(item, standId, item.currentStandId);
       },
       canDrop: (item: WithId<Member> & { currentStandId?: number | null }) => {
-        // Ensure item is WithId<Member>
         return (
           status === 'Empty' ||
           (status === 'Voting' && item.currentStandId === standId) ||
@@ -55,7 +55,7 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
   if (status === 'Voting' && member) {
     return (
       <Box
-        ref={drop as any} // Cast to any to resolve MUI Box ref type issue
+        ref={drop as any}
         sx={{
           mb: 4,
           p: 2,
@@ -83,7 +83,6 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
             p: 1
           }}
         >
-          {/* Ensure member prop passed to MemberCard is WithId<Member> */}
           <MemberCard
             member={member}
             isCurrentlyVoting={true}
@@ -159,7 +158,7 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
     case 'Empty':
       return (
         <Box
-          ref={drop as any} // Cast to any to resolve MUI Box ref type issue
+          ref={drop as any}
           sx={{
             mb: 4,
             p: 4,
@@ -172,8 +171,10 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            alignItems: 'center'
+            alignItems: 'center',
+            cursor: onEmptyStandClick ? 'pointer' : 'default'
           }}
+          onClick={() => onEmptyStandClick && onEmptyStandClick(standId)}
         >
           <Typography variant="h4" color="text.primary" gutterBottom>
             עמדה {standId}
@@ -181,6 +182,11 @@ export const StandStatusCard: React.FC<StandStatusCardProps> = ({
           <Typography variant="h5" color="text.secondary" gutterBottom>
             גרור לכאן מצביע
           </Typography>
+          {onEmptyStandClick && (
+            <Typography variant="body2" color="primary">
+              או לחץ לשיבוץ
+            </Typography>
+          )}
         </Box>
       );
     default:
