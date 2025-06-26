@@ -48,7 +48,7 @@ const CitiesManagementForm: React.FC<CitiesManagementFormProps> = ({
       </Typography>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <TextField
-          label="שם מוסד שולח חדשה"
+          label="שם מוסד שולח חדש"
           value={newCityName}
           onChange={e => setNewCityName(e.target.value)}
           onKeyPress={e => {
