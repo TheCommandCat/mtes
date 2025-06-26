@@ -60,6 +60,8 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
   const router = useRouter();
 
   const refreshVotedMembers = async (roundId: string) => {
+    console.log(`Fetching voted members for round ID: ${roundId}`);
+
     const response = await apiFetch(`/api/events/rounds/votedMembers/${roundId}`, {
       method: 'GET'
     });
@@ -72,10 +74,10 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
   };
 
   useEffect(() => {
-    if (selectedRound) {
-      refreshVotedMembers(selectedRound._id.toString());
+    if (activeRound) {
+      refreshVotedMembers(activeRound._id.toString());
     }
-  }, [selectedRound]);
+  }, [activeRound]);
 
   useWebsocket([
     {
@@ -128,7 +130,7 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
           ...prev,
           [standId]: { status: 'Empty', member: null }
         }));
-        refreshVotedMembers(selectedRound?._id.toString() || '');
+        refreshVotedMembers(activeRound?._id.toString() || '');
       }
     }
   ]);
