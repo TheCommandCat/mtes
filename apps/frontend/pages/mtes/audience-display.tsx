@@ -20,6 +20,7 @@ import Layout from '../../components/layout';
 import { AudiencePresence } from 'apps/frontend/components/mtes/audience/audience-presence';
 import { AudienceVotingDisplay } from 'apps/frontend/components/mtes/audience/audience-voting-display';
 import AudienceRoundDisplay from 'apps/frontend/components/mtes/audience/audience-round-display';
+import AudienceMemberDisplay from 'apps/frontend/components/mtes/audience/audience-member-display';
 import { enqueueSnackbar } from 'notistack';
 import AudienceDisplayContainer from 'apps/frontend/components/mtes/audience/audience-display-container';
 import { RoleAuthorizer } from 'apps/frontend/components/role-authorizer';
@@ -48,6 +49,7 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
   );
 
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
+  const [selectedMember, setSelectedMember] = useState<WithId<Member> | null>(null);
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
@@ -103,10 +105,14 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
     },
     {
       name: 'audienceDisplayUpdated',
-      handler: (view: { display: string; round?: WithId<Round> }) => {
+      handler: (view: { display: string; round?: WithId<Round>; member?: WithId<Member> }) => {
         if (view.round) {
           const round = view.round;
           if (round) setSelectedRound(round);
+        }
+        if (view.member) {
+          const member = view.member;
+          if (member) setSelectedMember(member);
         }
         setCurrentDisplay(view.display as AudienceDisplayScreen);
       }
@@ -180,6 +186,8 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
             />
           ) : currentDisplay === 'round' ? (
             <AudienceRoundDisplay activeRound={selectedRound} />
+          ) : currentDisplay === 'member' ? (
+            <AudienceMemberDisplay selectedMember={selectedMember} />
           ) : currentDisplay === 'voting' ? (
             activeRound ? (
               <AudienceVotingDisplay
