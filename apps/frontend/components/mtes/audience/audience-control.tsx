@@ -1,4 +1,4 @@
-import { AudienceDisplayScreen, AudienceDisplayScreenTypes, Round } from '@mtes/types';
+import { AudienceDisplayScreen, AudienceDisplayScreenTypes, Round, Member } from '@mtes/types';
 import {
   Paper,
   Typography,
@@ -17,18 +17,27 @@ import { useSnackbar } from 'notistack';
 
 interface AudienceControlProps {
   socket: any;
-  audienceDisplayState: { display: AudienceDisplayScreen; round?: WithId<Round> | null };
+  audienceDisplayState: {
+    display: AudienceDisplayScreen;
+    round?: WithId<Round> | null;
+    member?: WithId<Member> | null;
+  };
   rounds: WithId<Round>[]; // available rounds
+  members: WithId<Member>[]; // available members
 }
 
 export const AudienceControl: React.FC<AudienceControlProps> = ({
   socket,
   audienceDisplayState: eventState,
-  rounds
+  rounds,
+  members
 }) => {
   const [display, setDisplay] = useState(eventState.display);
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(
     eventState.round || null
+  );
+  const [selectedMember, setSelectedMember] = useState<WithId<Member> | null>(
+    eventState.member || null
   );
   const { enqueueSnackbar } = useSnackbar();
 
@@ -36,10 +45,12 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
     const newDisplay = event.target.value as AudienceDisplayScreen;
     setDisplay(newDisplay);
     setSelectedRound(null);
+    setSelectedMember(null);
   };
   const handleSend = () => {
     const payload: Record<string, any> = { display };
     if (display === 'round') payload.round = selectedRound;
+    if (display === 'member') payload.member = selectedMember;
     console.log('Sending audience display update:', payload);
     socket.emit('updateAudienceDisplay', payload, (response: { ok: boolean; error?: string }) => {
       if (response.ok) {
@@ -94,6 +105,31 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
                   {r.name}
                 </MenuItem>
               ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
+      {display === 'member' && (
+        <Box sx={{ mt: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel id="member-select-label">חבר</InputLabel>
+            <Select
+              labelId="member-select-label"
+              id="member-select"
+              value={selectedMember?._id.toString() || ''}
+              label="חבר"
+              onChange={e =>
+                setSelectedMember(members.find(m => m._id.toString() === e.target.value) || null)
+              }
+            >
+              {members.map(member => {
+                const displayName = member.replacedBy ? member.replacedBy.name : member.name;
+                return (
+                  <MenuItem key={member._id.toString()} value={member._id.toString()}>
+                    {displayName} - {member.city}
+                  </MenuItem>
+                );
+              })}
             </Select>
           </FormControl>
         </Box>

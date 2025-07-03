@@ -763,6 +763,7 @@ const Page: NextPage<Props> = ({
                     socket={socket}
                     audienceDisplayState={eventState.audienceDisplay}
                     rounds={rounds}
+                    members={members}
                   />
                 </Box>
               )}
