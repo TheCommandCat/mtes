@@ -3,6 +3,7 @@ import { Box, Typography, Grid, Card, CardContent, Chip, IconButton, Stack } fro
 import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import PollIcon from '@mui/icons-material/Poll';
@@ -54,6 +55,8 @@ export const ControlRounds = ({
       <Grid container spacing={2}>
         {rounds.map(round => {
           const isLocked = round.isLocked;
+          const hasNotStarted = !round.startTime; // Round hasn't started if startTime is null
+          const canEdit = hasNotStarted && !isLocked; // Can only edit rounds that haven't started and aren't locked
 
           return (
             <Grid item xs={12} key={round._id.toString()}>
@@ -140,6 +143,16 @@ export const ControlRounds = ({
                       >
                         <PlayArrowIcon fontSize="small" />
                       </IconButton>
+                    )}
+
+                    {/* Edit button - only show for rounds that haven't started yet */}
+                    {canEdit && (
+                      <AddRoundDialog
+                        availableMembers={members}
+                        onRoundCreated={refreshData}
+                        initialRound={round}
+                        isEdit={true}
+                      />
                     )}
 
                     <IconButton

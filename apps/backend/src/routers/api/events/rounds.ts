@@ -106,18 +106,49 @@ router.put('/update', async (req: Request, res: Response) => {
         return;
     }
 
-    console.log('⏬ Updating Round...');
-    console.log('Changes:', round);
+    try {
+        // Check if the round exists and hasn't started yet
+        const existingRound = await db.getRound({ _id: new ObjectId(roundId) });
+        if (!existingRound) {
+            console.log(`❌ Round with ID ${roundId} not found`);
+            return res.status(404).json({ ok: false, message: 'Round not found' });
+        }
 
-    const roundResult = await db.updateRound({ _id: new ObjectId(roundId) }, round);
+        // Prevent editing rounds that have already started
+        if (existingRound.startTime) {
+            console.log(`❌ Cannot edit round ${roundId} - round has already started`);
+            return res.status(400).json({ ok: false, message: 'Cannot edit round that has already started' });
+        }
 
-    if (!roundResult.acknowledged) {
-        console.log(`❌ Could not update Round`);
-        res.status(500).json({ ok: false, message: 'Could not update round' });
-        return;
+        // Prevent editing locked rounds
+        if (existingRound.isLocked) {
+            console.log(`❌ Cannot edit round ${roundId} - round is locked`);
+            return res.status(400).json({ ok: false, message: 'Cannot edit locked round' });
+        }
+
+        // Check if round has any votes (active voting has occurred)
+        const votedMembers = await db.getVotedMembers(roundId);
+        if (votedMembers && votedMembers.length > 0) {
+            console.log(`❌ Cannot edit round ${roundId} - round has active votes`);
+            return res.status(400).json({ ok: false, message: 'Cannot edit round that has active votes' });
+        }
+
+        console.log('⏬ Updating Round...');
+        console.log('Changes:', round);
+
+        const roundResult = await db.updateRound({ _id: new ObjectId(roundId) }, round);
+
+        if (!roundResult.acknowledged) {
+            console.log(`❌ Could not update Round`);
+            res.status(500).json({ ok: false, message: 'Could not update round' });
+            return;
+        }
+
+        res.json({ ok: true });
+    } catch (error: any) {
+        console.error('❌ Error updating round:', error);
+        return res.status(500).json({ ok: false, message: error.message || 'Internal server error' });
     }
-
-    res.json({ ok: true });
 });
 
 router.delete('/delete', async (req: Request, res: Response) => {
@@ -155,11 +186,44 @@ router.post('/lock/:roundId', async (req: Request, res: Response) => {
             return res.status(400).json({ ok: false, message: 'Round is already locked' });
         }
 
+        // Set both isLocked and endTime when locking a round
         await db.lockRound(roundId);
+        await db.updateRound({ _id: new ObjectId(roundId) }, { endTime: new Date() });
         console.log(`✅ Round ${roundId} locked successfully`);
         return res.json({ ok: true });
     } catch (error) {
         console.error('❌ Error locking round:', error);
+        return res.status(500).json({ ok: false, message: 'Internal server error' });
+    }
+});
+
+router.post('/unlock/:roundId', async (req: Request, res: Response) => {
+    const { roundId } = req.params;
+
+    if (!roundId) {
+        console.log('❌ Round ID is null or undefined');
+        res.status(400).json({ ok: false, message: 'Round ID is missing' });
+        return;
+    }
+
+    try {
+        const isLocked = await db.isRoundLocked(roundId);
+        if (!isLocked) {
+            console.log(`❌ Round ${roundId} is not locked`);
+            return res.status(400).json({ ok: false, message: 'Round is not locked' });
+        }
+
+        // Unlock the round and clear endTime, but keep startTime
+        await db.unlockRound(roundId);
+        await db.updateRound({ _id: new ObjectId(roundId) }, { endTime: null });
+
+        // Delete all votes for this round when unlocking
+        await db.deleteRoundVotes(roundId);
+
+        console.log(`✅ Round ${roundId} unlocked successfully`);
+        return res.json({ ok: true });
+    } catch (error) {
+        console.error('❌ Error unlocking round:', error);
         return res.status(500).json({ ok: false, message: 'Internal server error' });
     }
 });

@@ -31,7 +31,16 @@ export const handleLoadRound = async (namespace: any, roundId: string, callback)
   const round = await db.getRound({ _id: new ObjectId(roundId) });
 
   try {
-    await db.updateElectionState({ activeRound: round });
+    // If we're starting a round (roundId is not null), set the startTime if it hasn't been set
+    if (roundId && round && !round.startTime) {
+      console.log('⏬ Setting start time for round:', round.name);
+      await db.updateRound({ _id: new ObjectId(roundId) }, { startTime: new Date() });
+      // Fetch the updated round with the startTime
+      const updatedRound = await db.getRound({ _id: new ObjectId(roundId) });
+      await db.updateElectionState({ activeRound: updatedRound });
+    } else {
+      await db.updateElectionState({ activeRound: round });
+    }
 
     if (round) {
       console.log('✅ Loaded round:', round.name);

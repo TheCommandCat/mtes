@@ -522,6 +522,7 @@ const Page: NextPage<Props> = ({
     }
   };
 
+  // unused for now, but can be used later
   const handleUnlockRound = async () => {
     if (!activeRound) return;
 
@@ -532,7 +533,7 @@ const Page: NextPage<Props> = ({
     if (!shouldUnlock) return;
 
     try {
-      const res = await apiFetch(`/api/events/unlockRound/${activeRound._id}`, {
+      const res = await apiFetch(`/api/events/rounds/unlock/${activeRound._id}`, {
         method: 'POST'
       });
 
