@@ -123,7 +123,14 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                 )}
               </>
             ) : (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: '200px'
+                }}
+              >
                 <WaitingState title="אין תצורת הצבעה זמינה" subtitle="אנא פנה למנהל המערכת" error />
               </Box>
             )}
