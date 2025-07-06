@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import type { GetServerSidePropsContext } from 'next';
 import { useRouter } from 'next/router';
-import { Paper, Typography, Stack, Button, Box, Tabs, Tab } from '@mui/material';
+import { Paper, Typography, Stack, Button, Box, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
 import { enqueueSnackbar } from 'notistack';
 import { Formik, Form, FormikHelpers, getIn } from 'formik';
@@ -18,6 +18,7 @@ import UsersTable from '../../components/admin/users-table';
 import EventDetailsForm from '../../components/admin/EventDetailsForm';
 import MembersManagementForm from '../../components/admin/MembersManagementForm';
 import CitiesManagementForm from '../../components/admin/CitiesManagementForm';
+import ChangePasswordDialog from '../../components/admin/ChangePasswordDialog';
 
 const memberFormSchema = z.object({
   _id: z.string().optional(),
@@ -105,6 +106,8 @@ const Page: NextPage<PageProps> = ({
 }) => {
   const router = useRouter();
   const [currentTab, setCurrentTab] = useState(0);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isNewEvent = !event;
   const validationSchema = createValidationSchema(isNewEvent);
@@ -218,12 +221,15 @@ const Page: NextPage<PageProps> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!event?._id) return;
 
-    const confirmed = confirm('האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה ניתנת לביטול.');
-    if (!confirmed) return;
-
+    setDeleteConfirmOpen(false);
+    
     try {
       const res = await apiFetch(`/api/admin/events/data`, {
         method: 'DELETE'
@@ -284,7 +290,7 @@ const Page: NextPage<PageProps> = ({
                 </Button>
                 {event && (
                   <Button
-                    onClick={handleDelete}
+                    onClick={handleDeleteClick}
                     variant="outlined"
                     color="error"
                     disabled={isSubmitting}
@@ -308,6 +314,7 @@ const Page: NextPage<PageProps> = ({
                     <Tab label={<TabLabel label="ניהול חברים" hasError={hasMembersError} />} />
                     <Tab label={<TabLabel label="ניהול ערים" hasError={hasCitiesError} />} />
                     <Tab label="ניהול משתמשים" />
+                    <Tab label="הגדרות מנהל" />
                   </Tabs>
                 </Box>
 
@@ -357,11 +364,73 @@ const Page: NextPage<PageProps> = ({
                     {renderActionButtons()}
                   </Paper>
                 )}
+
+                {currentTab === 4 && (
+                  <Paper elevation={3} sx={{ p: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      הגדרות מנהל
+                    </Typography>
+                    <Stack spacing={3}>
+                      <Paper elevation={1} sx={{ p: 3, backgroundColor: 'grey.50' }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                          שינוי סיסמה
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          עדכן את סיסמת המנהל שלך למטרות אבטחה
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          onClick={() => setPasswordDialogOpen(true)}
+                          sx={{ mt: 1 }}
+                        >
+                          שנה סיסמה
+                        </Button>
+                      </Paper>
+                    </Stack>
+                    {renderActionButtons()}
+                  </Paper>
+                )}
               </Form>
             );
           }}
         </Formik>
       </Paper>
+      
+      <ChangePasswordDialog 
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+      />
+      
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center' }}>
+          אישור מחיקת אירוע
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה ניתנת לביטול.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3 }}>
+          <Button 
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="outlined"
+          >
+            ביטול
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+          >
+            מחק אירוע
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 };
