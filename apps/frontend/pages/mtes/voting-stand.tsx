@@ -123,7 +123,9 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                 )}
               </>
             ) : (
-              <WaitingState title="אין תצורת הצבעה זמינה" subtitle="אנא פנה למנהל המערכת" error />
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+                <WaitingState title="אין תצורת הצבעה זמינה" subtitle="אנא פנה למנהל המערכת" error />
+              </Box>
             )}
           </Paper>
         </Box>
