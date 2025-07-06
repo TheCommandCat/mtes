@@ -8,6 +8,8 @@ interface VotingStatusProps {
 export const VotingStatus = ({ votedCount, totalCount }: VotingStatusProps) => {
   const percentage = Math.round((votedCount / totalCount) * 100);
 
+  console.log(`Voted Count: ${votedCount}, Total Count: ${totalCount}, Percentage: ${percentage}%`);
+
   return (
     <Paper
       elevation={2}

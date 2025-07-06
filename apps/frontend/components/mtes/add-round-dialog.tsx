@@ -69,7 +69,14 @@ const RoleSchema = z
         invalid_type_error: 'מספר קולות פתק לבן חייב להיות מספר'
       })
       .int()
-      .min(0, 'חייב להיות לפחות 0')
+      .min(0, 'חייב להיות לפחות 0'),
+    numWinners: z
+      .number({
+        required_error: 'יש להזין מספר זוכים',
+        invalid_type_error: 'מספר הזוכים חייב להיות מספר'
+      })
+      .int()
+      .min(1, 'חייב להיות לפחות זוכה 1')
   })
   .refine(
     data => {
@@ -81,6 +88,15 @@ const RoleSchema = z
     {
       message: 'נדרש לפחות קול פתק לבן אחד כאשר יש מתמודד יחיד',
       path: ['numWhiteVotes']
+    }
+  )
+  .refine(
+    data => {
+      return data.numWinners <= data.contestants.length;
+    },
+    {
+      message: 'מספר הזוכים לא יכול להיות גדול ממספר המתמודדים',
+      path: ['numWinners']
     }
   );
 
@@ -105,6 +121,7 @@ interface ApiRound {
     contestants: string[];
     maxVotes: number;
     numWhiteVotes: number;
+    numWinners: number;
   }[];
   startTime: Date | null;
   endTime: Date | null;
@@ -125,7 +142,8 @@ const createNewRole = (
   role: existingData?.role || '',
   contestants: existingData?.contestants || [],
   maxVotes: existingData?.maxVotes ?? 1,
-  numWhiteVotes: existingData?.numWhiteVotes ?? 0
+  numWhiteVotes: existingData?.numWhiteVotes ?? 0,
+  numWinners: existingData?.numWinners ?? 1
 });
 
 const CustomStepIcon = (props: {
@@ -240,7 +258,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
               .map(c => (typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()))
               .sort(),
             maxVotes: r.maxVotes,
-            numWhiteVotes: r.numWhiteVotes
+            numWhiteVotes: r.numWhiteVotes,
+            numWinners: r.numWinners
           }))
           .sort((a, b) => a.role.localeCompare(b.role));
         const currentComparableRoles = rolesForApi
@@ -628,7 +647,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                         />
                                       </Grid>
 
-                                      <Grid item xs={12} md={7}>
+                                      <Grid item xs={12} md={4}>
                                         <TextField
                                           fullWidth
                                           label="מספר הצבעות מקסימלי"
@@ -655,6 +674,93 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                             startAdornment: (
                                               <InputAdornment position="start">
                                                 <HowToVoteIcon color="primary" />
+                                              </InputAdornment>
+                                            ),
+                                            sx: {
+                                              borderRadius: 2,
+                                              backgroundColor: 'background.paper'
+                                            }
+                                          }}
+                                        />
+                                      </Grid>
+
+                                      <Grid item xs={12} md={4}>
+                                        <TextField
+                                          fullWidth
+                                          label="מספר נבחרים לתפקיד"
+                                          type="number"
+                                          name={`${prefix}.numWinners`}
+                                          value={role.numWinners}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setFieldValue(
+                                              `${prefix}.numWinners`,
+                                              val === '' ? '' : Number(val)
+                                            );
+                                          }}
+                                          error={Boolean(
+                                            showRoleErrors && getIn(roleErrors, 'numWinners')
+                                          )}
+                                          helperText={
+                                            (showRoleErrors && getIn(roleErrors, 'numWinners')) ||
+                                            `מקסימום: ${role.contestants.length || 0} מתמודדים`
+                                          }
+                                          disabled={isSubmitting}
+                                          inputProps={{ min: 1, max: role.contestants.length || 1 }}
+                                          variant="outlined"
+                                          InputProps={{
+                                            startAdornment: (
+                                              <InputAdornment position="start">
+                                                <CheckCircleIcon color="success" />
+                                              </InputAdornment>
+                                            ),
+                                            sx: {
+                                              borderRadius: 2,
+                                              backgroundColor: 'background.paper'
+                                            }
+                                          }}
+                                        />
+                                      </Grid>
+
+                                      <Grid item xs={12} md={4}>
+                                        <TextField
+                                          fullWidth
+                                          label="מספר קולות פתק לבן"
+                                          type="text"
+                                          inputMode="numeric"
+                                          name={`${prefix}.numWhiteVotes`}
+                                          value={role.numWhiteVotes}
+                                          onChange={e => {
+                                            const newVal = e.target.value.replace(/[^0-9]/g, '');
+                                            if (newVal === '') {
+                                              setFieldValue(`${prefix}.numWhiteVotes`, 0);
+                                            } else {
+                                              const numVal = parseInt(newVal, 10);
+                                              setFieldValue(`${prefix}.numWhiteVotes`, numVal);
+                                            }
+                                          }}
+                                          onFocus={e => e.target.select()}
+                                          error={Boolean(
+                                            showRoleErrors && getIn(roleErrors, 'numWhiteVotes')
+                                          )}
+                                          helperText={
+                                            (showRoleErrors &&
+                                              getIn(roleErrors, 'numWhiteVotes')) ||
+                                            (role.contestants.length === 1
+                                              ? 'נדרש לפחות קול פתק לבן אחד עבור מועמד בודד'
+                                              : 'אם יש יותר ממועמד אחד, ניתן להשאיר 0')
+                                          }
+                                          disabled={isSubmitting}
+                                          inputProps={{
+                                            min: 0,
+                                            style: { textAlign: 'right' },
+                                            pattern: '[0-9]*'
+                                          }}
+                                          variant="outlined"
+                                          InputProps={{
+                                            startAdornment: (
+                                              <InputAdornment position="start">
+                                                <HowToVoteIcon color="secondary" />
                                               </InputAdornment>
                                             ),
                                             sx: {
@@ -699,6 +805,16 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                                 setFieldValue(`${prefix}.numWhiteVotes`, 1);
                                               }
                                             }
+                                            // Adjust numWinners if it exceeds the number of contestants
+                                            if (
+                                              role.numWinners > contestantIds.length &&
+                                              contestantIds.length > 0
+                                            ) {
+                                              setFieldValue(
+                                                `${prefix}.numWinners`,
+                                                contestantIds.length
+                                              );
+                                            }
                                           }}
                                           renderInput={params => (
                                             <TextField
@@ -738,56 +854,6 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                                                 backgroundColor: 'primary.light',
                                                 color: 'primary.contrastText'
                                               }
-                                            }
-                                          }}
-                                        />
-                                      </Grid>
-
-                                      <Grid item xs={12}>
-                                        {' '}
-                                        <TextField
-                                          fullWidth
-                                          label="מספר קולות פתק לבן"
-                                          type="text"
-                                          inputMode="numeric"
-                                          name={`${prefix}.numWhiteVotes`}
-                                          value={role.numWhiteVotes}
-                                          onChange={e => {
-                                            const newVal = e.target.value.replace(/[^0-9]/g, '');
-                                            if (newVal === '') {
-                                              setFieldValue(`${prefix}.numWhiteVotes`, 0);
-                                            } else {
-                                              const numVal = parseInt(newVal, 10);
-                                              setFieldValue(`${prefix}.numWhiteVotes`, numVal);
-                                            }
-                                          }}
-                                          onFocus={e => e.target.select()}
-                                          error={Boolean(
-                                            showRoleErrors && getIn(roleErrors, 'numWhiteVotes')
-                                          )}
-                                          helperText={
-                                            (showRoleErrors &&
-                                              getIn(roleErrors, 'numWhiteVotes')) ||
-                                            (role.contestants.length === 1
-                                              ? 'נדרש לפחות קול פתק לבן אחד עבור מועמד בודד'
-                                              : '')
-                                          }
-                                          disabled={isSubmitting}
-                                          inputProps={{
-                                            min: 0,
-                                            style: { textAlign: 'right' },
-                                            pattern: '[0-9]*'
-                                          }}
-                                          variant="outlined"
-                                          InputProps={{
-                                            startAdornment: (
-                                              <InputAdornment position="start">
-                                                <HowToVoteIcon color="secondary" />
-                                              </InputAdornment>
-                                            ),
-                                            sx: {
-                                              borderRadius: 2,
-                                              backgroundColor: 'background.paper'
                                             }
                                           }}
                                         />

@@ -572,6 +572,8 @@ const Page: NextPage<Props> = ({
     setSelectStandId(null);
   };
 
+  console.log(votedMembers);
+
   return (
     <RoleAuthorizer
       user={user}

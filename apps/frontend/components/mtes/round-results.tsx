@@ -98,12 +98,45 @@ export const RoundResults = ({
 
       {round.roles.map(role => {
         const roleResults = results[role.role] as RoleResult[];
-        const maxVotes = Math.max(...roleResults.map((r: RoleResult) => r.votes));
-        const thresholdVotersNeeded = (electionThreshold / 100) * totalMembers;
-        const potentialWinners = roleResults.filter(r => r.votes === maxVotes && maxVotes > 0);
-        const isDrawForRole = potentialWinners.length > 1;
-        const hasThresholdWinner =
-          maxVotes > 0 && maxVotes > thresholdVotersNeeded && !isDrawForRole;
+
+        // Sort results by votes in descending order
+        const sortedResults = [...roleResults].sort((a, b) => b.votes - a.votes);
+
+        // Count non-white ballot contestants
+        const nonWhiteContestants = sortedResults.filter(
+          r => !r.contestant.name.includes('פתק לבן')
+        );
+        const numContestants = nonWhiteContestants.length;
+
+        // Determine threshold based on number of contestants
+        const requiredThreshold = numContestants <= 2 ? 66 : 50;
+        const thresholdVotersNeeded =
+          numContestants <= 2
+            ? Math.ceil((66 / 100) * totalMembers) // 66% for 1-2 contestants (rounded up)
+            : Math.floor(totalMembers / 2) + 1; // 50% + 1 for 3+ contestants
+
+        const numWinners = role.numWinners || 1;
+
+        // Get ALL candidates that meet the threshold requirement (including white votes)
+        const candidatesAboveThreshold = sortedResults.filter(
+          r => r.votes >= thresholdVotersNeeded
+        );
+
+        // Take top numWinners from those above threshold
+        const actualWinners = candidatesAboveThreshold.slice(0, numWinners);
+
+        // Check for draws in winner positions
+        const lastWinnerVotes = actualWinners[numWinners - 1]?.votes || 0;
+        const candidatesWithLastWinnerVotes = candidatesAboveThreshold.filter(
+          r => r.votes === lastWinnerVotes
+        );
+        const isDrawForLastPosition =
+          candidatesWithLastWinnerVotes.length > 1 && lastWinnerVotes > 0;
+
+        // Check if white ballot won (is among the actual winners)
+        const whiteVoteWon = actualWinners.some(winner =>
+          winner.contestant.name.includes('פתק לבן')
+        );
 
         return (
           <Box key={role.role} sx={{ mb: 6 }}>
@@ -125,33 +158,42 @@ export const RoundResults = ({
                 }
               }}
             >
-              {role.role}
+              {role.role} ({numWinners} {numWinners === 1 ? 'נבחר' : 'נבחרים'})
             </Typography>
-            {!hasThresholdWinner ? (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+              סף נדרש לניצחון: {requiredThreshold}% ({thresholdVotersNeeded} קולות)
+            </Typography>
+            {whiteVoteWon ? (
               <Typography
                 variant="subtitle1"
                 color="error.main"
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                אף מתמודד לא הגיע לאחוז הכשירות הנדרש ({electionThreshold}% + 1)
+                😢 פתק לבן ניצח - אין אמון באף אחד
               </Typography>
-            ) : isDrawForRole ? (
+            ) : actualWinners.length === 0 ? (
+              <Typography
+                variant="subtitle1"
+                color="error.main"
+                sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
+              >
+                אף מתמודד לא הגיע לסף הנדרש ({requiredThreshold}%)
+              </Typography>
+            ) : actualWinners.length < numWinners ? (
               <Typography
                 variant="subtitle1"
                 color="warning.main"
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                {potentialWinners.some(winner => winner.contestant.name === 'פתק לבן')
-                  ? 'תיקו עם פתק לבן!'
-                  : 'תיקו בין המתמודדים המובילים!'}
+                רק {actualWinners.length} מתוך {numWinners} המועמדים הגיעו לסף הנדרש
               </Typography>
-            ) : potentialWinners.length > 0 && potentialWinners[0].contestant.name === 'פתק לבן' ? (
+            ) : isDrawForLastPosition ? (
               <Typography
                 variant="subtitle1"
-                color="error.main"
+                color="warning.main"
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                😢 פתק לבן ניצח
+                תיקו במקום ה-{numWinners}!
               </Typography>
             ) : (
               <Typography
@@ -159,18 +201,30 @@ export const RoundResults = ({
                 color="success.main"
                 sx={{ mb: 2, textAlign: 'center', fontWeight: 'medium' }}
               >
-                🎉 יש מנצח שעבר את אחוז הכשירות!
+                🎉{' '}
+                {actualWinners.filter(w => !w.contestant.name.includes('פתק לבן')).length === 1
+                  ? 'יש מנצח!'
+                  : `יש ${
+                      actualWinners.filter(w => !w.contestant.name.includes('פתק לבן')).length
+                    } מנצחים!`}
               </Typography>
             )}
             <Box sx={{ px: 2 }}>
-              {roleResults.map((result: RoleResult) => {
-                const isContestantPartOfDraw = isDrawForRole && result.votes === maxVotes;
-                const isClearWinner = hasThresholdWinner && result.votes === maxVotes;
-                const isHighestButBelowThreshold =
-                  maxVotes > 0 &&
-                  !isDrawForRole &&
-                  result.votes === maxVotes &&
-                  !hasThresholdWinner;
+              {roleResults.map((result: RoleResult, index: number) => {
+                const resultPosition =
+                  sortedResults.findIndex(
+                    r => r.contestant._id.toString() === result.contestant._id.toString()
+                  ) + 1;
+                const isWinner = actualWinners.some(
+                  w => w.contestant._id.toString() === result.contestant._id.toString()
+                );
+                const isPartOfDraw =
+                  isDrawForLastPosition &&
+                  candidatesWithLastWinnerVotes.some(
+                    c => c.contestant._id.toString() === result.contestant._id.toString()
+                  );
+                const isAboveThreshold = result.votes >= thresholdVotersNeeded;
+                const isWhiteVote = result.contestant.name.includes('פתק לבן');
 
                 let bgColor = 'background.default';
                 let borderColor = 'divider';
@@ -181,7 +235,7 @@ export const RoundResults = ({
                 let nameColor = 'text.primary';
                 let votesColor = 'primary.main';
 
-                if (isClearWinner) {
+                if (isWinner) {
                   bgColor = 'success.soft';
                   borderColor = 'success.main';
                   scale = 'scale(1.02)';
@@ -190,7 +244,7 @@ export const RoundResults = ({
                   nameFontWeight = 'bold';
                   nameColor = 'success.dark';
                   votesColor = 'success.dark';
-                } else if (isContestantPartOfDraw) {
+                } else if (isPartOfDraw) {
                   bgColor = 'warning.soft';
                   borderColor = 'warning.main';
                   scale = 'scale(1.01)';
@@ -199,7 +253,16 @@ export const RoundResults = ({
                   nameFontWeight = 'bold';
                   nameColor = 'warning.dark';
                   votesColor = 'warning.dark';
-                } else if (isHighestButBelowThreshold) {
+                } else if (isWhiteVote && whiteVoteWon) {
+                  bgColor = 'error.soft';
+                  borderColor = 'error.main';
+                  scale = 'scale(1.02)';
+                  shadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  avatarBgColor = 'error.main';
+                  nameFontWeight = 'bold';
+                  nameColor = 'error.dark';
+                  votesColor = 'error.dark';
+                } else if (!isAboveThreshold && !isWhiteVote && resultPosition <= numWinners) {
                   bgColor = 'error.soft';
                   borderColor = 'error.main';
                   scale = 'scale(1.01)';
@@ -236,27 +299,100 @@ export const RoundResults = ({
                         zIndex: 1
                       }}
                     >
-                      <Avatar
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          bgcolor: avatarBgColor,
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                        }}
-                      >
-                        {result.contestant.name.charAt(0)}
-                      </Avatar>
-
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography
-                          variant="h6"
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box
                           sx={{
-                            fontWeight: nameFontWeight,
-                            color: nameColor
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            bgcolor: isWinner
+                              ? 'success.main'
+                              : isPartOfDraw
+                              ? 'warning.main'
+                              : isWhiteVote && whiteVoteWon
+                              ? 'error.main'
+                              : !isAboveThreshold && !isWhiteVote && resultPosition <= numWinners
+                              ? 'error.main'
+                              : 'primary.light',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.875rem',
+                            fontWeight: 'bold'
                           }}
                         >
-                          {result.contestant.name}
-                        </Typography>
+                          {resultPosition}
+                        </Box>
+                        <Avatar
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            bgcolor: avatarBgColor,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          {result.contestant.name.charAt(0)}
+                        </Avatar>
+                      </Box>
+
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: nameFontWeight,
+                              color: nameColor
+                            }}
+                          >
+                            {result.contestant.name}
+                          </Typography>
+                          {isWinner && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                bgcolor: 'success.main',
+                                color: 'white',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              נבחר
+                            </Typography>
+                          )}
+                          {isWhiteVote && whiteVoteWon && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                bgcolor: 'error.main',
+                                color: 'white',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              ניצח
+                            </Typography>
+                          )}
+                          {!isAboveThreshold && !isWhiteVote && resultPosition <= numWinners && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                bgcolor: 'error.main',
+                                color: 'white',
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              לא עבר סף
+                            </Typography>
+                          )}
+                        </Box>
                         <Typography variant="body2" color="text.secondary">
                           {result.contestant.city}
                         </Typography>
@@ -282,6 +418,15 @@ export const RoundResults = ({
                         >
                           ({Math.round((result.votes / totalMembers) * 100)}% מהמליאה)
                         </Typography>
+                        {!isWhiteVote && (
+                          <Typography
+                            variant="caption"
+                            color={isAboveThreshold ? 'success.main' : 'error.main'}
+                            sx={{ display: 'block', mt: 0.25, fontWeight: 'bold' }}
+                          >
+                            {isAboveThreshold ? '✓ עבר סף' : '✗ לא עבר סף'}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
                   </Box>
@@ -345,7 +490,7 @@ export const RoundResults = ({
             display: 'inline-block'
           }}
         >
-          אחוז כשירות נדרש לניצחון: {electionThreshold}% + 1
+          סף כשירות משתנה לפי מספר מועמדים: 1-2 מועמדים = 66%, יותר = 50% + 1
         </Typography>
       </Box>
     </Paper>

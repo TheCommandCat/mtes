@@ -14,6 +14,7 @@ import LocationCity from '@mui/icons-material/LocationCity';
 import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
 import HighlightOff from '@mui/icons-material/HighlightOff';
 import HowToVoteOutlined from '@mui/icons-material/HowToVoteOutlined';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { WithId } from 'mongodb';
 import { Member, Round } from '@mtes/types';
 
@@ -53,13 +54,19 @@ export const RoundPreview = ({ round, members }: RoundPreviewProps) => {
             >
               {role.role}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-              <HowToVoteOutlined sx={{ mr: 1, color: 'text.secondary' }} />
-              <Typography variant="h6" color="text.secondary">
-                {' '}
-                {/* Made max votes slightly larger */}
-                מקסימום הצבעות: {role.maxVotes}
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <HowToVoteOutlined sx={{ mr: 1, color: 'text.secondary' }} />
+                <Typography variant="h6" color="text.secondary">
+                  מקסימום הצבעות: {role.maxVotes}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <EmojiEventsIcon sx={{ mr: 1, color: 'warning.main' }} />
+                <Typography variant="h6" color="text.secondary">
+                  נבחרים: {role.numWinners}
+                </Typography>
+              </Box>
             </Box>
 
             <Grid container spacing={3} justifyContent="center" sx={{ width: '100%' }}>

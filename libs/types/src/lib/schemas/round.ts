@@ -7,6 +7,7 @@ interface RoleConfig {
   contestants: WithId<Member>[];
   maxVotes: number;
   numWhiteVotes: number;
+  numWinners: number;
 }
 
 export interface Round {
