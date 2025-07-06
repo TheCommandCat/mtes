@@ -5,6 +5,6 @@ import { Member } from './member';
 
 export interface ElectionState {
   activeRound: WithId<Round>;
-  audienceDisplay: { display: AudienceDisplayScreen; round?: WithId<Round>; member?: WithId<Member> };
+  audienceDisplay: { display: AudienceDisplayScreen; round?: WithId<Round>; member?: WithId<Member>; message?: string };
   completed: boolean;
 }

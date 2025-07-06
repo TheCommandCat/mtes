@@ -5,4 +5,5 @@ export const localizedAudienceDisplayScreens: Record<AudienceDisplayScreen, stri
     'voting': 'הצבעה',
     'round': 'סיבוב',
     'member': 'חבר',
+    'message': 'הודעה',
 };

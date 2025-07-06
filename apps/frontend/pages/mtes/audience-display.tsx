@@ -21,6 +21,7 @@ import { AudiencePresence } from 'apps/frontend/components/mtes/audience/audienc
 import { AudienceVotingDisplay } from 'apps/frontend/components/mtes/audience/audience-voting-display';
 import AudienceRoundDisplay from 'apps/frontend/components/mtes/audience/audience-round-display';
 import AudienceMemberDisplay from 'apps/frontend/components/mtes/audience/audience-member-display';
+import AudienceMessageDisplay from 'apps/frontend/components/mtes/audience/audience-message-display';
 import { enqueueSnackbar } from 'notistack';
 import AudienceDisplayContainer from 'apps/frontend/components/mtes/audience/audience-display-container';
 import { RoleAuthorizer } from 'apps/frontend/components/role-authorizer';
@@ -50,6 +51,9 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
 
   const [selectedRound, setSelectedRound] = useState<WithId<Round> | null>(null);
   const [selectedMember, setSelectedMember] = useState<WithId<Member> | null>(null);
+  const [customMessage, setCustomMessage] = useState<string | null>(
+    electionState.audienceDisplay.message || null
+  );
   const [activeRound, setActiveRound] = useState<WithId<Round> | null>(
     electionState.activeRound || null
   );
@@ -105,7 +109,12 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
     },
     {
       name: 'audienceDisplayUpdated',
-      handler: (view: { display: string; round?: WithId<Round>; member?: WithId<Member> }) => {
+      handler: (view: {
+        display: string;
+        round?: WithId<Round>;
+        member?: WithId<Member>;
+        message?: string;
+      }) => {
         if (view.round) {
           const round = view.round;
           if (round) setSelectedRound(round);
@@ -113,6 +122,9 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
         if (view.member) {
           const member = view.member;
           if (member) setSelectedMember(member);
+        }
+        if (view.message !== undefined) {
+          setCustomMessage(view.message);
         }
         setCurrentDisplay(view.display as AudienceDisplayScreen);
       }
@@ -199,6 +211,8 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
             ) : (
               <WaitingState title="הצבעה טרם החלה" subtitle="מתחילים בקרוב" />
             )
+          ) : currentDisplay === 'message' ? (
+            <AudienceMessageDisplay message={customMessage} />
           ) : (
             <Box sx={{ width: '100%' }}>
               <Typography variant="h4" gutterBottom>

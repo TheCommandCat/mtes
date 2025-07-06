@@ -141,14 +141,19 @@ export const handleUpdateMemberPresence = async (
 
 export const handleUpdateAudienceDisplay = async (
   namespace: any,
-  view: { display: 'round' | 'presence' | 'voting'; round?: WithId<Round> },
+  view: { display: 'round' | 'presence' | 'voting' | 'member' | 'message'; round?: WithId<Round>; member?: WithId<Member>; message?: string },
   callback: ((response: { ok: boolean; error?: string }) => void) | undefined
 ) => {
   console.log(`🔌 WS: Update audience display to ${view}`);
   console.log('WS Status: ', namespace.connected);
 
   try {
-    await db.updateElectionState({ audienceDisplay: { display: view.display, round: view.round } });
+    const updateData: any = { display: view.display };
+    if (view.round) updateData.round = view.round;
+    if (view.member) updateData.member = view.member;
+    if (view.message !== undefined) updateData.message = view.message;
+
+    await db.updateElectionState({ audienceDisplay: updateData });
     namespace.emit('audienceDisplayUpdated', view);
     if (typeof callback === 'function') {
       callback({ ok: true });

@@ -14,7 +14,7 @@ export interface WSServerEmittedEvents {
     replacedBy: WithId<Member> | null
   ) => void;
   audienceDisplayUpdated: (
-    view: { display: 'round' | 'presence' | 'voting'; roundId?: string }
+    view: { display: 'round' | 'presence' | 'voting' | 'member' | 'message'; round?: WithId<Round>; member?: WithId<Member>; message?: string }
   ) => void;
 }
 
@@ -53,7 +53,7 @@ export interface WSClientEmittedEvents {
   ) => void;
 
   updateAudienceDisplay: (
-    view: { display: 'round' | 'presence' | 'voting'; round?: WithId<Round> },
+    view: { display: 'round' | 'presence' | 'voting' | 'member' | 'message'; round?: WithId<Round>; member?: WithId<Member>; message?: string },
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

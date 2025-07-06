@@ -88,7 +88,7 @@ export const TicketTypes = ['general', 'schedule', 'utilities', 'incident'] as c
 export type TicketType = (typeof TicketTypes)[number];
 
 export const AudienceDisplayScreenTypes = [
-  'round', 'presence', 'voting', 'member'
+  'round', 'presence', 'voting', 'member', 'message'
 ] as const;
 export type AudienceDisplayScreen = (typeof AudienceDisplayScreenTypes)[number];
 

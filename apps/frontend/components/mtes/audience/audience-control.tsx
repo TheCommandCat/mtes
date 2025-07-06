@@ -8,7 +8,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent
+  SelectChangeEvent,
+  TextField
 } from '@mui/material';
 import { localizedAudienceDisplayScreens } from 'apps/frontend/localization/displays';
 import { WithId } from 'mongodb';
@@ -21,6 +22,7 @@ interface AudienceControlProps {
     display: AudienceDisplayScreen;
     round?: WithId<Round> | null;
     member?: WithId<Member> | null;
+    message?: string | null;
   };
   rounds: WithId<Round>[]; // available rounds
   members: WithId<Member>[]; // available members
@@ -39,6 +41,7 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
   const [selectedMember, setSelectedMember] = useState<WithId<Member> | null>(
     eventState.member || null
   );
+  const [customMessage, setCustomMessage] = useState<string>(eventState.message || '');
   const { enqueueSnackbar } = useSnackbar();
 
   const handleDisplayChange = (event: SelectChangeEvent<string>) => {
@@ -46,11 +49,13 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
     setDisplay(newDisplay);
     setSelectedRound(null);
     setSelectedMember(null);
+    setCustomMessage('');
   };
   const handleSend = () => {
     const payload: Record<string, any> = { display };
     if (display === 'round') payload.round = selectedRound;
     if (display === 'member') payload.member = selectedMember;
+    if (display === 'message') payload.message = customMessage;
     console.log('Sending audience display update:', payload);
     socket.emit('updateAudienceDisplay', payload, (response: { ok: boolean; error?: string }) => {
       if (response.ok) {
@@ -132,6 +137,21 @@ export const AudienceControl: React.FC<AudienceControlProps> = ({
               })}
             </Select>
           </FormControl>
+        </Box>
+      )}
+      {display === 'message' && (
+        <Box sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            label="הודעה מותאמת אישית"
+            placeholder="הכנס את ההודעה שברצונך להציג לקהל..."
+            multiline
+            rows={4}
+            value={customMessage}
+            onChange={e => setCustomMessage(e.target.value)}
+            variant="outlined"
+            helperText="ההודעה תוצג במרכז המסך בגודל מותאם לאורך הטקסט"
+          />
         </Box>
       )}
       <Box sx={{ mt: 3 }}>
