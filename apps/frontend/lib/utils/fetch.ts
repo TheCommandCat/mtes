@@ -1,14 +1,12 @@
 import { SafeUser } from '@mtes/types';
 import { GetServerSidePropsContext } from 'next';
 
-export const getApiBase = (isServerSide: boolean = false) => {
-  console.log(
-    `🌐 Calling fetch with isServerSide=${isServerSide}, NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}`
-  );
+export const getApiBase = (isServerSide: boolean = false): string => {
+  const publicApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
+  const internalApiUrl = process.env.INTERNAL_API_URL ?? 'http://backend:3333';
 
-  // TODO: handle internal API URL for server-side rendering
-
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+  // Use internal API URL for server-side rendering, public API URL for client-side
+  return isServerSide ? internalApiUrl : publicApiUrl;
 };
 
 export const apiFetch = (
@@ -29,7 +27,12 @@ export const apiFetch = (
   }
   // Use server-side URL when we have server context (SSR), client-side URL otherwise
   const apiBase = getApiBase(!!ctx);
-  return fetch(apiBase + path, {
+  const fullUrl = apiBase + path;
+
+  console.log(`🌐 Fetching from path: ${path} with headers:`, headers);
+  console.log(`🌐 Full URL: ${fullUrl}`);
+
+  return fetch(fullUrl, {
     credentials: 'include',
     headers,
     ...init
