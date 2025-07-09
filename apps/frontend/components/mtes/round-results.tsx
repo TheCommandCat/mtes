@@ -1,6 +1,9 @@
-import { Box, Typography, Avatar, Paper } from '@mui/material';
+import { Box, Typography, Avatar, Paper, Fab } from '@mui/material';
+import { PictureAsPdf as PdfIcon, Launch as LaunchIcon } from '@mui/icons-material';
 import { WithId } from 'mongodb';
 import { Member, Round, VotingStatus } from '@mtes/types';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
 
 interface RoleResult {
   contestant: WithId<Member>;
@@ -52,6 +55,58 @@ export const RoundResults = ({
   electionThreshold = 50
 }: RoundResultsProps) => {
   const results = processResults(initialResults);
+  const router = useRouter();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    try {
+      setIsExporting(true);
+
+      // Get current event info if available
+      const eventId = router.query.eventId as string;
+      const queryParams = new URLSearchParams({
+        roundId: round._id.toString(),
+        ...(eventId && { eventId })
+      });
+
+      // Open simple export page in new tab - this shows the data as-is for printing
+      const exportUrl = `/mtes/export-pdf?${queryParams.toString()}`;
+      window.open(exportUrl, '_blank');
+    } catch (error) {
+      console.error('Error opening export page:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleServerPdf = async () => {
+    try {
+      setIsExporting(true);
+
+      // Get current event info if available
+      const eventId = router.query.eventId as string;
+      const queryParams = new URLSearchParams({
+        ...(eventId && { eventId })
+      });
+
+      // Download PDF directly from server - this generates a PDF file
+      const downloadUrl = `http://localhost:3333/api/events/export/round-results-pdf/${
+        round._id
+      }?${queryParams.toString()}`;
+
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `round-${round._id}-results.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (!round || !results || !votedMembers || totalMembers <= 0) {
     return (
@@ -98,6 +153,37 @@ export const RoundResults = ({
 
       {round.roles.map(role => {
         const roleResults = results[role.role] as RoleResult[];
+
+        // Validate that roleResults exists and is an array
+        if (!roleResults || !Array.isArray(roleResults) || roleResults.length === 0) {
+          return (
+            <Box key={role.role} sx={{ mb: 6 }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  mb: 3,
+                  color: 'text.primary',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  '&::before, &::after': {
+                    content: '""',
+                    flex: 1,
+                    borderBottom: '2px solid',
+                    borderImage:
+                      'linear-gradient(to right, transparent, primary.main, transparent) 1',
+                    mx: 2
+                  }
+                }}
+              >
+                {role.role} (אין תוצאות)
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center' }}>
+                אין תוצאות זמינות לתפקיד זה
+              </Typography>
+            </Box>
+          );
+        }
 
         // Sort results by votes in descending order
         const sortedResults = [...roleResults].sort((a, b) => b.votes - a.votes);
@@ -492,6 +578,60 @@ export const RoundResults = ({
         >
           סף כשירות משתנה לפי מספר מועמדים: 1-2 מועמדים = 66%, יותר = 50% + 1
         </Typography>
+      </Box>
+
+      {/* Export Buttons */}
+      <Box
+        sx={{
+          mt: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 2,
+          direction: 'rtl'
+        }}
+      >
+        <Fab
+          variant="extended"
+          size="medium"
+          color="primary"
+          onClick={handleExportPdf}
+          disabled={isExporting}
+          sx={{
+            px: 3,
+            py: 1.5,
+            borderRadius: 2,
+            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s ease',
+            direction: 'rtl',
+            '&:hover': {
+              boxShadow: '0 6px 12px rgba(0,0,0,0.15)'
+            }
+          }}
+        >
+          <LaunchIcon sx={{ ml: 1 }} />
+          {isExporting ? 'פותח...' : 'פתח דף הדפסה'}
+        </Fab>
+        <Fab
+          variant="extended"
+          size="medium"
+          color="secondary"
+          onClick={handleServerPdf}
+          disabled={isExporting}
+          sx={{
+            px: 3,
+            py: 1.5,
+            borderRadius: 2,
+            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s ease',
+            direction: 'rtl',
+            '&:hover': {
+              boxShadow: '0 6px 12px rgba(0,0,0,0.15)'
+            }
+          }}
+        >
+          <PdfIcon sx={{ ml: 1 }} />
+          {isExporting ? 'מוריד...' : 'הורד PDF'}
+        </Fab>
       </Box>
     </Paper>
   );
