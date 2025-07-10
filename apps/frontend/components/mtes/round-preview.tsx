@@ -54,7 +54,16 @@ export const RoundPreview = ({ round, members }: RoundPreviewProps) => {
             >
               {role.role}
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 3,
+                mb: 3,
+                flexWrap: 'wrap'
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <HowToVoteOutlined sx={{ mr: 1, color: 'text.secondary' }} />
                 <Typography variant="h6" color="text.secondary">
@@ -70,73 +79,75 @@ export const RoundPreview = ({ round, members }: RoundPreviewProps) => {
             </Box>
 
             <Grid container spacing={3} justifyContent="center" sx={{ width: '100%' }}>
-              {role.contestants.map(contestant => {
-                const isPresent = memberPresenceMap.get(contestant._id.toString()) || false;
-                return (
-                  <Grid item key={contestant._id.toString()} xs={12} sm={6} md={5} lg={4}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        textAlign: 'center',
-                        p: 2,
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        boxShadow: theme.shadows[2]
-                      }}
-                    >
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mb: 1.5
-                          }}
-                        >
-                          <PersonOutline
-                            sx={{ mr: 1, color: theme.palette.primary.main }}
-                            fontSize="large"
-                          />
-                          <Typography variant="h6" component="div" sx={{ fontWeight: 'medium' }}>
-                            {contestant.name}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mb: 1.5
-                          }}
-                        >
-                          <LocationCity sx={{ mr: 1, color: 'text.secondary' }} />
-                          <Typography variant="body1" color="text.secondary">
-                            {contestant.city}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          {isPresent ? (
-                            <CheckCircleOutline color="success" sx={{ mr: 1 }} />
-                          ) : (
-                            <HighlightOff color="error" sx={{ mr: 1 }} />
-                          )}
-                          <Typography
-                            variant="body1"
-                            color={isPresent ? 'success.main' : 'error.main'}
-                            sx={{ fontWeight: 'medium' }}
+              {role.contestants
+                .filter(contestant => contestant && contestant._id)
+                .map(contestant => {
+                  const isPresent = memberPresenceMap.get(contestant._id.toString()) || false;
+                  return (
+                    <Grid item key={contestant._id.toString()} xs={12} sm={6} md={5} lg={4}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          textAlign: 'center',
+                          p: 2,
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          boxShadow: theme.shadows[2]
+                        }}
+                      >
+                        <CardContent>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              mb: 1.5
+                            }}
                           >
-                            {isPresent ? 'נוכח.ת' : 'לא נוכח.ת'}
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
+                            <PersonOutline
+                              sx={{ mr: 1, color: theme.palette.primary.main }}
+                              fontSize="large"
+                            />
+                            <Typography variant="h6" component="div" sx={{ fontWeight: 'medium' }}>
+                              {contestant.name}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              mb: 1.5
+                            }}
+                          >
+                            <LocationCity sx={{ mr: 1, color: 'text.secondary' }} />
+                            <Typography variant="body1" color="text.secondary">
+                              {contestant.city}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            {isPresent ? (
+                              <CheckCircleOutline color="success" sx={{ mr: 1 }} />
+                            ) : (
+                              <HighlightOff color="error" sx={{ mr: 1 }} />
+                            )}
+                            <Typography
+                              variant="body1"
+                              color={isPresent ? 'success.main' : 'error.main'}
+                              sx={{ fontWeight: 'medium' }}
+                            >
+                              {isPresent ? 'נוכח.ת' : 'לא נוכח.ת'}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
             </Grid>
           </Paper>
         ))}

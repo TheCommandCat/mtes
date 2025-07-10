@@ -137,6 +137,8 @@ interface AddRoundDialogProps {
   isDuplicate?: boolean;
 }
 
+const WHITE_VOTE_ID_PREFIX = '000000000000000000000';
+
 const createNewRole = (
   existingData?: Partial<z.infer<typeof RoleSchema>> & { contestants?: string[] }
 ): RoleFormValues => ({
@@ -209,7 +211,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         roundName: isDuplicate ? `${initialRound.name} - העתק` : initialRound.name,
         allowedMembers: initialRound.allowedMembers.map(member => member._id.toString()),
         roles: initialRound.roles.map(role => {
-          // Filter out white vote contestants (they have hardcoded IDs starting with 000000000000000000000)
+          // Filter out white vote contestants (they have hardcoded IDs starting with WHITE_VOTE_ID_PREFIX)
           const contestants = role.contestants
             .filter(c => {
               // Handle both string IDs and objects with _id property
@@ -222,8 +224,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                 // Skip invalid contestants
                 return false;
               }
-              // Filter out white vote IDs which start with 000000000000000000000
-              return !id.startsWith('000000000000000000000');
+              // Filter out white vote IDs which start with WHITE_VOTE_ID_PREFIX
+              return !id.startsWith(WHITE_VOTE_ID_PREFIX);
             })
             .map(c => {
               if (typeof c === 'string') {
@@ -334,10 +336,9 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.message || 'נכשל ביצירת הסבב');
         }
-        enqueueSnackbar(
-          isDuplicate ? 'הסבב שוכפל בהצלחה!' : 'הסבב נוצר בהצלחה!',
-          { variant: 'success' }
-        );
+        enqueueSnackbar(isDuplicate ? 'הסבב שוכפל בהצלחה!' : 'הסבב נוצר בהצלחה!', {
+          variant: 'success'
+        });
         if (!isDuplicate) {
           const newInitialValues = {
             roundName: '',
