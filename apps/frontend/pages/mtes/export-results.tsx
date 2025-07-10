@@ -12,10 +12,14 @@ interface RoleResult {
   votes: number;
 }
 
+interface VotingStatusWithMember extends WithId<VotingStatus> {
+  member: WithId<Member>;
+}
+
 interface ExportResultsPageProps {
   round: WithId<Round>;
   results: Record<string, RoleResult[]>;
-  votedMembers: WithId<VotingStatus>[];
+  votedMembers: VotingStatusWithMember[];
   totalMembers: number;
   eventName?: string;
   eventDate?: string;
@@ -238,9 +242,9 @@ export const getServerSideProps: GetServerSideProps = async context => {
       // Continue with empty results rather than failing
     }
 
-    // Fetch voting status
+    // Fetch voting status with member details
     const votingStatusResponse = await apiFetch(
-      `/api/events/rounds/votedMembers/${roundId}`,
+      `/api/events/rounds/votedMembersWithDetails/${roundId}`,
       undefined,
       context
     );
