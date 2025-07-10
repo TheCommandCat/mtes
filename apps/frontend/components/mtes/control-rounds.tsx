@@ -4,6 +4,7 @@ import { enqueueSnackbar } from 'notistack';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import PollIcon from '@mui/icons-material/Poll';
@@ -154,6 +155,26 @@ export const ControlRounds = ({
                         isEdit={true}
                       />
                     )}
+
+                    {/* Duplicate button - always show for any round */}
+                    <Box
+                      sx={{
+                        '& .MuiIconButton-root': {
+                          color: 'secondary.main',
+                          bgcolor: 'secondary.50',
+                          '&:hover': {
+                            bgcolor: 'secondary.100'
+                          }
+                        }
+                      }}
+                    >
+                      <AddRoundDialog
+                        availableMembers={members}
+                        onRoundCreated={refreshData}
+                        initialRound={round}
+                        isDuplicate={true}
+                      />
+                    </Box>
 
                     <IconButton
                       size="small"
