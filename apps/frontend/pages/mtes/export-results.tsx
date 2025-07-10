@@ -87,7 +87,7 @@ const ExportResultsPage: NextPage<ExportResultsPageProps> = ({
           results={results}
           votedMembers={votedMembers}
           totalMembers={totalMembers}
-          eventName={eventName!}
+          eventName={eventName ?? 'בחירות מועצות תלמידים'}
           eventDate={eventDate}
         />
       </Container>
@@ -186,7 +186,7 @@ const ExportResultsPage: NextPage<ExportResultsPageProps> = ({
             results={results}
             votedMembers={votedMembers}
             totalMembers={totalMembers}
-            eventName={eventName!}
+            eventName={eventName ?? 'בחירות מועצות תלמידים'}
             eventDate={eventDate}
           />
         </Box>

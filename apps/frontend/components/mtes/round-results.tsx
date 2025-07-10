@@ -90,7 +90,8 @@ export const RoundResults = ({
       });
 
       // Download PDF directly from server - this generates a PDF file
-      const downloadUrl = `http://localhost:3333/api/events/export/round-results-pdf/${
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333';
+      const downloadUrl = `${apiBaseUrl}/api/events/export/round-results-pdf/${
         round._id
       }?${queryParams.toString()}`;
 

@@ -18,7 +18,8 @@ router.get('/round-results-pdf/:roundId', async (req: Request, res: Response) =>
             ...(eventDate && { eventDate: eventDate as string })
         });
 
-        const exportUrl = `http://localhost:4200/mtes/export-pdf?${queryParams.toString()}`;
+        const frontendUrl = process.env.MTES_DOMAIN || 'http://localhost:4200';
+        const exportUrl = `${frontendUrl}/mtes/export-pdf?${queryParams.toString()}`;
 
         console.log('Generating PDF from URL:', exportUrl);
 
