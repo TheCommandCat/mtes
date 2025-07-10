@@ -1,13 +1,13 @@
 import { Member, Round } from '@mtes/types';
 import { Box, Typography, Grid, Card, CardContent, Chip, IconButton, Stack } from '@mui/material';
 import { enqueueSnackbar } from 'notistack';
-import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import PollIcon from '@mui/icons-material/Poll';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import EditIcon from '@mui/icons-material/Edit';
 import { WithId } from 'mongodb';
 import { apiFetch } from 'apps/frontend/lib/utils/fetch';
 import router from 'next/router';
@@ -21,7 +21,7 @@ interface ControlRoundsProps {
   refreshData: () => void;
 }
 
-const handleDeleteRound = (round: WithId<Round>) => {
+const handleDeleteRound = (round: WithId<Round>, refreshData: () => void) => {
   if (!confirm(`האם אתה בטוח שברצונך למחוק את הסבב "${round.name}"?`)) {
     return;
   }
@@ -33,7 +33,7 @@ const handleDeleteRound = (round: WithId<Round>) => {
     body: JSON.stringify({ roundId: round._id })
   }).then(() => {
     enqueueSnackbar(`הסבב ${round.name} נמחק`, { variant: 'success' });
-    router.reload();
+    refreshData();
   });
 };
 
@@ -93,16 +93,16 @@ export const ControlRounds = ({
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                      {round.roles.map(role => (
+                      {round.roles.map((role, idx) => (
                         <Chip
-                          key={role.role}
+                          key={`${role.role}-${idx}`}
                           label={role.role}
                           variant="filled"
                           sx={{
-                            fontSize: '0.9rem', // Increased font size
-                            padding: '8px 12px', // Increased padding
-                            height: 'auto', // Allow height to adjust to content
-                            borderRadius: '16px', // More rounded corners
+                            fontSize: '0.9rem',
+                            padding: '8px 12px',
+                            height: 'auto',
+                            borderRadius: '16px',
                             fontWeight: 'bold'
                           }}
                         />
@@ -152,14 +152,26 @@ export const ControlRounds = ({
                         onRoundCreated={refreshData}
                         initialRound={round}
                         isEdit={true}
+                        // If AddRoundDialog needs a custom trigger, add a prop like below
+                        // triggerIcon={<EditIcon fontSize="small" />}
                       />
                     )}
+
+                    {/* Duplicate button - always show for any round */}
+                    <AddRoundDialog
+                      availableMembers={members}
+                      onRoundCreated={refreshData}
+                      initialRound={round}
+                      isDuplicate={true}
+                      // If AddRoundDialog needs a custom trigger, add a prop like below
+                      // triggerIcon={<ContentCopyIcon fontSize="small" />}
+                    />
 
                     <IconButton
                       size="small"
                       onClick={e => {
                         e.stopPropagation();
-                        handleDeleteRound(round);
+                        handleDeleteRound(round, refreshData);
                       }}
                       sx={{
                         color: 'error.main',

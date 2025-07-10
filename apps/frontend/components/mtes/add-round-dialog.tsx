@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import BadgeIcon from '@mui/icons-material/Badge';
 import BallotIcon from '@mui/icons-material/Ballot';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -133,7 +134,10 @@ interface AddRoundDialogProps {
   onRoundCreated?: () => void;
   initialRound?: WithId<Round>;
   isEdit?: boolean;
+  isDuplicate?: boolean;
 }
+
+const WHITE_VOTE_ID_PREFIX = '000000000000000000000';
 
 const createNewRole = (
   existingData?: Partial<z.infer<typeof RoleSchema>> & { contestants?: string[] }
@@ -190,7 +194,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
   availableMembers,
   onRoundCreated,
   initialRound,
-  isEdit = false
+  isEdit = false,
+  isDuplicate = false
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
@@ -201,14 +206,37 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
   const steps = ['פרטי הסבב', 'הגדרת תפקידים'];
 
   const initialValues: FormValues = useMemo(() => {
-    if (isEdit && initialRound) {
+    if ((isEdit || isDuplicate) && initialRound) {
       return {
-        roundName: initialRound.name,
+        roundName: isDuplicate ? `${initialRound.name} - העתק` : initialRound.name,
         allowedMembers: initialRound.allowedMembers.map(member => member._id.toString()),
         roles: initialRound.roles.map(role => {
-          const contestants = role.contestants.map(c =>
-            typeof c === 'string' ? c : (c as WithId<Member>)._id.toString()
-          );
+          // Filter out white vote contestants (they have hardcoded IDs starting with WHITE_VOTE_ID_PREFIX)
+          const contestants = role.contestants
+            .filter(c => {
+              // Handle both string IDs and objects with _id property
+              let id: string;
+              if (typeof c === 'string') {
+                id = c;
+              } else if (c && typeof c === 'object' && '_id' in c && c._id) {
+                id = c._id.toString();
+              } else {
+                // Skip invalid contestants
+                return false;
+              }
+              // Filter out white vote IDs which start with WHITE_VOTE_ID_PREFIX
+              return !id.startsWith(WHITE_VOTE_ID_PREFIX);
+            })
+            .map(c => {
+              if (typeof c === 'string') {
+                return c;
+              } else if (c && typeof c === 'object' && '_id' in c && c._id) {
+                return c._id.toString();
+              } else {
+                return '';
+              }
+            })
+            .filter(id => id !== ''); // Remove empty strings
           return createNewRole({
             ...role,
             contestants,
@@ -223,7 +251,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
       allowedMembers: availableMembers.map(member => member._id.toString()),
       roles: [createNewRole()]
     };
-  }, [isEdit, initialRound, availableMembers]);
+  }, [isEdit, isDuplicate, initialRound, availableMembers]);
 
   const handleClose = (isSubmitting: boolean) => {
     if (!isSubmitting) {
@@ -239,7 +267,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
     const rolesForApi = values.roles.map(({ _tempClientId, ...restOfRole }) => restOfRole);
 
     try {
-      if (isEdit && initialRound) {
+      if (isEdit && !isDuplicate && initialRound) {
         const changes: Partial<ApiRound> = {};
         if (values.roundName !== initialRound.name) {
           changes.name = values.roundName;
@@ -283,13 +311,14 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           });
           if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to update round');
+            throw new Error(errorData.message || 'נכשל בעדכון הסבב');
           }
-          enqueueSnackbar('Round updated successfully!', { variant: 'success' });
+          enqueueSnackbar('הסבב עודכן בהצלחה!', { variant: 'success' });
         } else {
-          enqueueSnackbar('No changes detected.', { variant: 'info' });
+          enqueueSnackbar('לא זוהו שינויים.', { variant: 'info' });
         }
       } else {
+        // Create new round (for both new rounds and duplicates)
         const payload: ApiRound = {
           name: values.roundName,
           roles: rolesForApi,
@@ -305,21 +334,25 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         });
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to create round');
+          throw new Error(errorData.message || 'נכשל ביצירת הסבב');
         }
-        enqueueSnackbar('Round created successfully!', { variant: 'success' });
-        const newInitialValues = {
-          roundName: '',
-          allowedMembers: availableMembers.map(member => member._id.toString()),
-          roles: [createNewRole()]
-        };
-        resetForm({ values: newInitialValues });
-        setActiveStep(0);
+        enqueueSnackbar(isDuplicate ? 'הסבב שוכפל בהצלחה!' : 'הסבב נוצר בהצלחה!', {
+          variant: 'success'
+        });
+        if (!isDuplicate) {
+          const newInitialValues = {
+            roundName: '',
+            allowedMembers: availableMembers.map(member => member._id.toString()),
+            roles: [createNewRole()]
+          };
+          resetForm({ values: newInitialValues });
+          setActiveStep(0);
+        }
       }
       setOpen(false);
       onRoundCreated?.();
     } catch (error: any) {
-      enqueueSnackbar(error.message || 'An unknown error occurred', {
+      enqueueSnackbar(error.message || 'אירעה שגיאה לא צפויה', {
         variant: 'error'
       });
     } finally {
@@ -331,6 +364,10 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
       {isEdit ? (
         <IconButton size="small" onClick={() => setOpen(true)} title="Edit Round">
           <EditIcon fontSize="small" />
+        </IconButton>
+      ) : isDuplicate ? (
+        <IconButton size="small" onClick={() => setOpen(true)} title="Duplicate Round">
+          <ContentCopyIcon fontSize="small" />
         </IconButton>
       ) : (
         <IconButton
@@ -957,6 +994,10 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
                         ? isSubmitting
                           ? 'מעדכן...'
                           : 'עדכן סבב'
+                        : isDuplicate
+                        ? isSubmitting
+                          ? 'משכפל...'
+                          : 'שכפל סבב'
                         : isSubmitting
                         ? 'יוצר...'
                         : 'צור סבב'}

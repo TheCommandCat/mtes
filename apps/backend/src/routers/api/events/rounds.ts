@@ -91,8 +91,24 @@ router.post('/add', async (req: Request, res: Response) => {
     }
 });
 
+// Type for the update request body - uses string IDs instead of full objects
+interface UpdateRoundRequest {
+    name?: string;
+    allowedMembers?: string[];
+    roles?: {
+        role: string;
+        contestants: string[];
+        maxVotes: number;
+        numWhiteVotes: number;
+        numWinners: number;
+    }[];
+    startTime?: Date | null;
+    endTime?: Date | null;
+    isLocked?: boolean;
+}
+
 router.put('/update', async (req: Request, res: Response) => {
-    const { roundId, round } = req.body as { roundId: string; round: Partial<Round> };
+    const { roundId, round } = req.body as { roundId: string; round: UpdateRoundRequest };
 
     if (!roundId) {
         console.log('❌ Round ID is null or undefined');
@@ -136,7 +152,52 @@ router.put('/update', async (req: Request, res: Response) => {
         console.log('⏬ Updating Round...');
         console.log('Changes:', round);
 
-        const roundResult = await db.updateRound({ _id: new ObjectId(roundId) }, round);
+        // Create the processed round object for database update
+        const processedRound: Partial<Round> = {};
+
+        // Copy simple fields
+        if (round.name !== undefined) processedRound.name = round.name;
+        if (round.startTime !== undefined) processedRound.startTime = round.startTime;
+        if (round.endTime !== undefined) processedRound.endTime = round.endTime;
+        if (round.isLocked !== undefined) processedRound.isLocked = round.isLocked;
+
+        // Process allowedMembers if they are being updated
+        if (round.allowedMembers) {
+            processedRound.allowedMembers = await Promise.all(
+                round.allowedMembers.map(async (memberId: string) => {
+                    const dbMember = await db.getMember({ _id: new ObjectId(memberId) });
+                    if (!dbMember) {
+                        console.log(`❌ Member with ID ${memberId} not found`);
+                        throw new Error(`Member with ID ${memberId} not found`);
+                    }
+                    return dbMember;
+                })
+            );
+        }
+
+        // Process roles if they are being updated
+        if (round.roles) {
+            processedRound.roles = await Promise.all(
+                round.roles.map(async (role: any) => {
+                    const contestants = await Promise.all(
+                        role.contestants.map(async (contestantId: string) => {
+                            const dbContestant = await db.getMember({ _id: new ObjectId(contestantId) });
+                            if (!dbContestant) {
+                                console.log(`❌ Contestant with ID ${contestantId} in role ${role.role} not found`);
+                                throw new Error(`Contestant with ID ${contestantId} in role ${role.role} not found`);
+                            }
+                            return dbContestant;
+                        })
+                    );
+                    if (role.numWhiteVotes > 0) {
+                        contestants.push(...genrateWhireVoteMembers(role.numWhiteVotes));
+                    }
+                    return { ...role, contestants };
+                })
+            );
+        }
+
+        const roundResult = await db.updateRound({ _id: new ObjectId(roundId) }, processedRound);
 
         if (!roundResult.acknowledged) {
             console.log(`❌ Could not update Round`);
