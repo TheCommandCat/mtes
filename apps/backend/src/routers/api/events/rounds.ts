@@ -355,4 +355,33 @@ router.get('/votedMembers/:roundId', async (req: Request, res: Response) => {
     res.json({ ok: true, votedMembers });
 });
 
+router.get('/votedMembersWithDetails/:roundId', async (req: Request, res: Response) => {
+    const { roundId } = req.params;
+    if (!roundId) {
+        console.log('❌ Round ID is null or undefined');
+        res.status(400).json({ ok: false, message: 'Round ID is missing' });
+        return;
+    }
+    console.log(`⏬ Getting voted members with details for round ${roundId}`);
+    const votedMembers = await db.getVotedMembers(roundId);
+    if (!votedMembers) {
+        console.log(`❌ Could not get voted members`);
+        res.status(500).json({ ok: false, message: 'Could not get voted members' });
+        return;
+    }
+
+    // Get member details for each voted member
+    const votedMembersWithDetails = await Promise.all(
+        votedMembers.map(async (votingStatus) => {
+            const member = await db.getMember({ _id: votingStatus.memberId });
+            return {
+                ...votingStatus,
+                member
+            };
+        })
+    );
+
+    res.json({ ok: true, votedMembers: votedMembersWithDetails });
+});
+
 export default router;
