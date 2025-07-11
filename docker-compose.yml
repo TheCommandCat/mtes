@@ -15,7 +15,7 @@ services:
     ports:
       - '3333:3333'
     env_file:
-      - apps/backend/.env
+      - apps/backend/.env.docker
     networks:
       - app-network
     restart: unless-stopped
@@ -31,7 +31,7 @@ services:
     ports:
       - '4200:4200'
     env_file:
-      - apps/frontend/.env
+      - apps/frontend/.env.docker
     networks:
       - app-network
     depends_on:

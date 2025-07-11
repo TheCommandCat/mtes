@@ -1,44 +1,50 @@
-# Dockerfile
-
-# 1. Base stage: Install all dependencies for building
+# 1. Base: install deps
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 
-# 2. Builder stage: Build the Express application
+# 2. Build: compile the backend
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Build the 'backend' app
 RUN npx nx build backend --prod
 
-# 3. Runner stage: Create the final production image
+# 3. Runner: production + Puppeteer
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    PORT=3333 \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
+# create non-root user
+RUN addgroup -S nodejs && \
+    adduser -S -G nodejs nodejs
 
-# Change ownership of the app directory BEFORE switching user
-RUN chown nodejs:nodejs /app
+# install Chromium & fonts etc.
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
 
-# Switch to the non-root user
-USER nodejs
-
-# Copy package definitions and install only production dependencies
+# copy only prod deps and install
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
-# Copy the built 'backend' app from the builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/dist/apps/backend/. .
+# (optional) if you need Puppeteer’s CLI to fetch any extra bits:
+# RUN npx puppeteer browsers install chrome
 
+# copy your built app and fix permissions
+COPY --from=builder --chown=nodejs:nodejs \
+    /app/dist/apps/backend/. .
+RUN chown -R nodejs:nodejs /app
+
+USER nodejs
 EXPOSE 3333
-ENV PORT 3333
-
-# Start the Express server (Nx typically outputs a main.js file)
-CMD ["node", "main.js"]
+CMD ["node","main.js"]
