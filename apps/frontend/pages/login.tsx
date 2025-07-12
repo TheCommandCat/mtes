@@ -5,22 +5,59 @@ import Layout from '../components/layout';
 import AdminLoginForm from '../components/general/login/admin-login-form';
 import { ElectionEvent, User } from '@mtes/types';
 import { apiFetch, serverSideGetRequests } from '../lib/utils/fetch';
-import DivisionLoginForm from '../components/login/division-login-form';
+import DivisionLoginForm from '../components/login/event-login-form';
+import EventSelector from '../components/forms/event-selector';
+import { ObjectId, WithId } from 'mongodb';
 
 interface LoginProps {
-  event?: ElectionEvent;
+  events: WithId<ElectionEvent>[];
+  defaultEvent?: WithId<ElectionEvent>;
 }
 
-const Page: NextPage<LoginProps> = ({ event }) => {
+const Page: NextPage<LoginProps> = ({ events, defaultEvent }) => {
   const [isAdminLogin, setIsAdminLogin] = useState<boolean>(false);
+  const [event, setEvent] = useState<WithId<ElectionEvent> | null>(null);
+
+  const handleEventSelect = (eventId: string | ObjectId) => {
+    const event = events.find(e => String(e._id) === String(eventId));
+    if (event) {
+      setEvent(event);
+    }
+  };
+
+  // if (!events || events.length === 0) {
+  //   return (
+  //     <Layout maxWidth="sm">
+  //       <Paper sx={{ p: 4, mt: 4, textAlign: 'center' }}>
+  //         <Typography variant="h6" color="error" gutterBottom>
+  //           אין אירועים זמינים
+  //         </Typography>
+  //         <Typography variant="body2" color="text.secondary">
+  //           אנא פנה למנהל המערכת
+  //         </Typography>
+  //       </Paper>
+  //     </Layout>
+  //   );
+  // }
 
   return (
     <Layout maxWidth="sm">
-      <Paper sx={{ p: 4, mt: 4 }}>
+      <Paper sx={{ p: 4, mt: 4, textAlign: 'center' }}>
         {isAdminLogin ? (
           <AdminLoginForm />
+        ) : event ? (
+          <DivisionLoginForm
+            votingStands={event.votingStands}
+            eventId={event._id}
+            onCancel={() => setEvent(null)}
+          />
         ) : (
-          <DivisionLoginForm votingStands={event?.votingStands ?? 0} />
+          <Stack direction="column">
+            <Typography variant="h2" pb={2} textAlign={'center'}>
+              בחירת אירוע
+            </Typography>
+            <EventSelector events={events} onChange={handleEventSelect} />
+          </Stack>
         )}
       </Paper>
 
@@ -50,19 +87,44 @@ export const getServerSideProps: GetServerSideProps = async ctx => {
     return response.ok ? response.json() : undefined;
   });
 
-  const data = await serverSideGetRequests(
-    {
-      event: '/public/event'
-    },
-    ctx
-  );
+  try {
+    const data = await serverSideGetRequests(
+      {
+        events: '/public/events',
+        defaultEvent: '/public/event'
+      },
+      ctx
+    );
 
-  if (user) {
-    return user.isAdmin
-      ? { redirect: { destination: `/admin`, permanent: false } }
-      : { redirect: { destination: `/mtes`, permanent: false } };
-  } else {
-    return { props: { ...data } };
+    if (user) {
+      return user.isAdmin
+        ? { redirect: { destination: `/admin`, permanent: false } }
+        : { redirect: { destination: `/mtes`, permanent: false } };
+    } else {
+      // Ensure events is always an array
+      const events = Array.isArray(data.events) ? data.events : [];
+      return {
+        props: {
+          events,
+          defaultEvent: data.defaultEvent
+        }
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching events:', error);
+
+    if (user) {
+      return user.isAdmin
+        ? { redirect: { destination: `/admin`, permanent: false } }
+        : { redirect: { destination: `/mtes`, permanent: false } };
+    } else {
+      return {
+        props: {
+          events: [],
+          defaultEvent: null
+        }
+      };
+    }
   }
 };
 

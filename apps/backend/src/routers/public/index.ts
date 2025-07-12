@@ -9,4 +9,10 @@ router.get('/event', (req: Request, res: Response) => {
   });
 });
 
+router.get('/events', (req: Request, res: Response) => {
+  db.getAllElectionEvents().then(events => {
+    res.status(200).json(events);
+  });
+});
+
 export default router;

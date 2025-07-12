@@ -1,47 +1,55 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useSnackbar } from 'notistack';
-import { WithId } from 'mongodb';
+import { WithId, ObjectId } from 'mongodb';
 import { Button, Box, Typography, Stack, MenuItem, TextField } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { Role, ElectionEvent } from '@mtes/types';
-// import FormDropdown from './form-dropdown';
+import { Role, RoleTypes } from '@mtes/types';
+import FormDropdown from './form-dropdown';
 import { apiFetch } from '../../lib/utils/fetch';
 import { localizedRoles } from '../../localization/roles';
-import FormDropdown from './form-dropdown';
 
-interface Props {
-  event: WithId<ElectionEvent>;
-  onCancel: () => void;
+interface DivisionLoginFormProps {
+  votingStands: number;
+  eventId?: string | ObjectId;
+  onCancel?: () => void;
 }
 
-const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
+const DivisionLoginForm: React.FC<DivisionLoginFormProps> = ({
+  votingStands,
+  eventId,
+  onCancel
+}) => {
   const [role, setRole] = useState<Role>('' as Role);
   const [password, setPassword] = useState<string>('');
-
-  const loginRoles = Object.keys(event.eventUsers);
+  const [association, setAssociation] = useState<number>();
 
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
 
-  const login = (captchaToken?: string) => {
+  const login = () => {
     apiFetch('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         isAdmin: false,
-        // eventId: event._id,
         role,
         password,
-        ...(captchaToken ? { captchaToken } : {})
+        eventId: eventId ? String(eventId) : undefined,
+        ...(association
+          ? {
+              roleAssociation: {
+                type: 'stand',
+                value: association
+              }
+            }
+          : undefined)
       })
     })
       .then(async res => {
         const data = await res.json();
         if (data && !data.error) {
-          document.getElementById('recaptcha-script')?.remove();
-          document.querySelector('.grecaptcha-badge')?.remove();
           const returnUrl = router.query.returnUrl || `/mtes`;
           router.push(returnUrl as string);
         } else if (data.error) {
@@ -72,9 +80,7 @@ const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
       <Typography variant="h2" textAlign="center">
         התחברות לאירוע:
       </Typography>
-      <Typography variant="h2" textAlign="center">
-        {event.name}
-      </Typography>
+      <Typography variant="h2" textAlign="center"></Typography>
 
       <FormDropdown
         id="select-division-role"
@@ -84,17 +90,28 @@ const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
           setRole(e.target.value as Role);
         }}
       >
-        {loginRoles
-          .filter((r): r is Role => r === 'election-manager' || r === 'voting-stand')
-          .map((r: Role) => {
-            return (
-              <MenuItem value={r} key={r}>
-                {localizedRoles[r]}
-              </MenuItem>
-            );
-          })}
+        {RoleTypes.map((r: Role) => {
+          return (
+            <MenuItem value={r as Role} key={r as Role}>
+              {localizedRoles[r as Role]}
+            </MenuItem>
+          );
+        })}
       </FormDropdown>
-
+      {role === 'voting-stand' && (
+        <FormDropdown
+          id="select-role-association"
+          value={association}
+          label={'קלפי'}
+          onChange={e => setAssociation(e.target.value)}
+        >
+          {Array.from({ length: votingStands }, (_, i) => i + 1).map(stand => (
+            <MenuItem value={stand} key={stand}>
+              קלפי {stand}
+            </MenuItem>
+          ))}
+        </FormDropdown>
+      )}
       <TextField
         fullWidth
         variant="outlined"
@@ -108,7 +125,7 @@ const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
       <Box justifyContent="flex-end" display="flex" pt={4}>
         <Button
           endIcon={<ChevronLeftIcon />}
-          disabled={!role || !password}
+          disabled={!role || !password || (role === 'voting-stand' && !association)}
           type="submit"
           variant="contained"
         >
@@ -119,4 +136,4 @@ const EventLoginForm: React.FC<Props> = ({ event, onCancel }): JSX.Element => {
   );
 };
 
-export default EventLoginForm;
+export default DivisionLoginForm;
