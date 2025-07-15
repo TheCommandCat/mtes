@@ -11,7 +11,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   const loginDetails: User = req.body;
-  loginDetails.eventId = new ObjectId(loginDetails.eventId);
+  if (loginDetails.eventId) loginDetails.eventId = new ObjectId(loginDetails.eventId);
 
   try {
     const user = await db.getUser({ ...loginDetails });
