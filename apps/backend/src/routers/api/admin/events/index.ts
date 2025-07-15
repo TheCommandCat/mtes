@@ -35,9 +35,20 @@ router.post(
 
     // Validate required fields
     if (!eventData?.name || !eventData?.votingStands) {
-      res.status(400).json({ error: 'שם האירוע ומספר עמדות הצבעה הם שדות חובה' });
+      if (!eventData.name) {
+        res.status(400).json({ error: 'שם האירוע הוא שדה חובה' });
+        return;
+      }
+      if (eventData.votingStands === undefined || eventData.votingStands === null) {
+        res.status(400).json({ error: 'מספר עמדות הצבעה הוא שדה חובה' });
+        return;
+      }
+
       return;
     }
+
+    console.log(eventData);
+
 
     eventData.startDate = new Date();
     eventData.endDate = new Date();
@@ -47,6 +58,8 @@ router.post(
 
     console.log('⏬ Creating Event...');
     const eventResult = await db.addElectionEvent(eventData as ElectionEvent);
+    const eventId = eventResult.insertedId
+
     if (!eventResult.acknowledged) {
       console.log('❌ Could not create Event');
       res.status(500).json({ ok: false });
@@ -68,7 +81,7 @@ router.post(
     // }
 
     console.log('👤 Generating division users');
-    const users = CreateVotingStandUsers(eventData.votingStands);
+    const users = CreateVotingStandUsers(eventData.votingStands, eventId);
 
     if (!(await db.addUsers(users)).acknowledged) {
       res.status(500).json({ error: 'Could not create users!' });

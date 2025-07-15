@@ -2,7 +2,19 @@ import { useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import type { GetServerSidePropsContext } from 'next';
 import { useRouter } from 'next/router';
-import { Paper, Typography, Stack, Button, Box, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import {
+  Paper,
+  Typography,
+  Stack,
+  Button,
+  Box,
+  Tabs,
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
 import { enqueueSnackbar } from 'notistack';
 import { Formik, Form, FormikHelpers, getIn } from 'formik';
@@ -229,7 +241,7 @@ const Page: NextPage<PageProps> = ({
     if (!event?._id) return;
 
     setDeleteConfirmOpen(false);
-    
+
     try {
       const res = await apiFetch(`/api/admin/events/data`, {
         method: 'DELETE'
@@ -395,38 +407,27 @@ const Page: NextPage<PageProps> = ({
           }}
         </Formik>
       </Paper>
-      
-      <ChangePasswordDialog 
+
+      <ChangePasswordDialog
         open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
       />
-      
+
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ textAlign: 'center' }}>
-          אישור מחיקת אירוע
-        </DialogTitle>
+        <DialogTitle sx={{ textAlign: 'center' }}>אישור מחיקת אירוע</DialogTitle>
         <DialogContent>
-          <Typography>
-            האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה ניתנת לביטול.
-          </Typography>
+          <Typography>האם אתה בטוח שברצונך למחוק את האירוע? פעולה זו אינה ניתנת לביטול.</Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', gap: 2, pb: 3 }}>
-          <Button 
-            onClick={() => setDeleteConfirmOpen(false)}
-            variant="outlined"
-          >
+          <Button onClick={() => setDeleteConfirmOpen(false)} variant="outlined">
             ביטול
           </Button>
-          <Button 
-            onClick={handleDeleteConfirm}
-            variant="contained"
-            color="error"
-          >
+          <Button onClick={handleDeleteConfirm} variant="contained" color="error">
             מחק אירוע
           </Button>
         </DialogActions>

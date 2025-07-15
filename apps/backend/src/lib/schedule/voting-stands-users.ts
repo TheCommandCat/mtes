@@ -1,4 +1,5 @@
 import { User } from '@mtes/types';
+import { ObjectId } from 'mongodb';
 
 const randomString = (length: number) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -9,10 +10,11 @@ const randomString = (length: number) => {
   return result;
 };
 
-export const CreateVotingStandUsers = (numOfStands: number): User[] => {
-  const users = [];
+export const CreateVotingStandUsers = (numOfStands: number, eventId: ObjectId): User[] => {
+  const users: User[] = [];
 
   users.push({
+    eventId: eventId,
     isAdmin: false,
     role: 'election-manager',
     password: randomString(4),
@@ -21,6 +23,7 @@ export const CreateVotingStandUsers = (numOfStands: number): User[] => {
 
   for (let i = 1; i <= numOfStands; i++) {
     users.push({
+      eventId: eventId,
       isAdmin: false,
       role: 'voting-stand',
       password: randomString(4),
@@ -33,6 +36,7 @@ export const CreateVotingStandUsers = (numOfStands: number): User[] => {
   }
 
   users.push({
+    eventId: eventId,
     isAdmin: false,
     role: 'audience-display',
     password: randomString(4),
