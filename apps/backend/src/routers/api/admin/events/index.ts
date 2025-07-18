@@ -6,6 +6,7 @@ import { ElectionEvent, ElectionState, User, Member } from '@mtes/types'; // Add
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 import { CreateVotingStandUsers } from 'apps/backend/src/lib/schedule/voting-stands-users';
+import { ObjectId } from 'mongodb';
 
 const randomString = (length: number) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -94,7 +95,7 @@ router.post(
 );
 
 router.put(
-  '/',
+  '/:eventId',
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
 
@@ -160,11 +161,12 @@ router.put(
 );
 
 router.delete(
-  '/data',
+  '/:eventId',
   asyncHandler(async (req: Request, res: Response) => {
     console.log(`🚮 Deleting data from event`);
     try {
-      await cleanDivisionData();
+      await cleanDivisionData(new ObjectId(req.params.eventId));
+
     } catch (error) {
       res.status(500).json(error.message);
       return;
@@ -174,7 +176,8 @@ router.delete(
   })
 );
 
-router.use('/users', divisionUsersRouter);
-router.use('/cities', citiesRouter);
+router.use('/:eventId/users', divisionUsersRouter);
+
+router.use('/:eventId/cities', citiesRouter);
 
 export default router;

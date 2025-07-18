@@ -43,7 +43,10 @@ export const apiFetch = (
 
 export const getUserAndDivision = async (ctx: GetServerSidePropsContext) => {
   const user: SafeUser = await apiFetch(`/api/me`, undefined, ctx).then(res => res?.json());
-  const eventId = user.eventId
+  console.log(`🌐 Fetched user data:`, user);
+
+  const eventId = user.eventId?.toString();
+
   return { user, eventId };
 };
 

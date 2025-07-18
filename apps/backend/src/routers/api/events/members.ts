@@ -7,7 +7,9 @@ const router = express.Router({ mergeParams: true });
 
 router.get('/', async (req: Request, res: Response) => {
     console.log('⏬ Getting members...');
-    return res.json(await db.getMembers({}));
+    return res.json(await db.getMembers({
+        // eventId: new ObjectId(req.params.eventId)
+    }));
 });
 
 router.put('/', async (req: Request, res: Response) => {

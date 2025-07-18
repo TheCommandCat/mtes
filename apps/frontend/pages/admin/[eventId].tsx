@@ -173,7 +173,12 @@ const Page: NextPage<PageProps> = ({
         votingStands: values.votingStands,
         electionThreshold: values.electionThreshold
       };
-      await updateEndpoint('/api/admin/events', 'PUT', eventDetailsPayload, 'event details');
+      await updateEndpoint(
+        `/api/admin/events/${event._id}`,
+        'PUT',
+        eventDetailsPayload,
+        'event details'
+      );
       const regularMembersPayload = values.regularMembers.map(m => ({
         ...m,
         isMM: false,
@@ -185,19 +190,19 @@ const Page: NextPage<PageProps> = ({
         isPresent: m.isPresent || false
       }));
       await updateEndpoint(
-        '/api/events/members',
+        `/api/events/${event._id}/members`,
         'PUT',
         { members: regularMembersPayload },
         'members'
       );
       await updateEndpoint(
-        '/api/events/mm-members',
+        `/api/events/${event._id}/mm-members`,
         'PUT',
         { mmMembers: mmMembersPayload },
         'MM members'
       );
       await updateEndpoint(
-        '/api/admin/events/cities',
+        `/api/admin/events/${event._id}/cities`,
         'PUT',
         { cities: values.cities as City[] },
         'cities'
@@ -218,10 +223,12 @@ const Page: NextPage<PageProps> = ({
   };
 
   const handleDeleteConfirm = async () => {
+    console.log(`🌐 Deleting event with ID: ${event?._id}`);
+
     if (!event?._id) return;
     setDeleteConfirmOpen(false);
     try {
-      const res = await apiFetch(`/api/admin/events/data`, {
+      const res = await apiFetch(`/api/admin/events/${event._id}`, {
         method: 'DELETE'
       });
       if (!res.ok) {
@@ -403,18 +410,21 @@ const Page: NextPage<PageProps> = ({
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx: GetServerSidePropsContext
 ) => {
-  const { user, eventId } = await getUserAndDivision(ctx);
+  const eventId = ctx.params?.eventId;
   const data = await serverSideGetRequests(
     {
       user: '/api/me',
       event: `/api/events/${eventId}`,
-      initMembers: `/api/events/${eventId}members`,
-      initMMMembers: `/api/events/mm-members`,
-      initCities: `/api/admin/events/cities`,
-      credentials: `/api/admin/events/users/credentials`
+      initMembers: `/api/events/${eventId}/members`,
+      initMMMembers: `/api/events/${eventId}/mm-members`,
+      initCities: `/api/admin/events/${eventId}/cities`,
+      credentials: `/api/admin/events/${eventId}/users/credentials`
     },
     ctx
   );
+
+  console.log('event : ', data.event);
+
   return {
     props: {
       user: data.user,

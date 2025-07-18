@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import * as db from '@mtes/database';
+import { ObjectId } from 'mongodb';
 
 const router = express.Router({ mergeParams: true });
 
 router.get('/event', (req: Request, res: Response) => {
-  db.getElectionEvent().then(event => {
+  db.getElectionEvent(new ObjectId(req.params.eventId)).then(event => {
     res.status(200).json(event);
   });
 });

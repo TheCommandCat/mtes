@@ -27,6 +27,6 @@ export const deleteCity = (filter: Filter<City>) => {
     return db.collection<City>('cities').deleteOne(filter);
 };
 
-export const deleteCities = () => {
-    return db.collection<City>('cities').deleteMany({});
+export const deleteCities = (filter: Filter<City>) => {
+    return db.collection<City>('cities').deleteMany(filter);
 };

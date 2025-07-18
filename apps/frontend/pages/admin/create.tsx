@@ -97,13 +97,7 @@ const createValidationSchema = (isNewEvent: boolean) =>
 
 export type FormValues = z.infer<ReturnType<typeof createValidationSchema>>;
 
-export interface PageProps {
-  user: WithId<User>;
-  initCities: City[];
-  credentials: User[];
-}
-
-const Page: NextPage<PageProps> = ({ user, initCities, credentials }) => {
+const Page: NextPage = () => {
   const router = useRouter();
   const [currentTab, setCurrentTab] = useState(0);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -116,7 +110,7 @@ const Page: NextPage<PageProps> = ({ user, initCities, credentials }) => {
     electionThreshold: 50,
     regularMembers: [],
     mmMembers: [],
-    cities: Array.isArray(initCities) ? initCities : []
+    cities: []
   };
 
   const handleSubmit = async (values: FormValues, { setSubmitting }: FormikHelpers<FormValues>) => {
@@ -144,16 +138,25 @@ const Page: NextPage<PageProps> = ({ user, initCities, credentials }) => {
         votingStands: values.votingStands,
         electionThreshold: values.electionThreshold
       };
-      await updateEndpoint('/api/admin/events', 'POST', eventDetailsPayload, 'event details');
+      const eventId = await updateEndpoint(
+        '/api/admin/events',
+        'POST',
+        eventDetailsPayload,
+        'event details'
+      );
+      console.log(`Event created with ID: ${eventId}`);
+
       const regularMembersPayload = values.regularMembers.map(m => ({
         ...m,
         isMM: false,
-        isPresent: m.isPresent || false
+        isPresent: m.isPresent || false,
+        eventId
       }));
       const mmMembersPayload = values.mmMembers.map(m => ({
         ...m,
         isMM: true,
-        isPresent: m.isPresent || false
+        isPresent: m.isPresent || false,
+        eventId
       }));
       await updateEndpoint(
         '/api/events/members',
@@ -207,14 +210,21 @@ const Page: NextPage<PageProps> = ({ user, initCities, credentials }) => {
                   sx={{ mb: 2 }}
                 >
                   <Tab label="פרטי אירוע" />
-                  <Tab label="ניהול חברים" />
                   <Tab label="ניהול ערים" />
-                  <Tab label="ניהול משתמשים" />
-                  <Tab label="הגדרות מנהל" />
+                  <Tab label="ניהול חברים" />
                 </Tabs>
               </Box>
               {currentTab === 0 && <EventDetailsForm renderActionButtons={() => <></>} />}
               {currentTab === 1 && (
+                <CitiesManagementForm
+                  values={values}
+                  setFieldValue={setFieldValue}
+                  renderActionButtons={() => <></>}
+                  isNewEvent={true}
+                  initCities={values.cities}
+                />
+              )}
+              {currentTab === 2 && (
                 <Stack spacing={3}>
                   <MembersManagementForm
                     title="ניהול נציגים"
@@ -236,47 +246,6 @@ const Page: NextPage<PageProps> = ({ user, initCities, credentials }) => {
                   />
                 </Stack>
               )}
-              {currentTab === 2 && (
-                <CitiesManagementForm
-                  values={values}
-                  setFieldValue={setFieldValue}
-                  renderActionButtons={() => <></>}
-                  isNewEvent={true}
-                  initCities={initCities}
-                />
-              )}
-              {currentTab === 3 && (
-                <Paper elevation={3} sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    ניהול משתמשים
-                  </Typography>
-                  <UsersTable users={credentials} />
-                </Paper>
-              )}
-              {currentTab === 4 && (
-                <Paper elevation={3} sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    הגדרות מנהל
-                  </Typography>
-                  <Stack spacing={3}>
-                    <Paper elevation={1} sx={{ p: 3, backgroundColor: 'grey.50' }}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        שינוי סיסמה
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        עדכן את סיסמת המנהל שלך למטרות אבטחה
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        onClick={() => setPasswordDialogOpen(true)}
-                        sx={{ mt: 1 }}
-                      >
-                        שנה סיסמה
-                      </Button>
-                    </Paper>
-                  </Stack>
-                </Paper>
-              )}
               <Stack
                 direction="row"
                 spacing={2}
@@ -297,27 +266,6 @@ const Page: NextPage<PageProps> = ({ user, initCities, credentials }) => {
       />
     </Layout>
   );
-};
-
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx: GetServerSidePropsContext
-) => {
-  const { user } = await getUserAndDivision(ctx);
-  const data = await serverSideGetRequests(
-    {
-      user: '/api/me',
-      initCities: '/api/admin/events/cities',
-      credentials: '/api/admin/events/users/credentials'
-    },
-    ctx
-  );
-  return {
-    props: {
-      user: data.user,
-      initCities: data.initCities ?? [],
-      credentials: data.credentials ?? []
-    }
-  };
 };
 
 export default Page;
