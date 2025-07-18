@@ -15,7 +15,6 @@
     "@mui/icons-material": "^6.4.0",
     "@mui/lab": "^6.0.0-beta.24",
     "@mui/material": "^6.4.10",
-    "@mui/system": "^7.2.0",
     "@mui/x-date-pickers": "^7.24.0",
     "@types/express-fileupload": "^1.5.1",
     "@uiw/react-signature": "^1.3.2",
