@@ -69,13 +69,13 @@ export async function deleteRoundVotes(roundId: string) {
 }
 
 // Delete all votes
-export const deleteVotes = () => {
-  return db.collection<Vote>('votes').deleteMany({});
+export const deleteVotes = (filter: Filter<Vote>) => {
+  return db.collection<Vote>('votes').deleteMany(filter);
 };
 
 // Delete all voting statuses
-export const deleteVotingStatuses = () => {
-  return db.collection<VotingStatus>('votingStatus').deleteMany({});
+export const deleteVotingStatuses = (filter: Filter<VotingStatus>) => {
+  return db.collection<VotingStatus>('votingStatus').deleteMany(filter);
 };
 
 // Check if round is locked

@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import jwt from 'jsonwebtoken';
 import * as db from '@mtes/database';
 import { User } from '@mtes/types';
+import { ObjectId } from 'mongodb';
 
 const router = express.Router({ mergeParams: true });
 
@@ -10,6 +11,7 @@ const jwtSecret = process.env.JWT_SECRET;
 
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   const loginDetails: User = req.body;
+  if (loginDetails.eventId) loginDetails.eventId = new ObjectId(loginDetails.eventId);
 
   try {
     const user = await db.getUser({ ...loginDetails });

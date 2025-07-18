@@ -26,6 +26,6 @@ export const deleteContestant = (filter: Filter<Contestant>) => {
   return db.collection<Contestant>('contestants').deleteOne(filter);
 };
 
-export const deleteContestants = () => {
-  return db.collection<Contestant>('contestants').deleteMany();
+export const deleteContestants = (filter: Filter<Contestant>) => {
+  return db.collection<Contestant>('contestants').deleteMany(filter);
 };

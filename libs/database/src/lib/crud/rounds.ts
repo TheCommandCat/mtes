@@ -26,6 +26,6 @@ export const deleteRound = (filter: Filter<Round>) => {
   return db.collection<Round>('rounds').deleteOne(filter);
 };
 
-export const deleteRounds = () => {
-  return db.collection<Round>('rounds').deleteMany();
+export const deleteRounds = (filter: Filter<Round>) => {
+  return db.collection<Round>('rounds').deleteMany(filter);
 };

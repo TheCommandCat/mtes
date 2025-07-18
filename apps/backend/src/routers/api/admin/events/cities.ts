@@ -76,7 +76,7 @@ router.put(
             }
         }
 
-        const deleteRes = await db.deleteCities();
+        const deleteRes = await db.deleteCities({});
         if (!deleteRes.acknowledged) {
             console.log('❌ Could not delete cities');
             res.status(500).json({ ok: false, message: 'Could not delete cities' });
