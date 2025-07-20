@@ -112,7 +112,7 @@ export const VotingForm = ({
     try {
       socket.emit('voteSubmitted', member, votingStandId);
 
-      const response = await apiFetch('/api/events/vote', {
+      const response = await apiFetch(`/api/events/${round.eventId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
