@@ -143,11 +143,11 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
 
 export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
-    const { user } = await getUserAndDivision(ctx);
+    const { user, eventId } = await getUserAndDivision(ctx);
 
     const data = await serverSideGetRequests(
       {
-        electionState: '/api/events/state'
+        electionState: `/api/events/${eventId}/state`
       },
       ctx
     );

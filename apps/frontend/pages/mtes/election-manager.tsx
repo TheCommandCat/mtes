@@ -54,7 +54,7 @@ interface Props {
   mmMembers: WithId<Member>[];
   rounds: WithId<Round>[];
   electionState: WithId<ElectionState>;
-  event: ElectionEvent;
+  event: WithId<ElectionEvent>;
   eventState: WithId<ElectionState>;
 }
 
@@ -573,8 +573,6 @@ const Page: NextPage<Props> = ({
     setSelectStandId(null);
   };
 
-  console.log(votedMembers);
-
   return (
     <RoleAuthorizer
       user={user}
@@ -747,6 +745,7 @@ const Page: NextPage<Props> = ({
                         handleShowResults={handleShowResults}
                         members={members}
                         refreshData={() => router.replace(router.asPath)}
+                        eventId={event._id.toString()}
                       />
                     </Box>
                   )}
@@ -841,19 +840,21 @@ const Page: NextPage<Props> = ({
 
 export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
-    const { user } = await getUserAndDivision(ctx);
+    const { user, eventId } = await getUserAndDivision(ctx);
 
     const data = await serverSideGetRequests(
       {
-        rounds: '/api/events/rounds',
-        electionState: '/api/events/state',
-        members: '/api/events/members',
-        mmMembers: '/api/events/mm-members', // Added mmMembers endpoint
-        event: '/public/event',
-        eventState: '/api/events/state'
+        rounds: `/api/events/${eventId}/rounds`,
+        event: `/api/events/${eventId}`,
+        electionState: `/api/events/${eventId}/state`,
+        members: `/api/events/${eventId}/members`,
+        mmMembers: `/api/events/${eventId}/mm-members`,
+        eventState: `/api/events/${eventId}/state`
       },
       ctx
     );
+
+    console.log('Server-side data fetched:', data);
 
     return { props: { user, ...data } }; // Pass combined list as members
   } catch {

@@ -19,6 +19,7 @@ interface ControlRoundsProps {
   handleShowResults: (round: WithId<Round>) => void;
   members: WithId<Member>[];
   refreshData: () => void;
+  eventId: string;
 }
 
 const handleDeleteRound = (round: WithId<Round>, refreshData: () => void) => {
@@ -42,7 +43,8 @@ export const ControlRounds = ({
   setSelectedRound,
   handleShowResults,
   members,
-  refreshData
+  refreshData,
+  eventId
 }: ControlRoundsProps) => {
   return (
     <Box>
@@ -50,7 +52,7 @@ export const ControlRounds = ({
         <Typography variant="h6" gutterBottom>
           סבבים זמינים
         </Typography>
-        <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} />
+        <AddRoundDialog availableMembers={members} onRoundCreated={refreshData} eventId={eventId} />
       </Box>
       <Grid container spacing={2}>
         {rounds.map(round => {
@@ -152,6 +154,7 @@ export const ControlRounds = ({
                         onRoundCreated={refreshData}
                         initialRound={round}
                         isEdit={true}
+                        eventId={eventId}
                         // If AddRoundDialog needs a custom trigger, add a prop like below
                         // triggerIcon={<EditIcon fontSize="small" />}
                       />
@@ -163,6 +166,7 @@ export const ControlRounds = ({
                       onRoundCreated={refreshData}
                       initialRound={round}
                       isDuplicate={true}
+                      eventId={eventId}
                       // If AddRoundDialog needs a custom trigger, add a prop like below
                       // triggerIcon={<ContentCopyIcon fontSize="small" />}
                     />
