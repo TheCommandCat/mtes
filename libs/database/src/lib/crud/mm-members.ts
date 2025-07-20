@@ -17,10 +17,12 @@ export const addMmMember = (mmMember: Member) => {
 export const addMmMembers = (mmMembers: Array<Member>) => {
     const validMmMembers = mmMembers.map(mmMember => {
         return {
+            eventId: mmMember.eventId,
             name: mmMember.name,
             city: mmMember.city,
             isPresent: mmMember.isPresent ?? false,
-            isMM: mmMember.isMM ?? false
+            isMM: mmMember.isMM ?? false,
+            replacedBy: mmMember.replacedBy ?? null
         };
     });
     return db.collection<Member>('mm-members').insertMany(validMmMembers);

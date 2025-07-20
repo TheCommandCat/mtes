@@ -5,12 +5,13 @@ import { Member, Round } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
-const genrateWhireVoteMembers = (numWhiteVotes: number): WithId<Member>[] => {
+const genrateWhireVoteMembers = (numWhiteVotes: number, eventId: ObjectId): WithId<Member>[] => {
     const whiteVotes: WithId<Member>[] = [];
     for (let i = 0; i < numWhiteVotes; i++) {
         whiteVotes.push(
             {
                 _id: new ObjectId(`00000000000000000000000${i + 1}`),
+                eventId: eventId,
                 name: `פתק לבן ${i + 1}`,
                 city: 'אין אמון באף אחד',
                 isPresent: true,
@@ -21,12 +22,29 @@ const genrateWhireVoteMembers = (numWhiteVotes: number): WithId<Member>[] => {
     return whiteVotes;
 }
 router.get('/', async (req: Request, res: Response) => {
+
+    const eventId = req.params.eventId;
+    if (!eventId) {
+        console.log('❌ Event ID is null or undefined');
+        return res.status(400).json({ ok: false, message: 'Event ID is missing' });
+    }
+
     console.log('⏬ Getting rounds...');
-    return res.json(await db.getRounds({}));
+    return res.json(await db.getRounds({
+        eventId: new ObjectId(eventId)
+    }));
 });
 
 router.post('/add', async (req: Request, res: Response) => {
+
+    const eventId = req.params.eventId;
+    if (!eventId) {
+        console.log('❌ Event ID is null or undefined');
+        return res.status(400).json({ ok: false, message: 'Event ID is missing' });
+    }
+
     const { round } = req.body;
+    round.eventId = new ObjectId(eventId);
 
     console.log('⏬ Adding Round...', JSON.stringify(round, null, 2));
 
@@ -75,7 +93,7 @@ router.post('/add', async (req: Request, res: Response) => {
                     })
                 );
                 if (role.numWhiteVotes > 0) {
-                    contestants.push(...genrateWhireVoteMembers(role.numWhiteVotes));
+                    contestants.push(...genrateWhireVoteMembers(role.numWhiteVotes, round.eventId));
                 }
                 return { ...role, contestants };
             })
@@ -190,7 +208,7 @@ router.put('/update', async (req: Request, res: Response) => {
                         })
                     );
                     if (role.numWhiteVotes > 0) {
-                        contestants.push(...genrateWhireVoteMembers(role.numWhiteVotes));
+                        contestants.push(...genrateWhireVoteMembers(role.numWhiteVotes, existingRound.eventId));
                     }
                     return { ...role, contestants };
                 })

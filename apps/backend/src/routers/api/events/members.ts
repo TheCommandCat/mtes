@@ -8,13 +8,18 @@ const router = express.Router({ mergeParams: true });
 router.get('/', async (req: Request, res: Response) => {
     console.log('⏬ Getting members...');
     return res.json(await db.getMembers({
-        // eventId: new ObjectId(req.params.eventId)
+        eventId: new ObjectId(req.params.eventId)
     }));
 });
 
 router.put('/', async (req: Request, res: Response) => {
-    const { members } = req.body as { members: Member[] };
+    const eventId = req.params.eventId;
+    if (!eventId) {
+        console.log('❌ Event ID is null or undefined');
+        return res.status(400).json({ ok: false, message: 'Event ID is missing' });
+    }
 
+    const { members } = req.body as { members: Member[] };
     if (!members || members.length === 0) {
         console.log('❌ Members array is empty');
         res.status(400).json({ ok: false, message: 'No members provided' });
@@ -23,14 +28,16 @@ router.put('/', async (req: Request, res: Response) => {
 
     console.log('⏬ Updating Members...');
 
-    const deleteRes = await db.deleteMembers({});
+    const deleteRes = await db.deleteMembers({
+        eventId: new ObjectId(eventId)
+    });
     if (!deleteRes.acknowledged) {
         console.log('❌ Could not delete members');
         res.status(500).json({ ok: false, message: 'Could not delete members' });
         return;
     }
 
-    const addRes = await db.addMembers(members.map(member => ({ ...member, _id: undefined })));
+    const addRes = await db.addMembers(members.map(member => ({ ...member, eventId: new ObjectId(eventId) })));
     if (!addRes.acknowledged) {
         console.log('❌ Could not add members');
         res.status(500).json({ ok: false, message: 'Could not add members' });

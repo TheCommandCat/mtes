@@ -6,11 +6,27 @@ import { Member } from '@mtes/types';
 const router = express.Router({ mergeParams: true });
 
 router.get('/', async (req: Request, res: Response) => {
+
+    const eventId = req.params.eventId;
+    if (!eventId) {
+        console.log('❌ Event ID is null or undefined');
+        return res.status(400).json({ ok: false, message: 'Event ID is missing' });
+    }
+
     console.log('⏬ Getting mm-members...');
-    return res.json(await db.getMmMembers({}));
+    return res.json(await db.getMmMembers({
+        eventId: new ObjectId(eventId)
+    }));
 });
 
 router.put('/', async (req: Request, res: Response) => {
+
+    const eventId = req.params.eventId;
+    if (!eventId) {
+        console.log('❌ Event ID is null or undefined');
+        return res.status(400).json({ ok: false, message: 'Event ID is missing' });
+    }
+
     const { mmMembers } = req.body as { mmMembers: Member[] } || { mmMembers: [] };
 
     console.log('⏬ Updating mm-members...');
@@ -21,14 +37,16 @@ router.put('/', async (req: Request, res: Response) => {
     }
 
     try {
-        const deleteRes = await db.deleteMmMembers({});
+        const deleteRes = await db.deleteMmMembers({
+            eventId: new ObjectId(eventId)
+        });
         if (!deleteRes.acknowledged) {
             console.log('❌ Could not delete mm-members');
             return res.status(500).json({ ok: false, message: 'Could not delete mm-members' });
         }
 
         if (mmMembers.length > 0) {
-            const addRes = await db.addMmMembers(mmMembers.map(member => ({ ...member, _id: undefined })));
+            const addRes = await db.addMmMembers(mmMembers.map(member => ({ ...member, eventId: new ObjectId(eventId) })));
             if (!addRes.acknowledged) {
                 console.log('❌ Could not add mm-members');
                 return res.status(500).json({ ok: false, message: 'Could not add mm-members' });

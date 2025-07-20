@@ -1,9 +1,9 @@
 import { ElectionState } from '@mtes/types';
 import db from '../database';
-import { ObjectId } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 
-export const getElectionState = () => {
-  return db.collection<ElectionState>('election-state').findOne();
+export const getElectionState = (filter: Filter<ElectionState>) => {
+  return db.collection<ElectionState>('election-state').findOne(filter);
 };
 
 export const addElectionState = (state: ElectionState) => {

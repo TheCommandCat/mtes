@@ -138,12 +138,13 @@ const Page: NextPage = () => {
         votingStands: values.votingStands,
         electionThreshold: values.electionThreshold
       };
-      const eventId = await updateEndpoint(
+      const eventUpdateRes = await updateEndpoint(
         '/api/admin/events',
         'POST',
         eventDetailsPayload,
         'event details'
       );
+      const eventId = eventUpdateRes.id as string;
       console.log(`Event created with ID: ${eventId}`);
 
       const regularMembersPayload = values.regularMembers.map(m => ({
@@ -159,21 +160,21 @@ const Page: NextPage = () => {
         eventId
       }));
       await updateEndpoint(
-        '/api/events/members',
+        `/api/events/${eventId}/members`,
         'PUT',
         { members: regularMembersPayload },
         'members'
       );
       if (mmMembersPayload.length > 0) {
         await updateEndpoint(
-          '/api/events/mm-members',
+          `/api/events/${eventId}/mm-members`,
           'PUT',
           { mmMembers: mmMembersPayload },
           'MM members'
         );
       }
       await updateEndpoint(
-        '/api/admin/events/cities',
+        `/api/admin/events/${eventId}/cities`,
         'PUT',
         { cities: values.cities as City[] },
         'cities'

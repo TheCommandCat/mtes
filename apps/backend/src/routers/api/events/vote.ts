@@ -5,9 +5,10 @@ import { Member, Positions } from '@mtes/types';
 
 const router = express.Router({ mergeParams: true });
 
-const getWhiteVoteMember = (id: string): WithId<Member> => {
+const getWhiteVoteMember = (id: string, eventId?: string): WithId<Member> => {
     return {
         _id: new ObjectId(id),
+        eventId: eventId ? new ObjectId(eventId) : new ObjectId(), // Provide eventId or fallback
         name: `פתק לבן ${Number(id)}`,
         city: 'אין אמון באף אחד',
         isPresent: true,
@@ -56,10 +57,9 @@ router.post('/', async (req: Request, res: Response) => {
                 return Promise.all(
                     contestantIds.map(async (contestantId: string) => {
                         console.log(`⏬ Processing vote for role ${role} and contestant ID ${contestantId}`);
-
                         const contestant =
                             contestantId.startsWith('00000000000000000000') // 20 times '0' for white vote as a white vote id is 24(last 4 characters are for id)
-                                ? getWhiteVoteMember(contestantId)
+                                ? getWhiteVoteMember(contestantId, round?.eventId?.toString())
                                 : await db.getMember({ _id: new ObjectId(contestantId) });
 
                         if (!contestant) {

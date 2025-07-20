@@ -1,12 +1,22 @@
 import express, { Request, Response } from 'express';
 import * as db from '@mtes/database';
 import { ElectionState } from '@mtes/types';
+import { ObjectId } from 'mongodb';
 
 const router = express.Router({ mergeParams: true });
 
 router.get('/', (req: Request, res: Response) => {
+
+    const eventId = req.params.eventId;
+    if (!eventId) {
+        console.log('❌ Event ID is null or undefined');
+        return res.status(400).json({ ok: false, message: 'Event ID is missing' });
+    }
+
     console.log(`⏬ Getting Election state`);
-    db.getElectionState().then(divisionState => res.json(divisionState));
+    db.getElectionState({
+        eventId: new ObjectId(eventId)
+    }).then(divisionState => res.json(divisionState));
 });
 
 router.put('/', (req: Request, res: Response) => {

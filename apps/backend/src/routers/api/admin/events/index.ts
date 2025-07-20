@@ -19,8 +19,9 @@ const randomString = (length: number) => {
 
 const router = express.Router({ mergeParams: true });
 
-function getInitialDivisionState(): ElectionState {
+function getInitialDivisionState(eventId: ObjectId): ElectionState {
   return {
+    eventId: eventId,
     activeRound: null,
     completed: false,
     audienceDisplay: {
@@ -69,7 +70,7 @@ router.post(
     console.log('✅ Created Event!');
 
     console.log('🔐 Creating division state');
-    if (!(await db.addElectionState(getInitialDivisionState())).acknowledged) {
+    if (!(await db.addElectionState(getInitialDivisionState(eventId))).acknowledged) {
       throw new Error('Could not create division state!');
     }
     console.log('✅ Created division state');
@@ -82,7 +83,13 @@ router.post(
     // }
 
     console.log('👤 Generating division users');
+
+    console.log(`Creating voting stand users for ${eventData.votingStands} stands with event ID: ${eventId}`);
+
     const users = CreateVotingStandUsers(eventData.votingStands, eventId);
+
+    console.log('users:', users);
+
 
     if (!(await db.addUsers(users)).acknowledged) {
       res.status(500).json({ error: 'Could not create users!' });
