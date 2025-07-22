@@ -88,7 +88,6 @@ export const handleUpdateMemberPresence = async (
   replacedBy: WithId<Member> | null,
   callback: ((response: { ok: boolean; error?: string }) => void) | undefined
 ) => {
-
   if (!memberId) {
     console.log('❌ Member ID is null or undefined');
     if (typeof callback === 'function') {
@@ -102,7 +101,7 @@ export const handleUpdateMemberPresence = async (
 
   const updatePayload: Partial<Member> = {
     isPresent,
-    replacedBy: replacedBy ? replacedBy as WithId<Member> : null
+    replacedBy: replacedBy ? (replacedBy as WithId<Member>) : null
   };
 
   try {
@@ -112,7 +111,9 @@ export const handleUpdateMemberPresence = async (
         updatePayload as unknown as Partial<Member>
       );
       if (!result.acknowledged || result.matchedCount === 0) {
-        console.log(`❌ Could not update presence for member ${memberId}. Member not found or update failed.`);
+        console.log(
+          `❌ Could not update presence for member ${memberId}. Member not found or update failed.`
+        );
         if (typeof callback === 'function') {
           callback({ ok: false, error: 'Member not found or update failed' });
         }
@@ -125,7 +126,9 @@ export const handleUpdateMemberPresence = async (
         updatePayload as unknown as Partial<Member>
       );
       if (!result.acknowledged || result.matchedCount === 0) {
-        console.log(`❌ Could not update presence for member ${memberId}. Member not found or update failed.`);
+        console.log(
+          `❌ Could not update presence for member ${memberId}. Member not found or update failed.`
+        );
         if (typeof callback === 'function') {
           callback({ ok: false, error: 'Member not found or update failed' });
         }
@@ -133,24 +136,23 @@ export const handleUpdateMemberPresence = async (
       }
       console.log(`✅ Presence updated for member ${memberId}`);
     }
-    namespace.emit('memberPresenceUpdated',
-      memberId,
-      isMM,
-      isPresent,
-      replacedBy
-    );
-
+    namespace.emit('memberPresenceUpdated', memberId, isMM, isPresent, replacedBy);
   } catch (error) {
     console.error('❌ Error updating member presence:', error);
     if (typeof callback === 'function') {
       callback({ ok: false, error: 'Internal server error while updating member presence' });
     }
   }
-}
+};
 
 export const handleUpdateAudienceDisplay = async (
   namespace: any,
-  view: { display: 'round' | 'presence' | 'voting' | 'member' | 'message'; round?: WithId<Round>; member?: WithId<Member>; message?: string },
+  view: {
+    display: 'round' | 'presence' | 'voting' | 'member' | 'message';
+    round?: WithId<Round>;
+    member?: WithId<Member>;
+    message?: string;
+  },
   callback: ((response: { ok: boolean; error?: string }) => void) | undefined
 ) => {
   console.log(`🔌 WS: Update audience display to ${view}`);
@@ -173,4 +175,4 @@ export const handleUpdateAudienceDisplay = async (
       callback({ ok: false, error: 'Failed to update audience display' });
     }
   }
-}
+};

@@ -6,6 +6,11 @@ import { Member } from './member';
 export interface ElectionState {
   eventId: ObjectId;
   activeRound: WithId<Round>;
-  audienceDisplay: { display: AudienceDisplayScreen; round?: WithId<Round>; member?: WithId<Member>; message?: string };
+  audienceDisplay: {
+    display: AudienceDisplayScreen;
+    round?: WithId<Round>;
+    member?: WithId<Member>;
+    message?: string;
+  };
   completed: boolean;
 }

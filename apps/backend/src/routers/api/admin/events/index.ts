@@ -25,8 +25,8 @@ function getInitialDivisionState(eventId: ObjectId): ElectionState {
     activeRound: null,
     completed: false,
     audienceDisplay: {
-      display: 'round',
-    },
+      display: 'round'
+    }
   };
 }
 
@@ -51,16 +51,14 @@ router.post(
 
     console.log(eventData);
 
-
     eventData.startDate = new Date();
     eventData.endDate = new Date();
 
     console.log(`🔍 Validating Event data: ${JSON.stringify(eventData)}`);
 
-
     console.log('⏬ Creating Event...');
     const eventResult = await db.addElectionEvent(eventData as ElectionEvent);
-    const eventId = eventResult.insertedId
+    const eventId = eventResult.insertedId;
 
     if (!eventResult.acknowledged) {
       console.log('❌ Could not create Event');
@@ -84,12 +82,13 @@ router.post(
 
     console.log('👤 Generating division users');
 
-    console.log(`Creating voting stand users for ${eventData.votingStands} stands with event ID: ${eventId}`);
+    console.log(
+      `Creating voting stand users for ${eventData.votingStands} stands with event ID: ${eventId}`
+    );
 
     const users = CreateVotingStandUsers(eventData.votingStands, eventId);
 
     console.log('users:', users);
-
 
     if (!(await db.addUsers(users)).acknowledged) {
       res.status(500).json({ error: 'Could not create users!' });
@@ -173,7 +172,6 @@ router.delete(
     console.log(`🚮 Deleting data from event`);
     try {
       await cleanDivisionData(new ObjectId(req.params.eventId));
-
     } catch (error) {
       res.status(500).json(error.message);
       return;

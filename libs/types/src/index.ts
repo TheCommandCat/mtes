@@ -12,4 +12,4 @@ export * from './lib/schemas/round';
 export * from './lib/schemas/city'; // Added City schema export
 export * from './lib/positions';
 export * from './lib/schemas/vote';
-export * from './lib/voting-states'
+export * from './lib/voting-states';

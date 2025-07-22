@@ -14,7 +14,7 @@ import {
 } from '@mtes/types';
 import { WaitingState } from 'apps/frontend/components/mtes/waiting-state';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
-import { apiFetch, getUserAndDivision, serverSideGetRequests } from 'apps/frontend/lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { Box, Typography, Grid, Paper, Container, Avatar } from '@mui/material';
 import Layout from '../../components/layout';
 import { AudiencePresence } from 'apps/frontend/components/mtes/audience/audience-presence';

@@ -15,10 +15,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 const app = express();
 const server = http.createServer(app);
 const corsOptions = {
-  origin: [
-    /localhost:\d+$/,
-    /\.thecommandcat\.me$/
-  ],
+  origin: [/localhost:\d+$/, /\.thecommandcat\.me$/],
   credentials: true
 };
 const io = new Server(server, { cors: corsOptions });

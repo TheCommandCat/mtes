@@ -18,7 +18,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     if (user) {
       delete user.password;
       req.user = user;
-      return next();  
+      return next();
     }
   } catch (err) {
     //Invalid token

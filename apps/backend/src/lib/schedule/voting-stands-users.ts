@@ -40,9 +40,8 @@ export const CreateVotingStandUsers = (numOfStands: number, eventId: ObjectId): 
     isAdmin: false,
     role: 'audience-display',
     password: randomString(4),
-    lastPasswordSetDate: new Date(),
+    lastPasswordSetDate: new Date()
   });
-
 
   return users;
 };

@@ -18,8 +18,14 @@ export const addContestants = (contestants: Array<Contestant>) => {
   return db.collection<Contestant>('contestants').insertMany(contestants);
 };
 
-export const updateContestant = (filter: Filter<Contestant>, newContestant: Partial<Contestant>, upsert = false) => {
-  return db.collection<Contestant>('contestants').updateOne(filter, { $set: newContestant }, { upsert });
+export const updateContestant = (
+  filter: Filter<Contestant>,
+  newContestant: Partial<Contestant>,
+  upsert = false
+) => {
+  return db
+    .collection<Contestant>('contestants')
+    .updateOne(filter, { $set: newContestant }, { upsert });
 };
 
 export const deleteContestant = (filter: Filter<Contestant>) => {

@@ -24,8 +24,7 @@ export const addMembers = (members: Array<Member>) => {
       replacedBy: member.replacedBy ?? null,
       isMM: member.isMM ?? false
     };
-  }
-  )
+  });
   return db.collection<Member>('members').insertMany(validMembers);
 };
 

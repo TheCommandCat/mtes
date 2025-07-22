@@ -16,7 +16,7 @@
       {
         "name": "next"
       }
-    ],
+    ]
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "next-env.d.ts"],
   "exclude": ["node_modules", "src/**/*.spec.ts", "src/**/*.test.ts"]

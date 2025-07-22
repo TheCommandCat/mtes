@@ -9,7 +9,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EditIcon from '@mui/icons-material/Edit';
 import { WithId } from 'mongodb';
-import { apiFetch } from 'apps/frontend/lib/utils/fetch';
+import { apiFetch } from '../../lib/utils/fetch';
 import router from 'next/router';
 import AddRoundDialog from './add-round-dialog';
 

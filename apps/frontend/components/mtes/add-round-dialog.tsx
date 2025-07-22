@@ -303,7 +303,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }
 
         if (Object.keys(changes).length > 0) {
-          const res = await apiFetch(`api/events/${eventId}/rounds/update`, {
+          const res = await apiFetch(`/api/events/${eventId}/rounds/update`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
