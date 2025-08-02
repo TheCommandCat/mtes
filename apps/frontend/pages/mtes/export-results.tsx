@@ -3,8 +3,22 @@ import { WithId } from 'mongodb';
 import { Member, Round, VotingStatus } from '@mtes/types';
 import { RoundResultsPdf } from '../../components/mtes/round-results-pdf';
 import { apiFetch } from '../../lib/utils/fetch';
-import { Box, Button, Container, Fab } from '@mui/material';
-import { Print as PrintIcon, PictureAsPdf as PdfIcon } from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Container,
+  Fab,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Typography
+} from '@mui/material';
+import {
+  Print as PrintIcon,
+  PictureAsPdf as PdfIcon,
+  CheckCircleOutline
+} from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 
 interface RoleResult {
@@ -53,10 +67,6 @@ const ExportResultsPage: NextPage<ExportResultsPageProps> = ({
     setIsPrintMode(urlParams.get('print') === 'true');
   }, []);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleGeneratePdf = async () => {
     try {
       // Open the same page with print=true parameter for PDF generation
@@ -100,21 +110,21 @@ const ExportResultsPage: NextPage<ExportResultsPageProps> = ({
       <Box
         className="no-print"
         sx={{
-          position: 'fixed',
-          top: 20,
-          right: 20,
-          zIndex: 1000,
           display: 'flex',
-          gap: 2,
-          flexDirection: 'column'
+          justifyContent: 'center',
+          mb: 4
         }}
       >
-        <Fab color="primary" onClick={handlePrint} sx={{ boxShadow: 3 }} title="הדפס">
-          <PrintIcon />
-        </Fab>
-        <Fab color="secondary" onClick={handleGeneratePdf} sx={{ boxShadow: 3 }} title="יצא לPDF">
-          <PdfIcon />
-        </Fab>
+        <Button
+          variant="contained"
+          color="secondary"
+          size="large"
+          onClick={handleGeneratePdf}
+          startIcon={<PdfIcon />}
+          sx={{ boxShadow: 3, padding: '12px 24px', fontSize: '1.2rem' }}
+        >
+          יצא ל-PDF
+        </Button>
       </Box>
 
       {/* Instructions */}
@@ -123,31 +133,55 @@ const ExportResultsPage: NextPage<ExportResultsPageProps> = ({
         sx={{
           mb: 4,
           p: 3,
-          bgcolor: 'info.light',
+          bgcolor: 'grey.100',
           borderRadius: 2,
           border: '1px solid',
-          borderColor: 'info.main'
+          borderColor: 'grey.300'
         }}
       >
-        <h2 style={{ margin: '0 0 16px 0', color: '#1976d2' }}>הוראות ליצוא PDF</h2>
-        <ul style={{ margin: 0, paddingRight: 20 }}>
-          <li>
-            <strong>להדפסה ישירה:</strong> לחץ על כפתור ההדפסה הכחול
-          </li>
-          <li>
-            <strong>לשמירה כ-PDF:</strong> לחץ על כפתור ה-PDF הסגול או השתמש בתפריט הדפסה ובחר "שמור
-            כ-PDF"
-          </li>
-          <li>
-            <strong>הגדרות מומלצות:</strong>
-            <ul style={{ marginTop: 8 }}>
-              <li>גודל נייר: A4</li>
-              <li>כיוון: לאורך</li>
-              <li>שוליים: רגיל</li>
-              <li>צבעי רקע: מופעל</li>
-            </ul>
-          </li>
-        </ul>
+        <Typography
+          variant="h5"
+          component="h2"
+          sx={{ mb: 2, color: 'primary.main', fontWeight: 'bold' }}
+        >
+          הוראות ליצירת קובץ PDF
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          כדי ליצור קובץ PDF של התוצאות, לחץ על הכפתור "יצא ל-PDF". פעולה זו תפתח את חלון ההדפסה של
+          הדפדפן.
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          בחלון שייפתח, בחר באפשרות <strong>"שמור כ-PDF"</strong> (Save as PDF) כיעד ההדפסה.
+        </Typography>
+        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+          הגדרות מומלצות לקבלת התוצאה הטובה ביותר:
+        </Typography>
+        <List dense>
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleOutline sx={{ color: 'success.main' }} />
+            </ListItemIcon>
+            <ListItemText primary="גודל נייר: A4" />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleOutline sx={{ color: 'success.main' }} />
+            </ListItemIcon>
+            <ListItemText primary="כיוון הדף: לאורך (Portrait)" />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleOutline sx={{ color: 'success.main' }} />
+            </ListItemIcon>
+            <ListItemText primary='שוליים: "ברירת מחדל" או "רגיל"' />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleOutline sx={{ color: 'success.main' }} />
+            </ListItemIcon>
+            <ListItemText primary="אפשר הדפסת גרפיקת רקע (Background graphics)" />
+          </ListItem>
+        </List>
       </Box>
 
       {/* PDF Preview */}

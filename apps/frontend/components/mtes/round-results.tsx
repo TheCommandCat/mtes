@@ -70,40 +70,10 @@ export const RoundResults = ({
       });
 
       // Open simple export page in new tab - this shows the data as-is for printing
-      const exportUrl = `/mtes/export-pdf?${queryParams.toString()}`;
+      const exportUrl = `/mtes/export-results?${queryParams.toString()}`;
       window.open(exportUrl, '_blank');
     } catch (error) {
       console.error('Error opening export page:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleServerPdf = async () => {
-    try {
-      setIsExporting(true);
-
-      // Get current event info if available
-      const eventId = router.query.eventId as string;
-      const queryParams = new URLSearchParams({
-        ...(eventId && { eventId })
-      });
-
-      // Download PDF directly from server - this generates a PDF file
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333';
-      const downloadUrl = `${apiBaseUrl}/api/events/export/round-results-pdf/${
-        round._id
-      }?${queryParams.toString()}`;
-
-      // Create a temporary anchor element to trigger download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `round-${round._id}-results.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
     } finally {
       setIsExporting(false);
     }
@@ -594,29 +564,8 @@ export const RoundResults = ({
         <Fab
           variant="extended"
           size="medium"
-          color="primary"
-          onClick={handleExportPdf}
-          disabled={isExporting}
-          sx={{
-            px: 3,
-            py: 1.5,
-            borderRadius: 2,
-            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-            transition: 'all 0.3s ease',
-            direction: 'rtl',
-            '&:hover': {
-              boxShadow: '0 6px 12px rgba(0,0,0,0.15)'
-            }
-          }}
-        >
-          <LaunchIcon sx={{ ml: 1 }} />
-          {isExporting ? 'פותח...' : 'פתח דף הדפסה'}
-        </Fab>
-        <Fab
-          variant="extended"
-          size="medium"
           color="secondary"
-          onClick={handleServerPdf}
+          onClick={handleExportPdf}
           disabled={isExporting}
           sx={{
             px: 3,
