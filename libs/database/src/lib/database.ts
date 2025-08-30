@@ -28,7 +28,8 @@ const initDbClient = async () => {
 
 const client = await initDbClient();
 
-const db: Db = client.db('mtes');
+const dbName = process.env.MONGODB_DB_NAME || 'mtes';
+const db: Db = client.db(dbName);
 
 const admins = db.collection<User>('users');
 admins.findOne({}).then(user => {
