@@ -119,7 +119,16 @@ const Page: NextPage<Props> = ({ user, electionState }) => {
                     />
                   </>
                 ) : (
-                  <WaitingState title="מחכה למצביע...." subtitle="נא להמתין עד שיזוהה המצביע הבא" />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      minHeight: '400px'
+                    }}
+                  >
+                    <WaitingState title="מחכה למצביע...." subtitle="נא להמתין עד שיזוהה המצביע הבא" />
+                  </Box>
                 )}
               </>
             ) : (
