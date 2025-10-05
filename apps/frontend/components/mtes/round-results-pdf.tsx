@@ -284,7 +284,7 @@ export const RoundResultsPdf = ({
               '@media print': { fontSize: '11px' }
             }}
           >
-            💡 סף כשירות: 1-2 מועמדים = 66% • 3+ מועמדים = 50% + 1
+            💡 סף כשירות: 1 מועמד = 66% • 2+ מועמדים = 50% + 1
           </Typography>
         </Box>
 
@@ -312,11 +312,11 @@ export const RoundResultsPdf = ({
           const numContestants = nonWhiteContestants.length;
 
           // Determine threshold based on number of contestants
-          const requiredThreshold = numContestants <= 2 ? 66 : 50;
+          const requiredThreshold = numContestants === 1 ? 66 : 50;
           const thresholdVotersNeeded =
-            numContestants <= 2
-              ? Math.ceil((66 / 100) * totalMembers) // 66% for 1-2 contestants (rounded up)
-              : Math.floor(totalMembers / 2) + 1; // 50% + 1 for 3+ contestants
+            numContestants === 1
+              ? Math.ceil((66 / 100) * votedMembers.length) // 66% for 1 contestant (rounded up)
+              : Math.floor(votedMembers.length / 2) + 1; // 50% + 1 for 2+ contestants
 
           const numWinners = role.numWinners || 1;
 
