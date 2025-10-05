@@ -267,11 +267,8 @@ export const RoundResults = ({
               </Typography>
             )}
             <Box sx={{ px: 2 }}>
-              {roleResults.map((result: RoleResult, index: number) => {
-                const resultPosition =
-                  sortedResults.findIndex(
-                    r => r.contestant._id.toString() === result.contestant._id.toString()
-                  ) + 1;
+              {sortedResults.map((result: RoleResult, index: number) => {
+                const resultPosition = index + 1;
                 const isWinner = actualWinners.some(
                   w => w.contestant._id.toString() === result.contestant._id.toString()
                 );
@@ -473,7 +470,7 @@ export const RoundResults = ({
                           color="text.secondary"
                           sx={{ display: 'block', mt: 0.25 }}
                         >
-                          ({Math.round((result.votes / totalMembers) * 100)}% מהמליאה)
+                          ({Math.round((result.votes / votedMembers.length) * 100)}% מהמצביעים)
                         </Typography>
                         {!isWhiteVote && (
                           <Typography
