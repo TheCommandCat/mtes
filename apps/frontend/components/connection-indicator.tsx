@@ -13,26 +13,26 @@ const config: {
     rippleColor: '#3cd3b2',
     textColor: '#111111',
     backgroundColor: '#f4f4f4',
-    text: 'מחובר',
+    text: 'מחובר'
   },
   connecting: {
     rippleColor: '#a21caf',
     textColor: '#000000',
     backgroundColor: '#f4f4f4',
-    text: 'מתחבר...',
+    text: 'מתחבר...'
   },
   disconnected: {
     rippleColor: '#f87171',
     textColor: '#000000',
     backgroundColor: '#f4f4f4',
-    text: 'מנותק',
+    text: 'מנותק'
   },
   error: {
     rippleColor: '#ffffff',
     textColor: '#ffffff',
     backgroundColor: '#dc2626',
-    text: 'שגיאה',
-  },
+    text: 'שגיאה'
+  }
 } as const;
 
 const rippleAnimation = keyframes`
@@ -45,9 +45,7 @@ interface ConnectionIndicatorProps {
   status: ConnectionStatus;
 }
 
-const ConnectionIndicator: React.FC<ConnectionIndicatorProps> = ({
-  status,
-}) => {
+const ConnectionIndicator: React.FC<ConnectionIndicatorProps> = ({ status }) => {
   const { rippleColor, textColor, backgroundColor, text } = config[status];
   return (
     <Box
@@ -62,7 +60,7 @@ const ConnectionIndicator: React.FC<ConnectionIndicatorProps> = ({
         fontSize: '0.875rem',
         fontWeight: 500,
         minWidth: 100,
-        transition: 'all 0.2s ease-in-out',
+        transition: 'all 0.2s ease-in-out'
       }}
     >
       <Box
@@ -74,7 +72,7 @@ const ConnectionIndicator: React.FC<ConnectionIndicatorProps> = ({
           boxShadow: `0 0 0 0.25rem ${rippleColor}33`,
           mr: 1.25,
           animation: `${rippleAnimation} 2s linear infinite`,
-          transition: 'all 0.2s ease-in-out',
+          transition: 'all 0.2s ease-in-out'
         }}
       />
       <Box flex={1} textAlign="center">

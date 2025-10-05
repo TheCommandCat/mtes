@@ -15,7 +15,7 @@ import {
   Stack,
   Toolbar,
   Tooltip,
-  Typography,
+  Typography
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -44,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({
   maxWidth = 'lg',
   action,
   error,
-  color,
+  color
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState<boolean>(false);
@@ -54,7 +54,7 @@ const Layout: React.FC<LayoutProps> = ({
   const handleBack = () => {
     const queryString = router.query.divisionId
       ? new URLSearchParams({
-          divisionId: router.query.divisionId as string,
+          divisionId: router.query.divisionId as string
         }).toString()
       : '';
     const url = `${back}${queryString ? `?${queryString}` : ''}`;
@@ -62,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   const logout = () => {
-   apiFetch('/auth/logout', { method: 'POST' }).then(res => router.push('/'));
+    apiFetch('/auth/logout', { method: 'POST' }).then(res => router.push('/'));
   };
 
   return (
@@ -73,7 +73,7 @@ const Layout: React.FC<LayoutProps> = ({
             position="fixed"
             sx={{
               //   animation: isError ? `${errorAnimation} 1s linear infinite alternate` : undefined,
-              borderBottom: color && `5px solid ${color}`,
+              borderBottom: color && `5px solid ${color}`
             }}
           >
             <Toolbar>
@@ -102,9 +102,7 @@ const Layout: React.FC<LayoutProps> = ({
               </Typography>
 
               <Stack direction="row" spacing={2}>
-                {connectionStatus && (
-                  <ConnectionIndicator status={connectionStatus} />
-                )}
+                {connectionStatus && <ConnectionIndicator status={connectionStatus} />}
                 {action}
               </Stack>
 
@@ -115,7 +113,7 @@ const Layout: React.FC<LayoutProps> = ({
               </Tooltip>
             </Toolbar>
           </AppBar>
-          <Box sx={{ height: (theme) => theme.mixins.toolbar.minHeight }} />
+          <Box sx={{ height: theme => theme.mixins.toolbar.minHeight }} />
         </>
       )}
       <Dialog
@@ -138,14 +136,10 @@ const Layout: React.FC<LayoutProps> = ({
         </DialogActions>
       </Dialog>
       <Container
-        maxWidth={
-          isNaN(maxWidth as number) ? (maxWidth as Breakpoint) : undefined
-        }
+        maxWidth={isNaN(maxWidth as number) ? (maxWidth as Breakpoint) : undefined}
         sx={{
           flex: 1,
-          maxWidth: isNaN(maxWidth as number)
-            ? undefined
-            : `${maxWidth}px !important`,
+          maxWidth: isNaN(maxWidth as number) ? undefined : `${maxWidth}px !important`
         }}
       >
         {children}
@@ -166,7 +160,7 @@ const Layout: React.FC<LayoutProps> = ({
                 bottom: '2rem',
                 right: '12%',
                 left: '12%',
-                borderRadius: 4,
+                borderRadius: 4
               }}
             >
               שגיאה בלתי צפויה, אנא פנו למנהל המערכת.

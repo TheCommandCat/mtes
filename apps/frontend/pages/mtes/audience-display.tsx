@@ -14,7 +14,7 @@ import {
 } from '@mtes/types';
 import { WaitingState } from 'apps/frontend/components/mtes/waiting-state';
 import { useWebsocket } from 'apps/frontend/hooks/use-websocket';
-import { apiFetch, getUserAndDivision, serverSideGetRequests } from 'apps/frontend/lib/utils/fetch';
+import { apiFetch, getUserAndDivision, serverSideGetRequests } from '../../lib/utils/fetch';
 import { Box, Typography, Grid, Paper, Container, Avatar } from '@mui/material';
 import Layout from '../../components/layout';
 import { AudiencePresence } from 'apps/frontend/components/mtes/audience/audience-presence';
@@ -68,7 +68,7 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
   const refreshVotedMembers = async (roundId: string) => {
     console.log(`Fetching voted members for round ID: ${roundId}`);
 
-    const response = await apiFetch(`/api/events/rounds/votedMembers/${roundId}`, {
+    const response = await apiFetch(`/api/events/${event._id}/rounds/votedMembers/${roundId}`, {
       method: 'GET'
     });
     if (response.ok) {
@@ -228,14 +228,14 @@ const Page: NextPage<Props> = ({ user, event, electionState, initialMembers, rou
 
 export const getServerSideProps: GetServerSideProps = async ctx => {
   try {
-    const { user } = await getUserAndDivision(ctx);
+    const { user, eventId } = await getUserAndDivision(ctx);
 
     const data = await serverSideGetRequests(
       {
-        event: `/public/event`,
-        electionState: `/api/events/state`,
-        initialMembers: `/api/events/members`,
-        rounds: '/api/events/rounds'
+        event: `/api/events/${eventId}`,
+        electionState: `/api/events/${eventId}/state`,
+        initialMembers: `/api/events/${eventId}/members`,
+        rounds: `/api/events/${eventId}/rounds`
       },
       ctx
     );

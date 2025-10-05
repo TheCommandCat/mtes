@@ -7,7 +7,7 @@ import * as db from '@mtes/database';
 const router = express.Router({ mergeParams: true });
 
 router.get('/', (req: Request, res: Response) => {
-  db.getEventUsers().then(users => {
+  db.getEventUsers(new ObjectId(req.params.eventId)).then(users => {
     return res.json(users);
   });
 });
@@ -15,7 +15,13 @@ router.get('/', (req: Request, res: Response) => {
 router.get(
   '/credentials',
   asyncHandler(async (req: Request, res: Response) => {
-    const usersWithAdmin = await db.getEventUsersWithCredentials();
+    const eventId = req.params.eventId;
+    if (!eventId) {
+      console.log('❌ Event ID is null or undefined');
+      res.status(400).json({ ok: false, message: 'Event ID is missing' });
+      return;
+    }
+    const usersWithAdmin = await db.getEventUsersWithCredentials(new ObjectId(eventId));
     const users = usersWithAdmin.filter(user => !user.isAdmin);
 
     res.json(users);

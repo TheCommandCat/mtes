@@ -1,4 +1,4 @@
 export interface City {
-    name: string;
-    numOfVoters: number;
+  name: string;
+  numOfVoters: number;
 }

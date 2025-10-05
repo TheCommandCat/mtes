@@ -64,7 +64,7 @@ npm run dev
 
 Deploy the application swiftly using Docker Compose. 🚀 Ensure Docker is running.
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > Before launching, configure your environment variables. The backend service needs an `apps/backend/.env.local` file (copy `apps/backend/.env` if needed). The `JWT_SECRET` is crucial. ✨
 
 Run this from the project root:
@@ -76,6 +76,7 @@ docker-compose up -d
 This builds and starts frontend and backend services in detached mode.
 
 Access:
+
 - **Frontend**: `http://localhost:4200` 🖥️
 - **Backend API**: `http://localhost:3333` ⚙️
 
@@ -112,5 +113,4 @@ mtes/
 
 This project is licensed under the GPL-3.0 License. It utilizes a similar tech stack and codebase inspired by [FIRSTIsrael/lems](https://github.com/FIRSTIsrael/lems); 🙏 thank you for making this possible! 🚀
 
-
-***Made with ❤️ by [@TheCommandCat](https://github.com/TheCommandCat)***
+**_Made with ❤️ by [@TheCommandCat](https://github.com/TheCommandCat)_**

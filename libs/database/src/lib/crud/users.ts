@@ -2,12 +2,12 @@ import { ObjectId, Filter, WithId } from 'mongodb';
 import { User, SafeUser } from '@mtes/types';
 import db from '../database';
 
-export const getEventUsersWithCredentials = () => {
-  return db.collection<User>('users').find().toArray();
+export const getEventUsersWithCredentials = (eventId: ObjectId) => {
+  return db.collection<User>('users').find({ eventId }).toArray();
 };
 
-export const getEventUsers = (): Promise<Array<WithId<SafeUser>>> => {
-  return getEventUsersWithCredentials().then(users => {
+export const getEventUsers = (eventId: ObjectId): Promise<Array<WithId<SafeUser>>> => {
+  return getEventUsersWithCredentials(eventId).then(users => {
     return users.map(user => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, lastPasswordSetDate, ...safeUser } = user;

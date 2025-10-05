@@ -1,9 +1,9 @@
-import { WithId, AggregationCursor, Filter } from 'mongodb';
+import { WithId, AggregationCursor, Filter, ObjectId } from 'mongodb';
 import { ElectionEvent } from '@mtes/types';
 import db from '../database';
 
-export const getElectionEvent = () => {
-  return findElectionEvents({}).next();
+export const getElectionEvent = (eventId: ObjectId) => {
+  return findElectionEvents({ _id: eventId }).next();
 };
 
 export const findElectionEvents = (filter: Filter<ElectionEvent>) => {
@@ -42,6 +42,8 @@ export const addElectionEvent = (ElectionEvent: ElectionEvent) => {
   return db.collection<ElectionEvent>('election-events').insertOne(ElectionEvent);
 };
 
-export const deleteElectionEvent = () => {
-  return db.collection<ElectionEvent>('election-events').drop();
+export const deleteElectionEvent = (eventId: ObjectId) => {
+  return db.collection<ElectionEvent>('election-events').deleteOne({
+    _id: eventId
+  });
 };

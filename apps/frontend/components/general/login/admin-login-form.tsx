@@ -4,10 +4,13 @@ import { useSnackbar } from 'notistack';
 import { Button, Box, Typography, Stack, TextField } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { apiFetch } from '../../../lib/utils/fetch';
+import { ObjectId } from 'mongodb';
 
-interface Props {}
+interface Props {
+  eventId?: string | ObjectId;
+}
 
-const AdminLoginForm: React.FC<Props> = ({}) => {
+const AdminLoginForm: React.FC<Props> = ({ eventId }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
@@ -22,9 +25,10 @@ const AdminLoginForm: React.FC<Props> = ({}) => {
         isAdmin: true,
         username,
         password,
-      }),
+        eventId: eventId ? String(eventId) : undefined
+      })
     })
-      .then(async (res) => {
+      .then(async res => {
         const data = await res.json();
         if (data && !data.error) {
           document.getElementById('recaptcha-script')?.remove();
@@ -35,16 +39,14 @@ const AdminLoginForm: React.FC<Props> = ({}) => {
             enqueueSnackbar('אופס, הסיסמה שגויה.', { variant: 'error' });
           } else {
             enqueueSnackbar('הגישה נדחתה, נסו שנית מאוחר יותר.', {
-              variant: 'error',
+              variant: 'error'
             });
           }
         } else {
           throw new Error(res.statusText);
         }
       })
-      .catch(() =>
-        enqueueSnackbar('אופס, החיבור לשרת נכשל.', { variant: 'error' })
-      );
+      .catch(() => enqueueSnackbar('אופס, החיבור לשרת נכשל.', { variant: 'error' }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -54,12 +56,7 @@ const AdminLoginForm: React.FC<Props> = ({}) => {
   };
 
   return (
-    <Stack
-      direction="column"
-      spacing={2}
-      component="form"
-      onSubmit={handleSubmit}
-    >
+    <Stack direction="column" spacing={2} component="form" onSubmit={handleSubmit}>
       <Typography variant="h2" textAlign="center">
         התחברות כמנהל
       </Typography>
@@ -69,7 +66,7 @@ const AdminLoginForm: React.FC<Props> = ({}) => {
         type="username"
         label="שם משתמש"
         value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={e => setUsername(e.target.value)}
         fullWidth
       />
       <TextField
@@ -78,7 +75,7 @@ const AdminLoginForm: React.FC<Props> = ({}) => {
         type="password"
         label="סיסמה"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={e => setPassword(e.target.value)}
         inputProps={{ dir: 'ltr' }}
       />
 

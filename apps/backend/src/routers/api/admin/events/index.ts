@@ -6,6 +6,7 @@ import { ElectionEvent, ElectionState, User, Member } from '@mtes/types'; // Add
 import * as db from '@mtes/database';
 import { cleanDivisionData } from 'apps/backend/src/lib/schedule/cleaner';
 import { CreateVotingStandUsers } from 'apps/backend/src/lib/schedule/voting-stands-users';
+import { ObjectId } from 'mongodb';
 
 const randomString = (length: number) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -18,13 +19,14 @@ const randomString = (length: number) => {
 
 const router = express.Router({ mergeParams: true });
 
-function getInitialDivisionState(): ElectionState {
+function getInitialDivisionState(eventId: ObjectId): ElectionState {
   return {
+    eventId: eventId,
     activeRound: null,
     completed: false,
     audienceDisplay: {
-      display: 'round',
-    },
+      display: 'round'
+    }
   };
 }
 
@@ -35,18 +37,29 @@ router.post(
 
     // Validate required fields
     if (!eventData?.name || !eventData?.votingStands) {
-      res.status(400).json({ error: 'שם האירוע ומספר עמדות הצבעה הם שדות חובה' });
+      if (!eventData.name) {
+        res.status(400).json({ error: 'שם האירוע הוא שדה חובה' });
+        return;
+      }
+      if (eventData.votingStands === undefined || eventData.votingStands === null) {
+        res.status(400).json({ error: 'מספר עמדות הצבעה הוא שדה חובה' });
+        return;
+      }
+
       return;
     }
+
+    console.log(eventData);
 
     eventData.startDate = new Date();
     eventData.endDate = new Date();
 
     console.log(`🔍 Validating Event data: ${JSON.stringify(eventData)}`);
 
-
     console.log('⏬ Creating Event...');
     const eventResult = await db.addElectionEvent(eventData as ElectionEvent);
+    const eventId = eventResult.insertedId;
+
     if (!eventResult.acknowledged) {
       console.log('❌ Could not create Event');
       res.status(500).json({ ok: false });
@@ -55,7 +68,7 @@ router.post(
     console.log('✅ Created Event!');
 
     console.log('🔐 Creating division state');
-    if (!(await db.addElectionState(getInitialDivisionState())).acknowledged) {
+    if (!(await db.addElectionState(getInitialDivisionState(eventId))).acknowledged) {
       throw new Error('Could not create division state!');
     }
     console.log('✅ Created division state');
@@ -68,7 +81,14 @@ router.post(
     // }
 
     console.log('👤 Generating division users');
-    const users = CreateVotingStandUsers(eventData.votingStands);
+
+    console.log(
+      `Creating voting stand users for ${eventData.votingStands} stands with event ID: ${eventId}`
+    );
+
+    const users = CreateVotingStandUsers(eventData.votingStands, eventId);
+
+    console.log('users:', users);
 
     if (!(await db.addUsers(users)).acknowledged) {
       res.status(500).json({ error: 'Could not create users!' });
@@ -81,7 +101,7 @@ router.post(
 );
 
 router.put(
-  '/',
+  '/:eventId',
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
 
@@ -147,11 +167,11 @@ router.put(
 );
 
 router.delete(
-  '/data',
+  '/:eventId',
   asyncHandler(async (req: Request, res: Response) => {
     console.log(`🚮 Deleting data from event`);
     try {
-      await cleanDivisionData();
+      await cleanDivisionData(new ObjectId(req.params.eventId));
     } catch (error) {
       res.status(500).json(error.message);
       return;
@@ -161,7 +181,8 @@ router.delete(
   })
 );
 
-router.use('/users', divisionUsersRouter);
-router.use('/cities', citiesRouter);
+router.use('/:eventId/users', divisionUsersRouter);
+
+router.use('/:eventId/cities', citiesRouter);
 
 export default router;

@@ -97,8 +97,8 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
@@ -110,7 +110,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
         <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
           <Typography variant="h6">שינוי סיסמת מנהל</Typography>
         </DialogTitle>
-        
+
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={3}>
             {error && (
@@ -124,7 +124,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
               label="סיסמה נוכחית"
               type={showCurrentPassword ? 'text' : 'password'}
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              onChange={e => setCurrentPassword(e.target.value)}
               disabled={loading}
               InputProps={{
                 dir: 'ltr',
@@ -147,7 +147,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
               label="סיסמה חדשה"
               type={showNewPassword ? 'text' : 'password'}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={e => setNewPassword(e.target.value)}
               disabled={loading}
               helperText="לפחות 4 תווים"
               InputProps={{
@@ -171,7 +171,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
               label="אימות סיסמה חדשה"
               type={showConfirmPassword ? 'text' : 'password'}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={e => setConfirmPassword(e.target.value)}
               disabled={loading}
               InputProps={{
                 dir: 'ltr',
@@ -192,18 +192,10 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ open, onClo
         </DialogContent>
 
         <DialogActions sx={{ p: 3, pt: 2 }}>
-          <Button 
-            onClick={handleClose} 
-            disabled={loading}
-            variant="outlined"
-          >
+          <Button onClick={handleClose} disabled={loading} variant="outlined">
             ביטול
           </Button>
-          <Button 
-            type="submit" 
-            variant="contained"
-            disabled={loading}
-          >
+          <Button type="submit" variant="contained" disabled={loading}>
             {loading ? 'מעדכן...' : 'עדכן סיסמה'}
           </Button>
         </DialogActions>

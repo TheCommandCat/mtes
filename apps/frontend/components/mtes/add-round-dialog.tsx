@@ -135,6 +135,7 @@ interface AddRoundDialogProps {
   initialRound?: WithId<Round>;
   isEdit?: boolean;
   isDuplicate?: boolean;
+  eventId: string;
 }
 
 const WHITE_VOTE_ID_PREFIX = '000000000000000000000';
@@ -195,7 +196,8 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
   onRoundCreated,
   initialRound,
   isEdit = false,
-  isDuplicate = false
+  isDuplicate = false,
+  eventId
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
@@ -301,7 +303,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
         }
 
         if (Object.keys(changes).length > 0) {
-          const res = await apiFetch('/api/events/rounds/update', {
+          const res = await apiFetch(`/api/events/${eventId}/rounds/update`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -327,7 +329,7 @@ const AddRoundDialog: React.FC<AddRoundDialogProps> = ({
           endTime: null,
           isLocked: false
         };
-        const res = await apiFetch('/api/events/rounds/add', {
+        const res = await apiFetch(`/api/events/${eventId}/rounds/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ round: payload })

@@ -3,7 +3,6 @@ import { AwardNames, TicketType } from './constants';
 import { Member } from './schemas/member';
 import { Round } from './schemas/round';
 
-
 export interface WSServerEmittedEvents {
   votingMemberLoaded: (member: WithId<Member>, votingStand: number) => void;
   roundLoaded: (roundId: string) => void;
@@ -13,9 +12,12 @@ export interface WSServerEmittedEvents {
     isPresent: boolean,
     replacedBy: WithId<Member> | null
   ) => void;
-  audienceDisplayUpdated: (
-    view: { display: 'round' | 'presence' | 'voting' | 'member' | 'message'; round?: WithId<Round>; member?: WithId<Member>; message?: string }
-  ) => void;
+  audienceDisplayUpdated: (view: {
+    display: 'round' | 'presence' | 'voting' | 'member' | 'message';
+    round?: WithId<Round>;
+    member?: WithId<Member>;
+    message?: string;
+  }) => void;
 }
 
 export interface WSClientEmittedEvents {
@@ -53,7 +55,12 @@ export interface WSClientEmittedEvents {
   ) => void;
 
   updateAudienceDisplay: (
-    view: { display: 'round' | 'presence' | 'voting' | 'member' | 'message'; round?: WithId<Round>; member?: WithId<Member>; message?: string },
+    view: {
+      display: 'round' | 'presence' | 'voting' | 'member' | 'message';
+      round?: WithId<Round>;
+      member?: WithId<Member>;
+      message?: string;
+    },
     callback: (response: { ok: boolean; error?: string }) => void
   ) => void;
 }

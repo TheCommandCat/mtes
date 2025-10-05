@@ -15,11 +15,7 @@ interface EventSelectorProps {
   getEventDisabled?: (event: WithId<ElectionEvent>) => boolean;
 }
 
-const EventSelector: React.FC<EventSelectorProps> = ({
-  events,
-  onChange,
-  getEventDisabled,
-}) => {
+const EventSelector: React.FC<EventSelectorProps> = ({ events, onChange, getEventDisabled }) => {
   const sortedEvents = useMemo(
     () =>
       events.sort((a, b) => {
@@ -37,8 +33,7 @@ const EventSelector: React.FC<EventSelectorProps> = ({
   return (
     <List>
       {sortedEvents.map(event => {
-        const disabled =
-          getEventDisabled?.(event)
+        const disabled = getEventDisabled?.(event);
 
         return (
           <React.Fragment key={String(event._id)}>
