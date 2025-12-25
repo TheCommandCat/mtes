@@ -438,9 +438,23 @@ const Page: NextPage<PageProps> = ({
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx: GetServerSidePropsContext
 ) => {
+  // First check if user is authenticated and is an admin
+  const userResponse = await apiFetch('/api/me', undefined, ctx);
+  const user = userResponse.ok ? await userResponse.json() : null;
+
+  // Redirect to login if not authenticated or not an admin
+  if (!user || !user.isAdmin) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false
+      }
+    };
+  }
+
+  // Only fetch admin-protected data after confirming admin status
   const data = await serverSideGetRequests(
     {
-      user: '/api/me',
       event: '/public/event',
       initMembers: '/api/events/members', // Fetches non-MM members
       initMMMembers: '/api/events/mm-members', // Fetches MM members
@@ -452,7 +466,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
 
   return {
     props: {
-      user: data.user,
+      user: user,
       event: data.event ?? null,
       initMembers: data.initMembers ?? [],
       initMMMembers: data.initMMMembers ?? [], // Ensure this is correctly populated

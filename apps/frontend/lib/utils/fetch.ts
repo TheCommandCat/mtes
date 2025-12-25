@@ -23,7 +23,10 @@ export const apiFetch = (
     } else {
       token = ctx.req.cookies?.['auth-token'];
     }
-    headers = { Authorization: `Bearer ${token}`, ...init?.headers };
+    // Only add Authorization header if token exists
+    if (token) {
+      headers = { Authorization: `Bearer ${token}`, ...init?.headers };
+    }
   }
   // Use server-side URL when we have server context (SSR), client-side URL otherwise
   const apiBase = getApiBase(!!ctx);
