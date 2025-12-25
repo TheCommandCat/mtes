@@ -2,11 +2,13 @@ import { SafeUser } from '@mtes/types';
 import { GetServerSidePropsContext } from 'next';
 
 export const getApiBase = (isServerSide: boolean = false): string => {
-  const publicApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
+  // For client-side requests, use empty string to go through Next.js rewrites (same origin)
+  // For server-side requests (SSR), use the internal API URL directly
+  if (!isServerSide) {
+    return ''; // Client-side: use relative URLs, Next.js rewrites handle the proxy
+  }
   const internalApiUrl = process.env.INTERNAL_API_URL ?? 'http://backend:3333';
-
-  // Use internal API URL for server-side rendering, public API URL for client-side
-  return isServerSide ? internalApiUrl : publicApiUrl;
+  return internalApiUrl;
 };
 
 export const apiFetch = (
@@ -14,7 +16,7 @@ export const apiFetch = (
   init?: RequestInit | undefined,
   ctx?: GetServerSidePropsContext
 ): Promise<Response> => {
-  let headers = { ...init?.headers };
+  let headers: Record<string, string> = { ...(init?.headers as Record<string, string>) };
   if (ctx) {
     let token: string | undefined = undefined;
     const authHeader = ctx.req.headers.authorization as string;
@@ -25,7 +27,12 @@ export const apiFetch = (
     }
     // Only add Authorization header if token exists
     if (token) {
-      headers = { Authorization: `Bearer ${token}`, ...init?.headers };
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    // Forward cookies from the incoming request for SSR
+    const cookieHeader = ctx.req.headers.cookie;
+    if (cookieHeader) {
+      headers['Cookie'] = cookieHeader;
     }
   }
   // Use server-side URL when we have server context (SSR), client-side URL otherwise
