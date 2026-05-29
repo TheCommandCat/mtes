@@ -9,6 +9,10 @@ RUN npm ci
 # 2. Builder stage: Build the Next.js application
 FROM node:20-alpine AS builder
 WORKDIR /app
+ARG INTERNAL_API_URL=http://backend:3333
+ARG NEXT_PUBLIC_WS_URL
+ENV INTERNAL_API_URL=$INTERNAL_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx nx build frontend --prod
