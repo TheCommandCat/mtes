@@ -1,46 +1,57 @@
-###########################################
-# MTES Application Stack Configuration
-# Docker Compose for Deployment
-###########################################
-
 services:
-  #-----------------------------------------
-  # Backend Service
-  #-----------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: mtes-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mtes_mongo_data:/data/db
+    networks:
+      - mtes-network
+
   backend:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
     container_name: mtes-backend
-    ports:
-      - '3333:3333'
-    env_file:
-      - apps/backend/.env
-    networks:
-      - app-network
     restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3333
+      JWT_SECRET: ${JWT_SECRET}
+      MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/?authSource=admin
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME}
+    depends_on:
+      - mongo
+    ports:
+      - "3333:3333"
+    networks:
+      - mtes-network
 
-  #-----------------------------------------
-  # Frontend Service
-  #-----------------------------------------
   frontend:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
     container_name: mtes-frontend
-    ports:
-      - '4200:4200'
-    env_file:
-      - apps/frontend/.env
-    networks:
-      - app-network
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4200
+      INTERNAL_API_URL: http://backend:3333
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
     depends_on:
       - backend
-    restart: unless-stopped
+    ports:
+      - "4200:4200"
+    networks:
+      - mtes-network
 
-#-----------------------------------------
-# Networks
-#-----------------------------------------
+volumes:
+  mtes_mongo_data:
+
 networks:
-  app-network:
+  mtes-network:
     driver: bridge
