@@ -17,7 +17,8 @@ const server = http.createServer(app);
 const corsOptions = {
   origin: [
     /localhost:\d+$/,
-    /\.thecommandcat\.me$/
+    /\.thecommandcat\.me$/,
+    /\.nocs-online.com$/
   ],
   credentials: true
 };
