@@ -65,7 +65,24 @@ npm run dev
 Deploy the application swiftly using Docker Compose. 🚀 Ensure Docker is running.
 
 > [!IMPORTANT] 
-> Before launching, configure your environment variables. The backend service needs an `apps/backend/.env.local` file (copy `apps/backend/.env` if needed). The `JWT_SECRET` is crucial. ✨
+> Before launching, configure the root `.env` file. The `JWT_SECRET`, Mongo credentials, and public WebSocket URL are required. ✨
+
+Create the root environment file:
+
+```bash
+cp .env.example .env
+```
+
+When running multiple MTES instances on the same machine, give each instance unique container names and host ports in `.env`:
+
+```bash
+MTES_MONGO_CONTAINER_NAME=mtes-mongo-instance-2
+MTES_BACKEND_CONTAINER_NAME=mtes-backend-instance-2
+MTES_FRONTEND_CONTAINER_NAME=mtes-frontend-instance-2
+BACKEND_HOST_PORT=3334
+FRONTEND_HOST_PORT=4201
+NEXT_PUBLIC_WS_URL=http://localhost:3334
+```
 
 Run this from the project root:
 

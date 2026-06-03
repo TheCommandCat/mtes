@@ -1,7 +1,7 @@
 services:
   mongo:
     image: mongo:7
-    container_name: mtes-mongo
+    container_name: ${MTES_MONGO_CONTAINER_NAME:-mtes-mongo}
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
@@ -15,7 +15,7 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-    container_name: mtes-backend
+    container_name: ${MTES_BACKEND_CONTAINER_NAME:-mtes-backend}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -27,7 +27,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - "3333:3333"
+      - "${BACKEND_HOST_PORT:-3333}:3333"
     networks:
       - mtes-network
 
@@ -38,7 +38,7 @@ services:
       args:
         INTERNAL_API_URL: http://backend:3333
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
-    container_name: mtes-frontend
+    container_name: ${MTES_FRONTEND_CONTAINER_NAME:-mtes-frontend}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -48,7 +48,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "4200:4200"
+      - "${FRONTEND_HOST_PORT:-4200}:4200"
     networks:
       - mtes-network
 
